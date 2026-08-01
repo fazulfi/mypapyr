@@ -1,0 +1,15 @@
+# Build artifacts
+.next/
+out/
+build/
+dist/
+
+# Coverage output
+coverage/
+
+# Dependencies
+node_modules/
+
+# Generated / vendor
+next-env.d.ts
+package-lock.json
