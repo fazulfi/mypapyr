@@ -126,6 +126,34 @@ jobs:
       - name: Ruff format check
         run: ruff format --check .
 
+  backend-type:
+    name: Backend (Strict mypy)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Strict mypy gate (pinned version; app and tests)
+        run: python -m mypy app tests --strict --no-incremental
+
   backend-test:
     name: Backend (Pytest + coverage threshold)
     runs-on: ubuntu-latest
@@ -201,14 +229,224 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Download gitleaks CLI (pinned v8.30.1)
+      - name: Download gitleaks CLI (pinned v8.30.1, checksum-verified)
         run: |
           set -euo pipefail
-          curl -sSL -o /tmp/gitleaks.tar.gz \
+          curl -sSL -o /tmp/gitleaks_8.30.1_linux_x64.tar.gz \
             https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
-          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
-          sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
+          curl -sSL -o /tmp/gitleaks_8.30.1_checksums.txt \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_checksums.txt
+          cd /tmp
+          grep 'gitleaks_8.30.1_linux_x64.tar.gz$' gitleaks_8.30.1_checksums.txt > gitleaks.pin.sha256
+          sha256sum -c gitleaks.pin.sha256
+          tar -xzf gitleaks_8.30.1_linux_x64.tar.gz gitleaks
+          sudo mv gitleaks /usr/local/bin/gitleaks
           gitleaks version
 
       - name: Run gitleaks detect
         run: gitleaks detect --source . --no-banner --redact
+
+  supplychain-dependency-review:
+    name: Supply chain (dependency review on PRs)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Dependency review (fail on high or critical)
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+
+  supplychain-npm-audit:
+    name: Supply chain (npm audit)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: npm audit (fail on high or critical)
+        run: npm audit --audit-level=high
+
+  supplychain-pip-audit:
+    name: Supply chain (pip-audit)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pip-audit (pinned 2.10.1)
+        run: pip install pip-audit==2.10.1
+
+      - name: 'pip-audit (deterministic: pinned versions only, no resolution)'
+        run: pip-audit -r requirements.txt -r requirements-dev.txt --disable-pip --no-deps
+
+  qa-pins:
+    name: QA (action pin truth)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify SHA pins against upstream tags
+        run: bash scripts/verify-pins.sh
+
+      - name: Guard regression (unpinned action must be rejected)
+        run: bash scripts/test-check-ci.sh
+
+  qa-docker:
+    name: QA (hadolint)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download hadolint (pinned v2.15.1, checksum-verified)
+        run: |
+          set -euo pipefail
+          curl -sSL -o /tmp/hadolint-linux-x86_64 \
+            https://github.com/hadolint/hadolint/releases/download/v2.15.1/hadolint-linux-x86_64
+          curl -sSL -o /tmp/checksums.sha256 \
+            https://github.com/hadolint/hadolint/releases/download/v2.15.1/checksums.sha256
+          cd /tmp
+          grep 'hadolint-linux-x86_64$' checksums.sha256 > hadolint.pin.sha256
+          sha256sum -c hadolint.pin.sha256
+          chmod +x hadolint-linux-x86_64
+          ./hadolint-linux-x86_64 --version
+
+      - name: Scan Dockerfiles (notice when none exist yet)
+        run: |
+          set -euo pipefail
+          FILES=$(find . -name 'Dockerfile*' -not -path '*/node_modules/*' -not -path '*/.venv/*' || true)
+          if [ -z "$FILES" ]; then
+            echo "qa-docker: notice - no Dockerfiles in the workspace; scan activates when one lands"
+          else
+            for f in $FILES; do
+              /tmp/hadolint-linux-x86_64 --failure-threshold warning "$f"
+            done
+          fi
+
+  qa-compose:
+    name: QA (compose structural gate)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+
+      - name: Install yamllint (pinned 1.38.0)
+        run: pip install yamllint==1.38.0
+
+      - name: Structural compose gate + yamllint
+        run: bash scripts/check-compose.sh
+
+  qa-yaml:
+    name: QA (yamllint CI YAML)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+
+      - name: Install yamllint (pinned 1.38.0)
+        run: pip install yamllint==1.38.0
+
+      - name: yamllint workflow + dependabot config
+        run: yamllint .github/workflows/ci.yml .github/dependabot.yml
+
+  qa-markdown:
+    name: QA (markdownlint)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: qa-tools/package-lock.json
+
+      - name: Install markdownlint-cli2 (pinned via committed lockfile)
+        working-directory: qa-tools
+        run: npm ci
+
+      - name: markdownlint workspace markdown
+        run: qa-tools/node_modules/.bin/markdownlint-cli2 "**/*.md" "!**/node_modules/**" "!**/.venv/**" "!**/.next/**" "!**/.pytest_cache/**" "!.playwright-mcp/**"
+
+  qa-shell:
+    name: QA (shellcheck)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download shellcheck (pinned v0.11.0, sha256-verified)
+        run: |
+          set -euo pipefail
+          curl -sSL -o /tmp/shellcheck.tar.xz \
+            https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz
+          printf '%s\n' "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198  shellcheck.tar.xz" > /tmp/shellcheck.pin.sha256
+          cd /tmp
+          sha256sum -c shellcheck.pin.sha256
+          tar -xJf shellcheck.tar.xz
+          sudo mv shellcheck-v0.11.0/shellcheck /usr/local/bin/shellcheck
+          shellcheck --version
+
+      - name: shellcheck scripts
+        run: shellcheck -x -S warning scripts/*.sh
