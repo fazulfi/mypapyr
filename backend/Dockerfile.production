@@ -1,0 +1,98 @@
+# syntax=docker/dockerfile:1.7
+#
+# ============================================================================
+# Papyr backend production image.
+#
+# Contract:
+#   * Multi-stage build: isolated `builder` stage produces the virtualenv;
+#     the `runtime` stage contains only the venv, tini, and app code.
+#   * Base image is IMMUTABLE: `python:3.13-slim-bookworm` pinned by real
+#     index digest (resolved 2026-08-01 from registry-1.docker.io and
+#     cross-verified via hub.docker.com v2 tags API; multi-arch amd64/arm64).
+#     Refresh the digest when the upstream base-image tag advances;
+#     bump BOTH `FROM` lines together.
+#   * Non-root execution: dedicated `appuser` UID/GID 1001; every COPY is
+#     --chown'ed; `USER appuser` before ENTRYPOINT. Under host userns-remap
+#     this maps to host UID 101001 (legacy host prep requirement).
+#   * tini as PID 1 so SIGTERM reaches uvicorn.
+#   * HEALTHCHECK exercises GET /health (liveness; readiness is /health/ready
+#     and is additive — never change this liveness probe).
+#   * Read-only rootfs compatible: nothing writes under /app at runtime
+#     (PYTHONDONTWRITEBYTECODE); writable areas are supplied by compose as
+#     tmpfs (/opt/papyr/temp = TMPDIR, /tmp, /home/appuser/.cache).
+#   * Port contract: 3000 (matches deploy compose `expose: 3000`, nginx
+#     upstream `api:3000`, and the API_PORT template value).
+#   * NO OCR (tesseract), NO LibreOffice, NO Redis/worker logic, NO PDF
+#     engines: the five-tool engine dependencies (pikepdf/img2pdf/Pillow/
+#     pypdfium2; Ghostscript as an unmodified `-dSAFER` subprocess) are not
+#     installed here and MUST be added in
+#     the `builder` stage only. Static container checks assert their absence here.
+#   * Build context is a whitelist (backend/.dockerignore): only app code
+#     and the pinned requirements enter; `.env*` files never do.
+#
+# Known hardening limitations:
+#   * apt packages (tini=0.19.0-1) are pinned to the bookworm version but
+#     not to a snapshot.debian.org digest — reproducible apt resolution is a
+#     future hardening item.
+#   * The final application image digest is unknown until the image is built
+#     and pushed; compose requires `PAPYR_API_IMAGE` to
+#     carry the immutable tag/digest at activation (never `:latest`).
+# ============================================================================
+
+# --- Stage 1: builder -------------------------------------------------------
+# Pinned immutable base; identical digest in both stages (BuildKit dedupes).
+FROM python:3.13-slim-bookworm@sha256:9d7f287598e1a5a978c015ee176d8216435aaf335ed69ac3c38dd1bbb10e8d64 AS builder
+
+ENV PATH=/opt/venv/bin:$PATH
+WORKDIR /build
+
+# Only the pinned runtime requirements enter the image (requirements.txt is
+# the authority: fastapi==0.123.5, uvicorn[standard]==0.39.0 today). Engine
+# build deps for the five tools are DEFERRED — add them here, never in the
+# runtime stage.
+COPY --chown=root:root requirements.txt ./
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+
+# --- Stage 2: runtime --------------------------------------------------------
+FROM python:3.13-slim-bookworm@sha256:9d7f287598e1a5a978c015ee176d8216435aaf335ed69ac3c38dd1bbb10e8d64 AS runtime
+
+# tini as PID 1, pinned to the bookworm package version (0.19.0-1).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tini=0.19.0-1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Dedicated non-root user, fixed UID/GID 1001 (Docker best-practice pattern).
+# /opt/papyr/temp is the exec-capable TMPDIR for future engine subprocesses;
+# it is writable by appuser and MUST be supplied writable at runtime (compose
+# tmpfs or volume) because the rootfs is read-only.
+RUN groupadd --gid 1001 appuser \
+    && useradd --uid 1001 --gid appuser --shell /usr/sbin/nologin --create-home appuser \
+    && mkdir -p /opt/papyr/temp \
+    && chown appuser:appuser /opt/papyr/temp
+
+ENV PATH=/opt/venv/bin:$PATH
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV TMPDIR=/opt/papyr/temp
+ENV HOME=/home/appuser
+
+# The builder venv, copied read-only-safe for the non-root user.
+COPY --from=builder --chown=appuser:appuser /opt/venv /opt/venv
+
+WORKDIR /app
+COPY --chown=appuser:appuser app ./app
+
+USER appuser
+
+EXPOSE 3000
+
+# Liveness: /health must answer 200. urllib avoids adding curl to the image;
+# readiness (/health/ready) stays out of the healthcheck until wired.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/health', timeout=5)"]
+
+ENTRYPOINT ["/usr/bin/tini", "--"]
+# Single bounded uvicorn process (no --reload, no watchfiles) — admission
+# control plane posture; worker scaling is a separate, approved decision.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "3000"]
