@@ -36,6 +36,7 @@ coverage/
 npm-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+test-results/
 
 # ===== Backend / Python =====
 __pycache__/

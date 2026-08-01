@@ -6,7 +6,7 @@
 </picture>
 
 <p align="center">
-  <a href=".github/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/fazulfi/mypapyr/ci.yml?branch=main&label=CI&logo=github" alt="CI — seven quality and security gates"></a>
+  <a href=".github/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/fazulfi/mypapyr/ci.yml?branch=main&label=CI&logo=github" alt="CI: 17 quality, security, and repository QA checks (16 on pushes to main)"></a>
   <img src="https://img.shields.io/badge/backend%20coverage-%E2%89%A580%25%20gate-2F855A" alt="Backend coverage gate — at least 80 percent">
   <img src="https://img.shields.io/badge/Trivy-CRITICAL%2FHIGH%20scan-34495E" alt="Trivy scans for critical and high severity findings">
   <img src="https://img.shields.io/badge/gitleaks-full%20history%20scan-34495E" alt="gitleaks scans full repository history for secrets">
@@ -23,7 +23,7 @@
 
 **Fast, private PDF tools.** Compress, merge, split, convert — five focused utilities that respect the user's time, files, and language. No accounts. No cloud history. Browser-first processing, with an explicit server path where native engines are required.
 
-Papyr is an open, specification-first platform. This repository is the tested engineering foundation for the product: a strict Next.js web application, a typed FastAPI service, deployment templates, and security-gated continuous integration. The five PDF workflows are fully specified, with implementation tracked openly on the [roadmap](docs/roadmap.md).
+Papyr is a specification-first platform. This repository is the tested engineering foundation for the product: a strict Next.js web application, a typed FastAPI service, deployment templates, and security-gated continuous integration. The five PDF workflows are fully specified but not yet implemented; progress is tracked on the [roadmap](docs/roadmap.md).
 
 **Start here:** [Product specification](docs/specifications/product.md) · [Technical architecture specification](docs/specifications/architecture.md)
 
@@ -32,10 +32,10 @@ Papyr is an open, specification-first platform. This repository is the tested en
 Papyr exists to complete a common document task in seconds — without a general-purpose editor, an account wall, or a privacy tax. Three commitments define the product:
 
 - **Fast and focused.** One clear primary action per page. Five tools with consistent upload, progress, and download experiences.
-- **Private by default.** Anonymous use at launch. Documents that can be processed locally never leave the device; server work is disclosed before upload and is deleted within a one-hour retention target.
-- **Trilingual from the start.** English, Spanish, and Indonesian across every essential launch surface.
+- **Private by default.** Anonymous use is a specified property of the catalogue: no account, no cloud history. Documents that can be processed locally never leave the device; server work is disclosed before upload and deleted no later than one hour after upload receipt.
+- **Trilingual surface.** English, Spanish, and Indonesian are specified across every essential surface; the shared product shell that delivers them is on the roadmap.
 
-## The five launch tools
+## The five specified tools
 
 | Tool | Specified behaviour |
 | --- | --- |
@@ -45,7 +45,7 @@ Papyr exists to complete a common document task in seconds — without a general
 | **JPG to PDF** | Predictable page fitting with orientation respected; PNG and WebP as launch candidates. |
 | **PDF to JPG** | Every requested page rendered at one documented quality profile. |
 
-Each tool follows a shared six-state workflow — ready, selected, processing, completed, failed, cancelled or expired — and is browser-first where practical, with an explicit, disclosed server path where native engines or stronger isolation are required. Full behavioural contracts are published in the [product specification](docs/specifications/product.md).
+Each tool follows the shared workflow and state model defined in the product specification, and is browser-first where practical, with an explicit, disclosed server path where native engines or stronger isolation are required. Full behavioural contracts are published in the [product specification](docs/specifications/product.md).
 
 ## Capability status
 
@@ -55,20 +55,21 @@ Papyr labels every claim so the repository can be read honestly: the source tree
 | --- | --- |
 | **Available now** | Implemented, tested, and present in the source tree. |
 | **Specified** | Contract published in the specifications and accepted as target behaviour. |
-| **Planned** | Directional intent; no published contract or implementation yet. |
+| **Planned** | Directional intent; implementation is not scheduled or started. The contract may already be published in the specifications. |
 
 | Capability | Status |
 | --- | --- |
 | Next.js application foundation with strict TypeScript, lint, format, unit-test, and build gates | Available now |
-| Typed FastAPI service exposing a tested `GET /health` endpoint | Available now |
+| Typed FastAPI service foundation: app factory, strict configuration, request correlation, stable error envelope, validation schemas, task state machine, and health and readiness endpoints | Available now |
 | Public-safe Docker Compose, Nginx, and environment templates | Available now |
-| CI quality and security gates — format, lint, coverage, build, Trivy, gitleaks | Available now |
+| CI quality, security, and repository QA gates: format, lint, coverage, build, Trivy, gitleaks, dependency and package audits, and QA checks for action pins, Dockerfiles, Compose, YAML, markdown, and shell | Available now |
 | Product, architecture, security, integration, and roadmap documentation | Available now |
-| Five-tool launch catalogue (Compress, Merge, Split, JPG to PDF, PDF to JPG) | Specified |
+| Five-tool catalogue (Compress, Merge, Split, JPG to PDF, PDF to JPG) | Specified |
 | Multilingual surface — English, Spanish, Indonesian | Specified |
 | Versioned tool APIs under `/api/v1` | Specified |
 | Cloudflare R2 temporary-object lifecycle with a one-hour retention target | Specified |
 | Ghostscript compression subprocess (official, unmodified distribution) | Specified |
+| Per-tool limits and stable error categories | Specified |
 | Shared upload, progress, error, and download experience | Planned |
 | Redis queue and bounded worker processing | Planned |
 | Production deployment and release procedures | Planned |
@@ -103,10 +104,10 @@ Papyr is designed around a "documents stay yours" model. The following behaviour
 - **No account required.** The launch catalogue works anonymously with no cross-device cloud history.
 - **Browser-first by default.** Documents that can be processed locally never leave the device.
 - **Disclosed server processing.** When a workflow requires native engines or stronger isolation, the user is told before any upload begins.
-- **Temporary by design.** Server-side objects use opaque keys and a maximum retention target of one hour, with active deletion plus a storage-lifecycle safety net.
+- **Temporary by design.** Server-side objects use opaque keys with a hard maximum retention of one hour from upload receipt, with active deletion plus a storage-lifecycle safety net.
 - **No document data in telemetry.** Filenames, contents, passwords, extracted text, and signed URLs are excluded from logs, analytics, and alerts.
 - **Fail-closed errors.** Invalid, expired, unsupported, or unsafe work returns stable public error categories — never stack traces, engine details, or provider credentials.
-- **Hardened delivery.** CI runs format, lint, coverage, a production build, Trivy (critical and high severity), and full-history gitleaks gates. Third-party actions are pinned to immutable commit SHAs, jobs use read-only permissions, and CI never deploys.
+- **Hardened delivery.** CI runs format, lint, coverage, a production build, Trivy (critical and high severity), full-history gitleaks, dependency and package audits, and repository QA checks across action pins, Dockerfiles, Compose, YAML, markdown, and shell. Third-party actions are pinned to immutable commit SHAs, jobs use read-only permissions, and CI never deploys.
 
 See the [security policy](SECURITY.md) for reporting guidance and the full control inventory.
 
@@ -131,7 +132,7 @@ cd backend
 python -m venv .venv
 # activate the virtual environment for your shell
 pip install -r requirements.txt -r requirements-dev.txt
-uvicorn app.main:app --reload   # http://localhost:8000/health
+uvicorn app.main:app --reload   # http://localhost:8000/health and /health/ready
 pytest tests/ --cov=app --cov-fail-under=80
 ```
 

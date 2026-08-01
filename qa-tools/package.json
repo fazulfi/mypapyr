@@ -1,0 +1,10 @@
+{
+  "name": "papyr-qa-tools",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Deterministic QA tooling with markdownlint-cli2 pinned by the committed lockfile",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "markdownlint-cli2": "0.23.2"
+  }
+}

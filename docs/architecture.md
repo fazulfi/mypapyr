@@ -1,13 +1,13 @@
 # Architecture overview
 
-Papyr is designed as a browser-first PDF platform with an explicit, bounded server-processing path. The repository currently implements only the frontend, backend health service, deployment templates, and CI foundation described below. Queueing, storage, native processing, and the five PDF workflows remain planned capabilities.
+Papyr is designed as a browser-first PDF platform with an explicit, bounded server-processing path. The repository currently implements only the frontend, backend service foundation, deployment templates, and CI foundation described below. Queueing, storage, and native processing remain planned capabilities; the five PDF workflows are specified but not yet implemented.
 
 ## Current implementation
 
 - A minimal Next.js application with strict TypeScript and automated quality gates.
-- A minimal typed FastAPI application exposing `GET /health`.
+- A typed FastAPI service foundation: app factory with strict configuration, `GET /health` and `GET /health/ready` endpoints, request correlation headers, a stable error envelope, file and job validation schemas, and the pure server task state machine.
 - Public-safe Docker Compose and Nginx templates for `nginx`, `api`, `redis`, and `workers` services.
-- CI-only GitHub Actions for formatting, linting, tests, coverage, builds, Trivy, and gitleaks.
+- CI-only GitHub Actions for formatting, linting, tests, coverage, builds, Trivy, gitleaks, dependency and package audits, and repository QA checks.
 
 ## Target topology
 

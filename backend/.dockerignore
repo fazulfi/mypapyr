@@ -1,0 +1,34 @@
+# ============================================================================
+# Papyr backend build-context whitelist (legacy precedent).
+#
+# Strategy: exclude EVERYTHING, then allow back only what the image needs.
+# Consequences:
+#   * `.env*` files can never enter the build context (secrets rule);
+#   * tests, caches, tooling config, git metadata never reach the builder;
+#   * the image stays exactly app code + pinned requirements.
+# The Dockerfile itself is always available to the builder even when
+# excluded (BuildKit), so re-excluding it here is defense-in-depth.
+# ============================================================================
+
+# Exclude everything by default.
+**
+
+# Explicit allows — the only content the image needs.
+!requirements.txt
+!app/
+!app/**
+
+# Re-exclude anything the allows above would pull back in.
+**/__pycache__/**
+*.py[cod]
+**/.pytest_cache/**
+.env
+.env.*
+Dockerfile*
+compose.y*
+*.md
+.git
+.github
+.venv/
+venv/
+tests/

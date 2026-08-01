@@ -1,45 +1,165 @@
 name: papyr
 
+# ============================================================================
+# Papyr deployment skeleton with an isolated API profile.
+#
+# The stack declares exactly four service slots: api, nginx, redis, workers.
+#   * api     — the only currently activatable service; its image is built
+#               from backend/Dockerfile.production.
+#   * nginx   — deferred edge slot with an image placeholder.
+#   * redis   — deferred queue-storage slot with an image placeholder.
+#   * workers — deferred worker slot with an image placeholder.
+# Deferred slots are NOT activatable: their image tags are __SET_ME__
+# placeholders, they live behind their own profile, and their skeleton wiring
+# stays non-functional until the release procedure assigns real values. They
+# MUST NOT be deployed as-is.
+#
+# Profile contract (activation safety): `--profile app` selects ONLY api.
+#   * api     -> profile "app"   (the only currently activatable profile)
+#   * nginx   -> profile "edge"  (deferred)
+#   * redis   -> profile "queue" (deferred)
+#   * workers -> profile "queue" (deferred)
+# `docker compose up -d` with no flags starts nothing (every service is
+# profiled); `--profile app up -d` reaches only api because redis/workers
+# live on the separate "queue" profile.
+#
+# Foundation isolation (no Redis/worker assumptions):
+#   * api has NO depends_on — it boots, healths, and serves standalone.
+#   * api publishes nothing (internal compose network only, expose: 3000).
+#   * redis/workers ports are NEVER published (internal-only).
+#   * At deploy time use the separate `papyr-app` compose project so no
+#     unrelated compose project or service is touched.
+#
+# Immutable image contract: api's image is selected via PAPYR_API_IMAGE and
+# MUST be an immutable tag/digest reference (e.g. registry/path@sha256:…);
+# the local default below is a placeholder and must never be deployed.
+#
+# Env-file contract (fail closed): the container environment is never read
+# from the committed template. `${PAPYR_ENV_FILE:?…}` makes every `docker
+# compose` load refuse to proceed unless the operator sets PAPYR_ENV_FILE to
+# the provisioned `.env.production` path (installed mode 0600 out of band);
+# an unset/empty variable or a missing file is an immediate, named error.
+# The committed template additionally carries EMPTY required values, so even
+# a manual copy of it fails fast at boot (backend/app/config.py rejects
+# empty required variables) instead of booting with placeholders.
+# ============================================================================
+
 services:
+  api:
+    image: ${PAPYR_API_IMAGE:-papyr-api:__SET_ME__}
+    profiles: ["app"]
+    env_file:
+      - "${PAPYR_ENV_FILE:?PAPYR_ENV_FILE required: set it to the provisioned .env.production path}"
+    expose:
+      - "3000"
+    restart: unless-stopped
+    # --- Hardened container posture -------------------------------------
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+    # Writable areas for a read-only rootfs: /tmp (exec for future engine
+    # subprocesses), /opt/papyr/temp (image TMPDIR), appuser cache.
+    tmpfs:
+      - /tmp:exec,mode=1777,size=512M
+      - /home/appuser/.cache:size=128M
+      - /opt/papyr/temp:exec,mode=1777,size=512M
+    # Conservative resource budgets for the initial service.
+    cpus: "1.0"
+    mem_limit: 512M
+    pids_limit: 256
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "com.papyr.service=api"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+
   nginx:
     image: nginx:__SET_ME__
     profiles: ["edge"]
     depends_on:
-      - api
-    ports:
-      - "127.0.0.1:__SET_ME__:80"
+      api:
+        condition: service_healthy
+    # Port publication is deferred: the placeholder
+    # "127.0.0.1:__SET_ME__:80" was removed because it is invalid port syntax
+    # and made `docker compose config` fail for the whole file (B2). The
+    # release procedure assigns the real host port before nginx leaves the
+    # skeleton state; until then nginx stays unpublishable behind its "edge"
+    # profile and __SET_ME__ image tag.
+    ports: []
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
     restart: unless-stopped
-
-  api:
-    image: papyr-api:__SET_ME__
-    profiles: ["app"]
-    env_file:
-      - .env.production.example
-    depends_on:
-      - redis
-    expose:
-      - "3000"
-    restart: unless-stopped
+    cpus: "0.25"
+    mem_limit: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "com.papyr.service=nginx"
+    healthcheck:
+      # Skeleton probe for the default nginx page. Replace this with the
+      # final edge health route when the edge service is activated.
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
 
   workers:
     image: papyr-workers:__SET_ME__
-    profiles: ["app"]
+    profiles: ["queue"]
     env_file:
-      - .env.production.example
+      - "${PAPYR_ENV_FILE:?PAPYR_ENV_FILE required: set it to the provisioned .env.production path}"
     depends_on:
-      - redis
-      - api
+      redis:
+        condition: service_healthy
     restart: unless-stopped
-
+    cpus: "1.0"
+    mem_limit: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "com.papyr.service=workers"
+  # No healthcheck is invented for a non-existent worker image; the real
+  # worker image must declare its own probe.
   redis:
     image: redis:__SET_ME__
-    profiles: ["app"]
+    profiles: ["queue"]
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis-data:/data
     restart: unless-stopped
+    cpus: "0.5"
+    mem_limit: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "com.papyr.service=redis"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      retries: 3
 
 volumes:
   redis-data:
