@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" role="img" aria-labelledby="papyr-title papyr-desc">
+  <title id="papyr-title">Papyr — fast, private PDF tools</title>
+  <desc id="papyr-desc">Five PDF utilities: compress, merge, split, JPG to PDF, and PDF to JPG. No account required, browser-first processing, and a one-hour retention target for server-processed objects.</desc>
+  <rect width="1200" height="400" fill="#1A1815"/>
+  <rect x="1" y="1" width="1198" height="398" fill="none" stroke="#2E2A24" stroke-width="2"/>
+
+  <g font-family="'Avenir Next','Segoe UI','Helvetica Neue',Arial,sans-serif">
+    <!-- Reed spine -->
+    <rect x="64" y="94" width="10" height="64" rx="3" fill="#D9923F"/>
+    <!-- Wordmark -->
+    <text x="96" y="147" font-size="58" font-weight="700" fill="#F7F3EC">Papyr</text>
+    <!-- Tagline -->
+    <text x="98" y="194" font-size="24" fill="#B5AA9A">Fast, private PDF tools — your browser, your language.</text>
+
+    <!-- Tool chips -->
+    <g font-size="18" font-weight="600" fill="#F7F3EC">
+      <rect x="64" y="246" width="138" height="46" rx="23" fill="#211D19" stroke="#3A352D" stroke-width="1.5"/>
+      <text x="133" y="274" text-anchor="middle">Compress PDF</text>
+
+      <rect x="216" y="246" width="130" height="46" rx="23" fill="#211D19" stroke="#3A352D" stroke-width="1.5"/>
+      <text x="281" y="274" text-anchor="middle">Merge PDF</text>
+
+      <rect x="360" y="246" width="120" height="46" rx="23" fill="#211D19" stroke="#3A352D" stroke-width="1.5"/>
+      <text x="420" y="274" text-anchor="middle">Split PDF</text>
+
+      <rect x="494" y="246" width="128" height="46" rx="23" fill="#211D19" stroke="#3A352D" stroke-width="1.5"/>
+      <text x="558" y="274" text-anchor="middle">JPG → PDF</text>
+
+      <rect x="636" y="246" width="128" height="46" rx="23" fill="#211D19" stroke="#3A352D" stroke-width="1.5"/>
+      <text x="700" y="274" text-anchor="middle">PDF → JPG</text>
+    </g>
+
+    <!-- Trust strip -->
+    <g font-size="16" fill="#B5AA9A">
+      <text x="64" y="348">No account required</text>
+      <text x="230" y="348">·</text>
+      <text x="248" y="348">Browser-first processing</text>
+      <text x="470" y="348">·</text>
+      <text x="488" y="348">One-hour retention target</text>
+    </g>
+  </g>
+
+  <!-- Document stack motif -->
+  <g>
+    <rect x="852" y="104" width="172" height="192" rx="12" fill="#26211B" stroke="#3A352D" stroke-width="1.5"/>
+    <rect x="866" y="112" width="172" height="192" rx="12" fill="#211D19" stroke="#3A352D" stroke-width="1.5"/>
+    <rect x="880" y="120" width="172" height="192" rx="12" fill="#F7F3EC"/>
+    <path d="M 968 120 h 20 a 4 4 0 0 1 4 4 v 16 l -24 -20 z" fill="#C97B2D"/>
+    <g font-family="'Avenir Next','Segoe UI','Helvetica Neue',Arial,sans-serif">
+      <text x="902" y="160" font-size="16" font-weight="600" fill="#1A1815">PDF</text>
+      <rect x="902" y="228" width="128" height="8" rx="4" fill="#D9CFBC"/>
+      <rect x="902" y="228" width="78" height="8" rx="4" fill="#C97B2D"/>
+      <text x="1040" y="288" text-anchor="end" font-size="14" fill="#6E655A">private by design</text>
+    </g>
+  </g>
+</svg>

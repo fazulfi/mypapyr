@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="papyr-mark-title papyr-mark-desc">
+  <title id="papyr-mark-title">Papyr mark</title>
+  <desc id="papyr-mark-desc">A document glyph representing Papyr's five PDF utilities.</desc>
+  <rect x="10" y="8" width="44" height="48" rx="6" fill="none" stroke="#6E655A" stroke-width="4"/>
+  <path d="M 40 8 L 40 18 L 50 18" fill="none" stroke="#6E655A" stroke-width="4"/>
+  <rect x="19" y="28" width="26" height="4" rx="2" fill="#6E655A"/>
+  <rect x="19" y="38" width="16" height="4" rx="2" fill="#6E655A"/>
+  <rect x="42" y="42" width="12" height="12" rx="3" fill="#C97B2D"/>
+</svg>
