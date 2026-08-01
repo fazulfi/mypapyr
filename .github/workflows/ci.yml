@@ -17,7 +17,8 @@ jobs:
   frontend-lint:
     name: Frontend (Lint + Format)
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: frontend
@@ -45,7 +46,8 @@ jobs:
   frontend-test:
     name: Frontend (Vitest + Coverage)
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: frontend
@@ -71,7 +73,8 @@ jobs:
     name: Frontend (Next.js production build)
     runs-on: ubuntu-latest
     needs: [frontend-lint, frontend-test]
-    permissions: {}
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: frontend
@@ -99,7 +102,8 @@ jobs:
   backend-lint:
     name: Backend (Ruff lint + format)
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: backend
@@ -128,7 +132,8 @@ jobs:
   backend-test:
     name: Backend (Pytest + coverage threshold)
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: backend
@@ -164,7 +169,8 @@ jobs:
   security-trivy:
     name: Security (Trivy filesystem/config scan)
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -191,7 +197,8 @@ jobs:
   secret-scan-gitleaks:
     name: Security (gitleaks secret scan)
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
