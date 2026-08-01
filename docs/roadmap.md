@@ -5,9 +5,9 @@ This roadmap distinguishes code available in the repository from intended produc
 ## Available foundation
 
 - Minimal Next.js application and strict TypeScript configuration.
-- Minimal FastAPI application with a tested health endpoint.
+- FastAPI service foundation: app factory, strict environment configuration, health and readiness endpoints, request correlation, a stable error envelope, file and job validation schemas, and the pure server task state machine, with full unit coverage.
 - Public-safe Compose, Nginx, and environment templates.
-- CI with format, lint, unit-test, coverage, build, Trivy, and gitleaks gates.
+- CI with format, lint, unit-test, coverage, build, Trivy, gitleaks, dependency and package audit, and repository QA gates.
 - Public product, architecture, security, integration, and contribution documentation.
 
 ## Next: shared product shell
@@ -17,7 +17,9 @@ This roadmap distinguishes code available in the repository from intended produc
 - Shared file validation and processing-location disclosure.
 - Stable analytics and error contracts that exclude document-derived data.
 
-## Planned launch catalogue
+## Specified launch catalogue
+
+The five-tool catalogue below is fully specified in the product specification. The tools are not implemented yet; this section describes target behaviour and the planned implementation approach.
 
 1. **Compress PDF** — one automatic quality profile. The server path uses the official, unmodified Ghostscript distribution through a hardened subprocess boundary.
 2. **Merge PDF** — ordered multi-file merging with preservation rules defined by the product specification.

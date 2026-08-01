@@ -291,9 +291,9 @@ Status values are used consistently across the product and architecture specific
 | Capability | Status | Where defined |
 | --- | --- | --- |
 | Frontend application foundation (shell, strict TypeScript, tooling, tests, build) | Available now | Repository `frontend/` |
-| Backend health service foundation | Available now | Repository `backend/` |
+| Backend service foundation (app factory, strict configuration, health and readiness endpoints, request correlation, stable error envelope, validation schemas, server task state machine) | Available now | Repository `backend/` |
 | Deployment templates and environment placeholders | Available now | Repository `deploy/` |
-| Continuous integration with seven required checks | Available now | Repository `.github/workflows/ci.yml` |
+| Continuous integration with 17 required checks (quality, security and supply chain, repository QA) | Available now | Repository `.github/workflows/ci.yml` |
 | Five-tool launch catalogue | Specified | This document, Section 4; roadmap |
 | Shared workflow and state model | Specified | This document, Section 5 |
 | Trilingual localization (English, Spanish, Indonesian) | Specified | This document, Section 7 |

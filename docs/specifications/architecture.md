@@ -4,7 +4,7 @@
 
 This document defines the target technical architecture for Papyr: the component boundaries, processing model, task and API contracts, storage lifecycle, security controls, observability, delivery boundary, and verification strategy that the launch product is designed against.
 
-The current repository implements a minimal engineering foundation: a Next.js web shell, a FastAPI health endpoint, deployment templates, and CI. Every component described as a target service is specified here and is not yet available unless the status matrix in Section 16, or source code and automated tests, demonstrate otherwise. Documentation is never a substitute for runtime evidence; a component becomes implemented only when its code, tests, configuration, and operational constraints are present.
+The current repository implements a minimal engineering foundation: a Next.js web shell, a typed FastAPI service foundation (app factory, strict configuration, health and readiness endpoints, request correlation, a stable error envelope, validation schemas, and the pure server task state machine), deployment templates, and CI. Every component described as a target service is specified here and is not yet available unless the status matrix in Section 16, or source code and automated tests, demonstrate otherwise. Documentation is never a substitute for runtime evidence; a component becomes implemented only when its code, tests, configuration, and operational constraints are present.
 
 The companion [product specification](product.md) defines the user-visible behaviour and acceptance criteria. Where responsibilities meet, this document states the mechanism and the product specification states the experience.
 
@@ -47,13 +47,13 @@ Server job:
 | Area | Current (available now) | Target (specified) |
 | --- | --- | --- |
 | Frontend | Minimal Next.js shell, strict TypeScript, lint, format, unit tests, production build configuration | Localized product shell, five tool interfaces, browser processing, shared upload, progress, and result components |
-| Backend API | FastAPI service exposing `GET /health`, typed, with full unit coverage | Versioned `/api/v1` admission, validation, limits, task state, cancellation, and signed-download issuance |
+| Backend API | FastAPI service foundation: app factory, strict configuration, health and readiness endpoints, request correlation, stable error envelope, validation schemas, and the pure server task state machine | Versioned `/api/v1` admission, validation, limits, task state, cancellation, and signed-download issuance |
 | Queue | No queue implementation; Redis service exists as a Compose template | Redis durable minimal-metadata task queue with bounded scheduling |
 | Workers | No worker implementation; worker service exists as a Compose template | Bounded worker processes; one active worker executing one concurrent job at launch |
 | Storage | No storage integration | Cloudflare R2 temporary objects with a one-hour lifecycle safety net |
 | Edge and proxy | Nginx server-block template with placeholders only | Hardened Nginx reverse proxy behind Cloudflare |
 | Monitoring | None | Host resource monitoring, external uptime checks, automated status experience, incident alerts |
-| Delivery | CI with seven required checks and no deployment steps | Seven required CI checks with no deployment steps; separately authorized release and deployment procedures |
+| Delivery | CI with 17 required checks (16 on pushes to main, where the PR-only dependency review is skipped) and no deployment steps | Seventeen required CI checks with no deployment steps; separately authorized release and deployment procedures |
 
 ## 4. Component boundaries
 
@@ -87,7 +87,7 @@ The target API uses versioned routes under `/api/v1`. It is asynchronous and adm
 - Cancellation (queued jobs only) and expiry coordination.
 - Stable, non-sensitive error responses.
 
-The current backend exposes only `GET /health`.
+The current backend foundation exposes `GET /health` and `GET /health/ready` and implements the pure server task state machine; the versioned API is not implemented.
 
 ### 4.3 Queue
 
@@ -268,14 +268,14 @@ A simple public status page shows material service availability and incidents in
 
 ### 12.1 Target host topology
 
-The target backend topology is Nginx, FastAPI, Redis, and bounded workers in one Docker Compose stack on a dedicated host. Nginx is the only host service exposed to the public; Redis and worker ports are never published. Compose declares startup dependencies (API and workers start after Redis is healthy, Nginx starts after the API is healthy), health checks, resource limits, restart behaviour, and bounded log rotation.
+The target backend topology is Nginx, FastAPI, Redis, and bounded workers in one Docker Compose stack on a dedicated host. Nginx is the only host service exposed to the public; Redis and worker ports are never published. The Compose template declares health checks for api, nginx, and redis, resource limits, restart behaviour, and bounded log rotation. Startup dependencies use service-health conditions where they exist: workers start after Redis is healthy and Nginx starts after the API is healthy. The API service runs standalone with no Redis or worker dependency in the current foundation template, and the worker healthcheck is deferred until the worker image exists.
 
 ### 12.2 Delivery boundary
 
 CI is continuous integration only. The repository CI:
 
 - Runs on every push and pull request to the main branch.
-- Requires seven checks: frontend format, frontend lint, frontend unit tests with coverage, frontend production build, backend lint and format, backend tests with an 80% coverage floor, a vulnerability scan of filesystem and configuration, and a full-history secret scan.
+- Requires 17 checks on pull requests (16 on pushes to main, where the PR-only dependency review is skipped), across three groups: core quality (frontend format and lint, frontend unit tests with coverage, frontend production build, backend lint and format, backend strict mypy, backend tests with an 80 percent coverage floor), security and supply chain (Trivy filesystem and configuration scan, gitleaks full-history secret scan, dependency review, npm audit, pip audit), and repository QA (action pin verification, Dockerfile lint, Compose structural validation, workflow YAML lint, markdownlint, shellcheck).
 - Third-party actions are pinned to immutable commit SHAs.
 - Jobs use least-privilege read-only permissions and do not persist checkout credentials.
 - Contains no deployment steps and consumes no production credentials.
@@ -304,7 +304,7 @@ The following are targets, not claims of achieved or measured performance. They 
 | --- | --- | --- |
 | NFR-01 | Server-side objects are removed no later than one hour after upload receipt | Specified; no storage integration exists yet |
 | NFR-02 | Operational logs retain no document-derived data and are kept for 30 days | Specified; logging policy applies once services ship |
-| NFR-03 | Backend unit-test coverage floor of 80% | Enforced today by CI on the health-service foundation |
+| NFR-03 | Backend unit-test coverage floor of 80% | Enforced today by CI on the backend service foundation |
 | NFR-04 | One active worker executing one concurrent native job at launch | Specified; worker capacity targets tuned from production observability |
 | NFR-05 | Browser-capable tools remain usable during backend incidents | Design property; verified once tool flows exist |
 | NFR-06 | Task status and download authorization complete within bounded, non-extending retention | Specified |
@@ -335,12 +335,13 @@ Status values match the product specification: **Available now**, **Specified**,
 | Component | Status | Basis |
 | --- | --- | --- |
 | Next.js frontend foundation | Available now | `frontend/` source and tests |
-| FastAPI health service | Available now | `backend/app/main.py`, `backend/tests/test_health.py` |
+| FastAPI service foundation (app factory, strict configuration, health and readiness endpoints, request correlation, stable error envelope, validation schemas) | Available now | `backend/` source and tests |
 | Deployment templates (Compose, Nginx, environment, runbook) | Available now | `deploy/` |
-| Continuous integration (seven required checks) | Available now | `.github/workflows/ci.yml` |
+| Continuous integration (17 required checks: quality, security and supply chain, repository QA) | Available now | `.github/workflows/ci.yml` |
 | Versioned `/api/v1` contract | Specified | Section 6 |
 | Capability and limits contract | Specified | Section 6.2 |
-| Task state machine and status contract | Specified | Section 6.3, Section 6.4 |
+| Server task state machine (pure transition core) | Available now | `backend/app/tasks/state_machine.py` and its tests |
+| Task status API contract | Specified | Section 6.4 |
 | Redis durable minimal-metadata queue | Specified | Section 7 |
 | Bounded workers and fair scheduling | Specified | Section 7 |
 | Ghostscript subprocess boundary for Compress | Specified | Section 8 |
