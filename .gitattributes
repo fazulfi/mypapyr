@@ -1,0 +1,15 @@
+# Enforce LF line endings repository-wide.
+# Prevents core.autocrlf=true (Windows) from rewriting tracked files
+# (CI workflows, scripts) to CRLF on fresh checkouts, which would
+# break scripts/check-ci.sh CRLF rejection and Prettier format checks.
+* text=auto eol=lf
+
+# Explicit rules for line-ending-sensitive file types
+*.sh text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
