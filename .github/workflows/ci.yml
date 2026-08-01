@@ -215,4 +215,4 @@ jobs:
           gitleaks version
 
       - name: Run gitleaks detect
-        run: gitleaks detect --source . --no-banner --redact
+        run: gitleaks detect --source . --config .gitleaks.toml --no-banner --redact
