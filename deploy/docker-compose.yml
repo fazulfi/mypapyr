@@ -1,0 +1,46 @@
+name: papyr
+
+services:
+  nginx:
+    image: nginx:__SET_ME__
+    profiles: ["edge"]
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:__SET_ME__:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    restart: unless-stopped
+
+  api:
+    image: papyr-api:__SET_ME__
+    profiles: ["app"]
+    env_file:
+      - .env.production.example
+    depends_on:
+      - redis
+    expose:
+      - "3000"
+    restart: unless-stopped
+
+  workers:
+    image: papyr-workers:__SET_ME__
+    profiles: ["app"]
+    env_file:
+      - .env.production.example
+    depends_on:
+      - redis
+      - api
+    restart: unless-stopped
+
+  redis:
+    image: redis:__SET_ME__
+    profiles: ["app"]
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+    driver: local
