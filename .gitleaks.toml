@@ -1,0 +1,32 @@
+# gitleaks configuration for the Papyr rebuild repository.
+#
+# This file extends the upstream default ruleset. It does not weaken any rule.
+# It records two verified false positives so the secret-scan gate stays
+# meaningful instead of being disabled.
+#
+# Both entries are Indonesian user-interface copy from the legacy password
+# strength indicator ("Kekuatan password: Kuat/Sedang/Lemah"). The word
+# "password" followed by a colon and an ordinary Indonesian adjective matches
+# the upstream `generic-api-key` heuristic. No credential is present at either
+# location. The same strings were already classified as false positives by the
+# independent repository safety audit before gitleaks ran in CI.
+#
+# Evidence:
+#   - audit-outputs/phase-0/repository-safety-audit.md (false positive table)
+#   - audit-outputs/phase-0/ci-gitleaks-allowlist.md (this decision)
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+[rules.allowlist]
+description = "Legacy Indonesian password-strength UI copy documented in audit evidence"
+regexTarget = "line"
+regexes = [
+  '''Kekuatan password: Kuat/Sedang/Lemah''',
+]
+paths = [
+  '''audit-outputs/research/track-b/_evidence-legacy-frontend\.md''',
+  '''audit-outputs/phase-0/repository-safety-audit\.md''',
+]
