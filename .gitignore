@@ -1,0 +1,58 @@
+# Papyr Rebuild root .gitignore
+
+# ===== Secrets: never commit =====
+.env
+.env.*
+!.env.example
+!.env.*.example
+# Live credential file (defense-in-depth; also matched by .env.*)
+/.env.papyr
+*.pem
+*.key
+id_rsa
+id_ed25519
+*.p12
+*.pfx
+# Secret-scan reports (may contain matched secrets)
+gitleaks-report.json
+trufflehog-report.json
+
+# ===== Legacy reference clone: read-only, excluded =====
+/papyr-reference/
+
+# ===== Frontend / Node =====
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===== Backend / Python =====
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+.coverage
+.coverage.*
+
+# ===== Deploy / infra local state =====
+.vercel/
+terraform.tfstate*
+*.tfvars
+
+# ===== OS / editor / misc =====
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
+*.swp
