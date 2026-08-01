@@ -1,0 +1,65 @@
+# Papyr deploy — docker-compose skeleton (Phase 0 / FD-03).
+#
+# This is a SKELETON only. It defines the four services that compose the
+# Phase 0 deploy unit (nginx, api, redis, workers). Image tags, network
+# bindings, secret references, volumes, and a real `docker compose config`
+# pass happen in a later wave (see FD-03 ownership in
+# audit-outputs/phase-0/phase-0-execution-dag.md).
+#
+# Constraints honored:
+#   - Exactly 4 services. A scanner service is intentionally deferred to
+#     SEC-03 and MUST NOT be added here.
+#   - No real image digests, no real registry hosts, no real domains.
+#   - No real secrets; env values come from .env.production.example only.
+#
+# Local validation: Docker is absent on this workstation, so the regression
+# test is a pyyaml structural check:
+#   python -c "import yaml; d=yaml.safe_load(open('deploy/docker-compose.yml')); \
+#     assert sorted(d['services'].keys())==['api','nginx','redis','workers']"
+
+name: papyr
+
+services:
+  nginx:
+    image: nginx:__SET_ME__
+    profiles: ["edge"]
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:__SET_ME__:80"   # placeholder host bind; real bind in deploy wave
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    restart: unless-stopped
+
+  api:
+    image: papyr-api:__SET_ME__
+    profiles: ["app"]
+    env_file:
+      - .env.production.example    # template only; real .env.production is provided at VPS via DEC-176
+    depends_on:
+      - redis
+    expose:
+      - "3000"
+    restart: unless-stopped
+
+  workers:
+    image: papyr-workers:__SET_ME__
+    profiles: ["app"]
+    env_file:
+      - .env.production.example
+    depends_on:
+      - redis
+      - api
+    restart: unless-stopped
+
+  redis:
+    image: redis:__SET_ME__
+    profiles: ["app"]
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+    driver: local
