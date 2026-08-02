@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { TOOL_IDS } from "../tool-ids";
 import { productStatus } from "../product-status";
 
 describe("productStatus", () => {
@@ -17,5 +18,9 @@ describe("productStatus", () => {
       "jpg-to-pdf",
       "pdf-to-jpg",
     ]);
+  });
+
+  it("derives plannedTools from the canonical TOOL_IDS tuple (no duplicated id list)", () => {
+    expect(productStatus.plannedTools).toEqual(TOOL_IDS);
   });
 });
