@@ -99,6 +99,42 @@ jobs:
           NEXT_PUBLIC_API_URL: https://api.example.com
           NEXT_PUBLIC_SITE_URL: https://mypapyr.com
 
+  frontend-e2e:
+    name: Frontend (Playwright E2E)
+    runs-on: ubuntu-latest
+    needs: [frontend-lint, frontend-test]
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build Next.js app
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://api.example.com
+          NEXT_PUBLIC_SITE_URL: https://mypapyr.com
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+
   backend-lint:
     name: Backend (Ruff lint + format)
     runs-on: ubuntu-latest

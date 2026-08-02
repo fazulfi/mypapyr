@@ -53,7 +53,7 @@ Server job:
 | Storage | No storage integration | Cloudflare R2 temporary objects with a one-hour lifecycle safety net |
 | Edge and proxy | Nginx server-block template with placeholders only | Hardened Nginx reverse proxy behind Cloudflare |
 | Monitoring | None | Host resource monitoring, external uptime checks, automated status experience, incident alerts |
-| Delivery | CI with 17 required checks (16 on pushes to main, where the PR-only dependency review is skipped) and no deployment steps | Seventeen required CI checks with no deployment steps; separately authorized release and deployment procedures |
+| Delivery | CI with 18 required checks (17 on pushes to main, where the PR-only dependency review is skipped) and no deployment steps | Eighteen required CI checks with no deployment steps; separately authorized release and deployment procedures |
 
 ## 4. Component boundaries
 
@@ -275,7 +275,7 @@ The target backend topology is Nginx, FastAPI, Redis, and bounded workers in one
 CI is continuous integration only. The repository CI:
 
 - Runs on every push and pull request to the main branch.
-- Requires 17 checks on pull requests (16 on pushes to main, where the PR-only dependency review is skipped), across three groups: core quality (frontend format and lint, frontend unit tests with coverage, frontend production build, backend lint and format, backend strict mypy, backend tests with an 80 percent coverage floor), security and supply chain (Trivy filesystem and configuration scan, gitleaks full-history secret scan, dependency review, npm audit, pip audit), and repository QA (action pin verification, Dockerfile lint, Compose structural validation, workflow YAML lint, markdownlint, shellcheck).
+- Requires 18 checks on pull requests (17 on pushes to main, where the PR-only dependency review is skipped), across three groups: core quality (frontend format and lint, frontend unit tests with coverage, frontend production build, Playwright E2E, backend lint and format, backend strict mypy, backend tests with an 80 percent coverage floor), security and supply chain (Trivy filesystem and configuration scan, gitleaks full-history secret scan, dependency review, npm audit, pip audit), and repository QA (action pin verification, Dockerfile lint, Compose structural validation, workflow YAML lint, markdownlint, shellcheck).
 - Third-party actions are pinned to immutable commit SHAs.
 - Jobs use least-privilege read-only permissions and do not persist checkout credentials.
 - Contains no deployment steps and consumes no production credentials.
@@ -337,7 +337,10 @@ Status values match the product specification: **Available now**, **Specified**,
 | Next.js frontend foundation | Available now | `frontend/` source and tests |
 | FastAPI service foundation (app factory, strict configuration, health and readiness endpoints, request correlation, stable error envelope, validation schemas) | Available now | `backend/` source and tests |
 | Deployment templates (Compose, Nginx, environment, runbook) | Available now | `deploy/` |
-| Continuous integration (17 required checks: quality, security and supply chain, repository QA) | Available now | `.github/workflows/ci.yml` |
+| Continuous integration (18 required checks: quality, security and supply chain, repository QA) | Available now | `.github/workflows/ci.yml` |
+| Shared trilingual shell: locale routing, accessible navigation, supporting route shells, localized 404, and unit and E2E gates | Available now | `frontend/src/app/[locale]/`, `frontend/src/components/`, `frontend/src/lib/i18n.ts`, `frontend/src/proxy.ts` |
+| Legal, support, and status route shells (privacy, terms, cookies and advertising, contact, status, roadmap) | Available now | `frontend/src/app/[locale]/` |
+| Blog route shell | Available now | `frontend/src/app/[locale]/blog/` |
 | Versioned `/api/v1` contract | Specified | Section 6 |
 | Capability and limits contract | Specified | Section 6.2 |
 | Server task state machine (pure transition core) | Available now | `backend/app/tasks/state_machine.py` and its tests |
@@ -349,6 +352,8 @@ Status values match the product specification: **Available now**, **Specified**,
 | Browser versus server routing model | Specified | Section 5 |
 | Threat model and security controls | Specified | Section 10 |
 | Observability and status experience | Specified | Section 11 |
+| Full legal, support, and status content and functionality | Planned | Roadmap and operational procedures |
+| Blog publishing programme | Planned | Roadmap |
 | Hardened production deployment and release procedure | Planned | Roadmap and operational procedures |
 
 ## 17. Related documents

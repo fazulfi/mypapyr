@@ -7,13 +7,21 @@ This roadmap distinguishes code available in the repository from intended produc
 - Minimal Next.js application and strict TypeScript configuration.
 - FastAPI service foundation: app factory, strict environment configuration, health and readiness endpoints, request correlation, a stable error envelope, file and job validation schemas, and the pure server task state machine, with full unit coverage.
 - Public-safe Compose, Nginx, and environment templates.
-- CI with format, lint, unit-test, coverage, build, Trivy, gitleaks, dependency and package audit, and repository QA gates.
+- CI with format, lint, unit-test, coverage, build, Playwright E2E, Trivy, gitleaks, dependency and package audit, and repository QA gates.
 - Public product, architecture, security, integration, and contribution documentation.
 
-## Next: shared product shell
+## Now available: shared trilingual shell
 
-- English, Spanish, and Indonesian locale routing.
-- Accessible navigation, upload, progress, failure, and download patterns.
+The shared trilingual shell that lands the locale routing, accessibility navigation, and supporting pages is implemented and tested. The remaining work below is what comes next.
+
+- English, Spanish, and Indonesian locale routing with persistent preference via cookie and Accept-Language fallback; non-supported two-letter prefixes are stripped so requests resolve under EN without redirect loops.
+- Accessible navigation across all three locales: SkipLink as the first focusable element, sticky Navbar with categorized tool menus, Footer with tools and support columns, LanguageSwitcher with equivalent-path resolution, and a single `main` landmark per locale.
+- Localized homepage, localized 404 with `lang` and locale-resolved copy, and localized supporting route shells for privacy, terms, cookies and advertising, contact, status, roadmap, and blog.
+- Unit and Playwright E2E gates cover locale routing, cookie preference, the SkipLink and focus target, contrast on the focused SkipLink, the localized 404, and the supporting route headings across all three locales.
+
+## Next: tool pages and shared experience
+
+- Localization across the five tool pages (English, Spanish, Indonesian) and the localized upload, progress, failure, and download patterns.
 - Shared file validation and processing-location disclosure.
 - Stable analytics and error contracts that exclude document-derived data.
 

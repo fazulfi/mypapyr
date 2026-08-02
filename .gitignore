@@ -37,6 +37,8 @@ npm-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 test-results/
+playwright-report/
+playwright/.cache/
 
 # ===== Backend / Python =====
 __pycache__/

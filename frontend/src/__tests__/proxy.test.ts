@@ -1,0 +1,165 @@
+import { describe, expect, it } from "vitest";
+import { NextRequest } from "next/server";
+
+import { LEGACY_ROUTING_PATHS, LOCALE_COOKIE } from "../lib/i18n";
+import { config, isSafeRedirectPath, proxy } from "../proxy";
+
+function makeRequest(pathname: string, headers?: Record<string, string>): NextRequest {
+  return new NextRequest(`http://localhost${pathname}`, { headers });
+}
+
+function headerValue(response: Response, name: string): string | null {
+  return response.headers.get(name);
+}
+
+describe("SH-01 locale proxy", () => {
+  it("redirects the locale-less root with 307 to the default locale", () => {
+    const response = proxy(makeRequest("/"));
+    expect(response.status).toBe(307);
+    expect(headerValue(response, "location")).toBe("http://localhost/en");
+  });
+
+  it("persists the resolved locale in a minimal cookie on the redirect", () => {
+    const response = proxy(makeRequest("/"));
+    expect(response.cookies.get(LOCALE_COOKIE)?.value).toBe("en");
+  });
+
+  it("marks the locale cookie Secure so it only travels over HTTPS", () => {
+    const response = proxy(makeRequest("/"));
+    expect(headerValue(response, "set-cookie")).toContain("Secure");
+  });
+
+  it("honors a persisted cookie preference over the accept-language header", () => {
+    const response = proxy(
+      makeRequest("/", {
+        cookie: `${LOCALE_COOKIE}=id`,
+        "accept-language": "es;q=0.9, en;q=0.5",
+      }),
+    );
+    expect(response.status).toBe(307);
+    expect(headerValue(response, "location")).toBe("http://localhost/id");
+  });
+
+  it("uses accept-language q-values when no preference is persisted", () => {
+    const response = proxy(makeRequest("/", { "accept-language": "en;q=0.4, es;q=0.9" }));
+    expect(response.status).toBe(307);
+    expect(headerValue(response, "location")).toBe("http://localhost/es");
+  });
+
+  it("falls back to the default locale for unsupported languages", () => {
+    const response = proxy(makeRequest("/", { "accept-language": "fr;q=0.9" }));
+    expect(response.status).toBe(307);
+    expect(headerValue(response, "location")).toBe("http://localhost/en");
+  });
+
+  it("passes already-localized paths through without redirecting", () => {
+    for (const path of ["/en", "/es/compress-pdf", "/id/kompres-pdf"]) {
+      const response = proxy(makeRequest(path));
+      expect(headerValue(response, "location")).toBeNull();
+    }
+  });
+
+  it("strips unsupported two-letter locale-like prefixes to the resolved locale", () => {
+    const bare = proxy(makeRequest("/fr"));
+    expect(bare.status).toBe(307);
+    expect(headerValue(bare, "location")).toBe("http://localhost/en");
+
+    const nested = proxy(makeRequest("/fr/foo"));
+    expect(nested.status).toBe(307);
+    expect(headerValue(nested, "location")).toBe("http://localhost/en/foo");
+  });
+
+  it("strips locale-like prefixes after resolving the persisted preference", () => {
+    const response = proxy(makeRequest("/fr/foo", { cookie: `${LOCALE_COOKIE}=id` }));
+    expect(response.status).toBe(307);
+    expect(headerValue(response, "location")).toBe("http://localhost/id/foo");
+  });
+
+  it("preserves query strings when stripping a locale-like prefix", () => {
+    const response = proxy(makeRequest("/fr/foo?utm_source=test"));
+    expect(headerValue(response, "location")).toBe("http://localhost/en/foo?utm_source=test");
+  });
+
+  it("prefixes locale-less application paths while keeping the slug", () => {
+    const response = proxy(makeRequest("/compress-pdf"));
+    expect(response.status).toBe(307);
+    expect(headerValue(response, "location")).toBe("http://localhost/en/compress-pdf");
+  });
+
+  it("preserves query strings on the redirect", () => {
+    const response = proxy(makeRequest("/?utm_source=test"));
+    expect(headerValue(response, "location")).toBe("http://localhost/en?utm_source=test");
+  });
+
+  it("leaves every legacy routing path untouched for the URL-disposition task", () => {
+    for (const path of LEGACY_ROUTING_PATHS) {
+      const response = proxy(makeRequest(path));
+      expect(headerValue(response, "location")).toBeNull();
+    }
+  });
+
+  it("passes a scheme-relative pathname through without shaping a redirect", () => {
+    const response = proxy(makeRequest("//evil.com"));
+    expect(headerValue(response, "location")).toBeNull();
+  });
+
+  it("never emits raw control characters in a redirect location", () => {
+    const response = proxy(makeRequest("/%0d%0aSet-Cookie:evil=1"));
+    const location = headerValue(response, "location");
+    expect(location).not.toBeNull();
+    expect(location).not.toMatch(/[\r\n]/);
+  });
+});
+
+describe("SH-01 proxy redirect-path guard", () => {
+  it("accepts strictly relative application paths", () => {
+    for (const path of ["/", "/en", "/en/foo", "/compress-pdf", "/es/compress-pdf"]) {
+      expect(isSafeRedirectPath(path)).toBe(true);
+    }
+  });
+
+  it("rejects scheme-relative, backslash, scheme, and control-character paths", () => {
+    for (const path of [
+      "//evil.com",
+      "\\evil.com",
+      "/\\evil.com",
+      "http://evil.com",
+      "https://evil.com",
+      "evil.com",
+      "/en\r\nSet-Cookie:evil=1",
+    ]) {
+      expect(isSafeRedirectPath(path)).toBe(false);
+    }
+  });
+});
+
+describe("SH-01 proxy matcher", () => {
+  const pattern = `^${config.matcher[0]}$`;
+  const matches = (path: string) => new RegExp(pattern).test(path);
+
+  it("is a static constant array", () => {
+    expect(Array.isArray(config.matcher)).toBe(true);
+    expect(typeof config.matcher[0]).toBe("string");
+  });
+
+  it("excludes api, next internals, favicon, sitemap, robots and public files", () => {
+    for (const path of [
+      "/api/v1/status",
+      "/_next/static/chunks/main.js",
+      "/_next/image?url=%2Flogo.png",
+      "/favicon.ico",
+      "/sitemap.xml",
+      "/robots.txt",
+      "/images/logo.svg",
+      "/docs/file.pdf",
+    ]) {
+      expect(matches(path)).toBe(false);
+    }
+  });
+
+  it("matches locale-less and localized application paths", () => {
+    for (const path of ["/", "/en", "/es/compress-pdf", "/fr", "/compress-pdf"]) {
+      expect(matches(path)).toBe(true);
+    }
+  });
+});

@@ -293,7 +293,10 @@ Status values are used consistently across the product and architecture specific
 | Frontend application foundation (shell, strict TypeScript, tooling, tests, build) | Available now | Repository `frontend/` |
 | Backend service foundation (app factory, strict configuration, health and readiness endpoints, request correlation, stable error envelope, validation schemas, server task state machine) | Available now | Repository `backend/` |
 | Deployment templates and environment placeholders | Available now | Repository `deploy/` |
-| Continuous integration with 17 required checks (quality, security and supply chain, repository QA) | Available now | Repository `.github/workflows/ci.yml` |
+| Continuous integration with 18 required checks (quality, security and supply chain, repository QA) | Available now | Repository `.github/workflows/ci.yml` |
+| Shared trilingual shell: English, Spanish, and Indonesian locale routing, accessible navigation, supporting route shells, localized 404, and unit and E2E gates | Available now | Repository `frontend/src/` |
+| Legal, support, and status route shells (privacy, terms, cookies and advertising, contact, status, roadmap) | Available now | Repository `frontend/src/app/[locale]/` |
+| Blog route shell | Available now | Repository `frontend/src/app/[locale]/blog/` |
 | Five-tool launch catalogue | Specified | This document, Section 4; roadmap |
 | Shared workflow and state model | Specified | This document, Section 5 |
 | Trilingual localization (English, Spanish, Indonesian) | Specified | This document, Section 7 |
@@ -304,8 +307,8 @@ Status values are used consistently across the product and architecture specific
 | Server processing, queue, and bounded workers | Specified | Architecture specification |
 | Compress server path with the Ghostscript subprocess boundary | Specified | Architecture specification |
 | Analytics and error boundaries | Specified | This document, Sections 9 and 10 |
-| Legal, support, and status surfaces | Planned | Roadmap |
-| Blog content programme | Planned | Roadmap |
+| Full legal, support, and status content and functionality | Planned | Roadmap |
+| Blog publishing programme | Planned | Roadmap |
 
 ## 14. Non-goals for the launch catalogue
 
