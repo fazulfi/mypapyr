@@ -54,8 +54,10 @@ from typing import Any, Protocol, cast
 
 import pytest
 import redis
+from fastapi.testclient import TestClient
 
 from app.config import Settings
+from app.main import create_app
 from app.queue.queue import (
     _APPEND_LUA,
     GROUP_NAME,
@@ -1341,3 +1343,42 @@ def test_cancel_unknown_task_fails_closed_real_redis(
     queue = JobQueue(_make_settings(), store, client=cast(StreamsRedisLike, redis_client))
     with pytest.raises(TaskNotFoundError):
         queue.cancel("task-missing-cancel")
+
+
+# ---------------------------------------------------------------------------
+# Hotfix — production reproduction: create_app + readiness + BE-06/09 404
+# ---------------------------------------------------------------------------
+
+
+def test_factory_wires_store_and_readiness_against_real_redis(
+    redis_client: RealRedis,
+) -> None:
+    """The production reproduction: ``create_app`` with production-style
+    settings (compose Redis binding) wires the task store, readiness probes
+    it accurately, and unknown tasks return the BE-06 404 contract instead
+    of an internal_error."""
+    app = create_app(settings=_make_settings())
+    client = TestClient(app)
+
+    ready = client.get("/health/ready")
+    assert ready.status_code == 200
+    assert ready.json()["status"] == "ready"
+    assert ready.json()["checks"] == {"foundation": "ok", "redis": "ok"}
+    assert ready.json()["deferred"] == ["worker"]
+
+    response = client.get("/api/v1/tools/compress-pdf/tasks/does-not-exist/status")
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "not_found"
+
+
+def test_unknown_download_returns_404_through_wired_store(
+    redis_client: RealRedis,
+) -> None:
+    """BE-09 download for an unknown task through the wired store returns the
+    same stable 404 envelope as status (never internal_error)."""
+    app = create_app(settings=_make_settings())
+    client = TestClient(app)
+    response = client.get("/api/v1/tools/compress-pdf/tasks/does-not-exist/download/0")
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "not_found"
+    assert response.json()["error"]["category"] == "not_found"

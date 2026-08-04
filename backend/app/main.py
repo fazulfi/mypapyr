@@ -1,11 +1,10 @@
 """Application factory for the backend service.
 
 ``create_app()`` is the single construction seam: each call builds a fresh
-:class:`FastAPI` instance with no import-time side effects and no lifespan
-handlers. Settings are injected explicitly; when omitted they are loaded
-from the process environment — never from dotfiles — via
-:func:`app.config.load`, which fails fast when any required variable is
-missing.
+:class:`FastAPI` instance with no import-time side effects. Settings are
+injected explicitly; when omitted they are loaded from the process
+environment — never from dotfiles — via :func:`app.config.load`, which
+fails fast when any required variable is missing.
 
 ``app/main.py`` is the single integration owner (execution-matrix.md file
 ownership table, BE-01 row): it mounts the BE-06 status, BE-08
@@ -13,9 +12,19 @@ capabilities, and BE-09 download routers exactly once each, preserving the
 health/readiness, request-id, CORS/security-header, logging, and
 stable-error-envelope contracts. ``app/routers/__init__.py`` carries no
 APIRouter re-exports.
+
+Lifecycle wiring (BE-04): each application instance constructs the Redis
+task store once from its injected settings and presets it on
+``app.state.task_store`` — the documented seam the routers prefer — and a
+minimal lifespan closes the store's Redis connection pool on shutdown.
+The module-level ``app`` is built from the process environment exactly as
+before.
 """
 
 from __future__ import annotations
+
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
@@ -23,11 +32,21 @@ from app.config import Settings, load
 from app.errors import register_error_handlers
 from app.health import register_health_routes
 from app.middleware import add_request_id_middleware
+from app.queue.store import TaskStore
 from app.routers.capabilities import router as capabilities_router
 from app.routers.download import router as download_router
 from app.routers.status import router as status_router
 from app.security import add_security_middleware
 from app.utils.logging import setup_logging
+
+
+@asynccontextmanager
+async def _lifespan(application: FastAPI) -> AsyncIterator[None]:
+    """Shutdown-only lifecycle: releases the wired store's Redis pool."""
+    yield
+    store = getattr(application.state, "task_store", None)
+    if isinstance(store, TaskStore):
+        store.close()
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -42,7 +61,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     Returns:
         A fresh FastAPI instance with the liveness route, readiness route,
-        and the mounted versioned routers registered.
+        the mounted versioned routers, the wired task store, and a lifespan
+        that closes the store on shutdown.
     """
     if settings is None:
         settings = load()
@@ -52,14 +72,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # request-id, error-envelope, or security-header contract.
     setup_logging(settings.log_level)
 
-    application = FastAPI(title="papyr-backend", version="0.1.0")
+    application = FastAPI(
+        title="papyr-backend",
+        version="0.1.0",
+        lifespan=_lifespan,
+    )
 
     @application.get("/health")
     async def health_ok() -> dict[str, str]:
         return {"status": "ok"}
 
     # Readiness is additive: liveness remains unchanged while
-    # /health/ready reports whether required configuration is available.
+    # /health/ready reports whether the required configuration and the
+    # Redis task-store dependency are available.
     register_health_routes(application)
 
     # BE-09 wiring wave: the versioned routers are mounted exactly once by
@@ -71,6 +96,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(download_router)
 
     application.state.settings = settings
+    # BE-04 lifecycle wiring: the task store is constructed once from the
+    # injected settings (the client is lazy — no connection at construction)
+    # and preset on the documented ``app.state.task_store`` seam the status
+    # and download routers prefer; the lifespan closes it on shutdown.
+    application.state.task_store = TaskStore(settings)
     # Mount the explicit CORS allowlist and application-layer security
     # headers using the injected settings.
     add_security_middleware(application, settings)
