@@ -293,7 +293,7 @@ Status values are used consistently across the product and architecture specific
 | Frontend application foundation (shell, strict TypeScript, tooling, tests, build) | Available now | Repository `frontend/` |
 | Backend service foundation (app factory, strict configuration, health and readiness endpoints, request correlation, stable error envelope, validation schemas, server task state machine) | Available now | Repository `backend/` |
 | Deployment templates and environment placeholders | Available now | Repository `deploy/` |
-| Continuous integration with 18 required checks (quality, security and supply chain, repository QA) | Available now | Repository `.github/workflows/ci.yml` |
+| Continuous integration with 19 required checks (quality, security and supply chain, repository QA) | Available now | Repository `.github/workflows/ci.yml` |
 | Shared trilingual shell: English, Spanish, and Indonesian locale routing, accessible navigation, supporting route shells, localized 404, and unit and E2E gates | Available now | Repository `frontend/src/` |
 | Legal, support, and status route shells (privacy, terms, cookies and advertising, contact, status, roadmap) | Available now | Repository `frontend/src/app/[locale]/` |
 | Blog route shell | Available now | Repository `frontend/src/app/[locale]/blog/` |

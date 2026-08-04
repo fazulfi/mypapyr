@@ -10,6 +10,16 @@ This roadmap distinguishes code available in the repository from intended produc
 - CI with format, lint, unit-test, coverage, build, Playwright E2E, Trivy, gitleaks, dependency and package audit, and repository QA gates.
 - Public product, architecture, security, integration, and contribution documentation.
 
+## Available now: backend service contracts
+
+The versioned backend contracts for the API, queue, storage, and security foundation are implementation-complete and pass their local gates: 862 backend tests — the 830-test unit baseline plus 26 real-Redis and 6 R2 integration tests — at 97.13 percent coverage, with the frontend regression gates green. This status is not full acceptance: the changes are uncommitted, CI and container-security checks run only after a pull request, and review, deployment, runtime, and rollback validation are separate later gates.
+
+- Versioned `/api/v1` endpoints for capabilities, task status, and signed downloads, with a stable failure-code vocabulary and per-tool and global limits.
+- Redis-backed durable queue and minimal-metadata task store with a one-worker processing loop, queue caps, and adaptive fair-use controls.
+- Cloudflare R2 client with opaque keys, presigned download grants, and a cleanup coordinator enforcing the hard one-hour retention maximum, with R2's day-granular one-day-minimum lifecycle rule template as an independent safety net.
+- Privacy-safe logging and records: request and task correlation, redacted settings, and no document bodies, filenames, passwords, signed URLs, or extracted text in logs or store records.
+- Validation, sanitizer, and threat-classification prerequisites: typed file validation, a PDF sanitizer that refuses unsanitizable input, and a fail-closed classification matrix. The concrete threat scanner remains a later phase behind a defined protocol seam.
+
 ## Now available: shared trilingual shell
 
 The shared trilingual shell that lands the locale routing, accessibility navigation, and supporting pages is implemented and tested. The remaining work below is what comes next.
@@ -39,10 +49,8 @@ Each tool is planned with browser-first capability detection, a transparent serv
 
 ## Planned platform services
 
-- Versioned API contracts and validation.
-- Redis-backed durable queue with bounded fair scheduling.
-- Isolated workers and native engine wrappers.
-- Cloudflare R2 temporary-object lifecycle.
+- Upload and enqueue endpoints, tool execution, and native engine wrappers.
+- Concrete threat scanning and its admission integration.
 - Abuse controls, monitoring, incident alerts, and recovery procedures.
 - Separately authorized production release and deployment automation.
 
