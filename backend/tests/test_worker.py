@@ -28,7 +28,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import fakeredis
 import pytest
@@ -614,7 +614,7 @@ def _wait_for_file(path: Path, *, deadline: float) -> None:
 
 def _process_alive(pid: int) -> bool:
     if os.name == "nt":
-        kernel32 = getattr(ctypes, "WinDLL")("kernel32", use_last_error=True)
+        kernel32 = cast(Any, ctypes).WinDLL("kernel32", use_last_error=True)
         handle = kernel32.OpenProcess(0x0400, False, pid)
         if not handle:
             return False
