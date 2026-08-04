@@ -103,13 +103,16 @@ def test_factory_mounts_the_three_router_instances() -> None:
 
 
 def test_health_and_readiness_preserved_after_wiring() -> None:
-    client = TestClient(create_app())
+    instance = create_app()
+    instance.state.task_store = _make_store()
+    client = TestClient(instance)
     health = client.get("/health")
     assert health.status_code == 200
     assert health.json() == {"status": "ok"}
     ready = client.get("/health/ready")
     assert ready.status_code == 200
     assert ready.json()["status"] == "ready"
+    assert ready.json()["checks"]["redis"] == "ok"
 
 
 # --- routed endpoints reachable through the factory -------------------------

@@ -236,6 +236,8 @@ class RedisLike(Protocol):
     def ttl(self, name: str) -> int: ...
     def delete(self, name: str) -> int: ...
     def scan_iter(self, match: str | None = None, count: int = 100) -> Iterator[bytes]: ...
+    def ping(self) -> bool: ...
+    def close(self) -> None: ...
 
 
 class LuaRedisLike(Protocol):
@@ -730,6 +732,15 @@ class TaskStore:
             )
             raise StoreUnavailableError() from exc
 
+    def close(self) -> None:
+        """Release the store's Redis connection pool (idempotent).
+
+        Called by the application lifespan on shutdown so the API process
+        exits cleanly without dangling pooled connections; the pool is
+        re-created lazily if the store is used again.
+        """
+        self._client.close()
+
     def get(self, task_id: str) -> TaskRecord:
         """Return the record for *task_id*; unknown or expired ids fail closed."""
         if not task_id:
@@ -745,6 +756,24 @@ class TaskStore:
         if not raw:
             raise TaskNotFoundError()
         return _deserialize(task_id, raw)
+
+    def ping(self) -> None:
+        """Probe Redis connectivity on the store's own client.
+
+        Returns ``None`` when the store can reach Redis; raises
+        :class:`StoreUnavailableError` (with only the exception class name
+        logged) when it cannot. The readiness surface uses this probe so
+        ``/health/ready`` reports exactly what the status/download routers
+        will experience.
+        """
+        try:
+            self._client.ping()
+        except RedisError as exc:
+            logger.error(
+                "task store redis failure",
+                extra={"fields": {"error": type(exc).__name__}},
+            )
+            raise StoreUnavailableError() from exc
 
     def list_expired(self, now: datetime, *, limit: int = 100) -> list[TaskRecord]:
         """Return up to *limit* records whose deadline has passed (BE-07 seam).
