@@ -8,6 +8,8 @@ lifespan side effects.
 
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -75,9 +77,33 @@ def test_injected_settings_do_not_touch_global_app() -> None:
 
 
 def test_no_lifespan_handlers_registered() -> None:
+    """The factory registers no custom startup/shutdown handlers or lifespan.
+
+    Starlette 1.x always installs a default no-op lifespan
+    (``starlette.routing._DefaultLifespan``), so ``lifespan_context`` is
+    never ``None``. FastAPI 0.141.x additionally wraps that default with its
+    own ``_merge_lifespan_context`` context, so the robust invariant is
+    behavioral rather than identity-based: with no custom ``lifespan`` and no
+    ``on_event`` startup/shutdown handlers, entering the merged context must
+    succeed and yield no lifespan state (``None``). A registered handler
+    would surface as non-``None`` state here, and a removed/``None``
+    lifespan (pre-1.x assumption) is explicitly rejected below.
+    """
     instance = create_app()
-    assert instance.router.on_startup == []
-    assert instance.router.on_shutdown == []
+    lifespan_context = instance.router.lifespan_context
+    assert lifespan_context is not None, (
+        "Starlette 1.x installs a default no-op lifespan; a None assertion "
+        "only held for pre-1.x Starlette semantics"
+    )
+
+    async def probe() -> None:
+        async with lifespan_context(instance) as state:
+            assert state is None, (
+                "lifespan state implies a registered startup handler; "
+                "create_app() must not install custom lifespan handlers"
+            )
+
+    asyncio.run(probe())
 
 
 def test_testclient_context_manager_works() -> None:

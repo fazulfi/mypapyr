@@ -31,7 +31,7 @@ from app.config import Settings
 CORS_ALLOW_METHODS: tuple[str, ...] = ("GET", "POST", "OPTIONS")
 """Methods allowed on cross-origin requests."""
 
-CORS_ALLOW_HEADERS: tuple[str, ...] = ("Content-Type", "Authorization")
+CORS_ALLOW_HEADERS: tuple[str, ...] = ("Content-Type", "Authorization", "X-Request-ID")
 """Headers allowed on cross-origin requests."""
 
 SECURITY_HEADERS: Mapping[str, str] = {

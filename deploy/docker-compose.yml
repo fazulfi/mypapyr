@@ -7,18 +7,21 @@ name: papyr
 #   * api     — the only currently activatable service; its image is built
 #               from backend/Dockerfile.production.
 #   * nginx   — deferred edge slot with an image placeholder.
-#   * redis   — deferred queue-storage slot with an image placeholder.
-#   * workers — deferred worker slot with an image placeholder.
-# Deferred slots are NOT activatable: their image tags are __SET_ME__
-# placeholders, they live behind their own profile, and their skeleton wiring
-# stays non-functional until the release procedure assigns real values. They
-# MUST NOT be deployed as-is.
+#   * redis   — queue-storage slot; image pinned by immutable digest to the
+#               approved R-09 persistence/eviction policy (queue profile).
+#   * workers — deferred worker slot; resource bounds and one-worker posture
+#               are declared per R-07/DEC-189, the image reference stays a
+#               __SET_ME__ placeholder until a real worker image exists.
+# Deferred slots are NOT activatable: nginx/workers carry __SET_ME__ image
+# placeholders, they live behind their own profiles, and their skeleton
+# wiring stays non-functional until the release procedure assigns real
+# values. They MUST NOT be deployed as-is.
 #
 # Profile contract (activation safety): `--profile app` selects ONLY api.
 #   * api     -> profile "app"   (the only currently activatable profile)
 #   * nginx   -> profile "edge"  (deferred)
-#   * redis   -> profile "queue" (deferred)
-#   * workers -> profile "queue" (deferred)
+#   * redis   -> profile "queue"
+#   * workers -> profile "queue"
 # `docker compose up -d` with no flags starts nothing (every service is
 # profiled); `--profile app up -d` reaches only api because redis/workers
 # live on the separate "queue" profile.
@@ -30,9 +33,20 @@ name: papyr
 #   * At deploy time use the separate `papyr-app` compose project so no
 #     unrelated compose project or service is touched.
 #
-# Immutable image contract: api's image is selected via PAPYR_API_IMAGE and
-# MUST be an immutable tag/digest reference (e.g. registry/path@sha256:…);
-# the local default below is a placeholder and must never be deployed.
+# Immutable image contract: api's image is selected via the required
+# PAPYR_API_IMAGE variable and MUST be a digest-form reference
+# (registry/path@sha256:…); no default or mutable tag is permitted.
+# check-compose.sh rejects floating tags and any mutable default for api.
+# redis is pinned by digest in this file (check-compose.sh rejects floating
+# tags and __SET_ME__ for it); nginx/workers keep __SET_ME__ placeholders
+# until real images exist (a digest cannot be pinned for an image the repo
+# does not build).
+#
+# R2 lifecycle contract: deploy/r2-lifecycle.json declares the approved
+# temporary-object lifecycle (tmp/ prefix expires after 1 day; incomplete
+# multipart uploads abort after 1 day) in the R2 lifecycle API request-body
+# shape, applied out-of-band (wrangler `r2 bucket lifecycle set`). No
+# secrets, no live mutation from this repository.
 #
 # Env-file contract (fail closed): the container environment is never read
 # from the committed template. `${PAPYR_ENV_FILE:?…}` makes every `docker
@@ -46,7 +60,7 @@ name: papyr
 
 services:
   api:
-    image: ${PAPYR_API_IMAGE:-papyr-api:__SET_ME__}
+    image: "${PAPYR_API_IMAGE:?PAPYR_API_IMAGE required: set it to the immutable digest-form API image reference (registry/path@sha256:...)}"
     profiles: ["app"]
     env_file:
       - "${PAPYR_ENV_FILE:?PAPYR_ENV_FILE required: set it to the provisioned .env.production path}"
@@ -59,13 +73,6 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    cap_add:
-      - CHOWN
-      - DAC_OVERRIDE
-      - SETGID
-      - SETUID
-    # Writable areas for a read-only rootfs: /tmp (exec for future engine
-    # subprocesses), /opt/papyr/temp (image TMPDIR), appuser cache.
     tmpfs:
       - /tmp:exec,mode=1777,size=512M
       - /home/appuser/.cache:size=128M
@@ -123,14 +130,36 @@ services:
   workers:
     image: papyr-workers:__SET_ME__
     profiles: ["queue"]
+    deploy:
+      replicas: 1
     env_file:
       - "${PAPYR_ENV_FILE:?PAPYR_ENV_FILE required: set it to the provisioned .env.production path}"
     depends_on:
       redis:
         condition: service_healthy
     restart: unless-stopped
-    cpus: "1.0"
-    mem_limit: 512M
+    # --- Hardened container posture (mirrors api) -------------------------
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+    # R-07 approved worker bounds: memory 2G / cpus 1.5. The tmpfs
+    # workspace is the per-job ceiling (DEC-189 one job per instance, so
+    # the container ceiling is the per-job ceiling); 1G covers the largest
+    # per-tool disk ceilings (C2: maxZipBytes 256 MB, maxResultBytes
+    # 512 MB) plus engine scratch.
+    tmpfs:
+      - /tmp:exec,mode=1777,size=256M
+      - /opt/papyr/workspace:exec,mode=1777,size=1G
+    cpus: "1.5"
+    mem_limit: 2G
+    pids_limit: 256
     logging:
       driver: json-file
       options:
@@ -140,14 +169,32 @@ services:
   # No healthcheck is invented for a non-existent worker image; the real
   # worker image must declare its own probe.
   redis:
-    image: redis:__SET_ME__
+    image: redis:7.4.10-alpine@sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2
     profiles: ["queue"]
-    command: ["redis-server", "--appendonly", "yes"]
+    # R-09 approved persistence/eviction policy (gate-entry.md section 5):
+    # AOF with appendfsync everysec plus RDB snapshots (explicit save
+    # points) as secondary recovery aid; maxmemory ~384 MB with noeviction
+    # so valid tasks are never silently evicted and OOM writes fail loudly
+    # to the monitored error path. mem_limit 768M keeps the hard cgroup
+    # limit well above maxmemory (AOF/RDB/fork headroom; a limit below
+    # maxmemory would kernel-OOM-kill the server instead of failing writes).
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --save
+      - "3600 1 300 100 60 10000"
+      - --maxmemory
+      - 384mb
+      - --maxmemory-policy
+      - noeviction
     volumes:
       - redis-data:/data
     restart: unless-stopped
     cpus: "0.5"
-    mem_limit: 256M
+    mem_limit: 768M
     logging:
       driver: json-file
       options:
@@ -155,7 +202,13 @@ services:
         max-file: "3"
         labels: "com.papyr.service=redis"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      # Liveness (PONG) plus the R-09 mandatory memory-warning watermark:
+      # every probe prints used_memory/maxmemory and emits a WARNING once
+      # the watermark crosses, so operators are warned before a hard OOM
+      # write failure is the only signal. The probe never fails on high
+      # memory (unhealthy would restart redis and lose the queue); it stays
+      # observable in the health stream (docker inspect) for alerting.
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG && redis-cli info memory | awk -F: -v warn=80 '/^used_memory:/{u=$2} /^maxmemory:/{m=$2} END{if(m>0){pct=u*100/m; printf \"redis memory %d%% of maxmemory\\n\", pct; if(pct>=warn) print \"WARNING redis memory watermark reached; noeviction will reject writes\"}}'"]
       interval: 30s
       timeout: 5s
       start_period: 5s

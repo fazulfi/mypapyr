@@ -1,0 +1,26 @@
+{
+  "RetentionContract": {
+    "HardMaximumSeconds": 3600,
+    "Enforcement": "application-cleanup",
+    "LifecycleSafetyNet": "r2-minimum-one-day-expiration"
+  },
+  "Rules": [
+    {
+      "ID": "papyr-tmp-objects-expire-r2-minimum-1-day-safety-net",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "tmp/"
+      },
+      "Expiration": {
+        "Days": 1
+      }
+    },
+    {
+      "ID": "papyr-abort-incomplete-multipart-r2-minimum-1-day",
+      "Status": "Enabled",
+      "AbortIncompleteMultipartUpload": {
+        "DaysAfterInitiation": 1
+      }
+    }
+  ]
+}

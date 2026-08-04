@@ -6,7 +6,7 @@
 </picture>
 
 <p align="center">
-  <a href=".github/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/fazulfi/mypapyr/ci.yml?branch=main&label=CI&logo=github" alt="CI: 18 quality, security, and repository QA checks (17 on pushes to main)"></a>
+  <a href=".github/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/fazulfi/mypapyr/ci.yml?branch=main&label=CI&logo=github" alt="CI: 19 quality, security, and repository QA checks (18 on pushes to main)"></a>
   <img src="https://img.shields.io/badge/backend%20coverage-%E2%89%A580%25%20gate-2F855A" alt="Backend coverage gate — at least 80 percent">
   <img src="https://img.shields.io/badge/Trivy-CRITICAL%2FHIGH%20scan-34495E" alt="Trivy scans for critical and high severity findings">
   <img src="https://img.shields.io/badge/gitleaks-full%20history%20scan-34495E" alt="gitleaks scans full repository history for secrets">
@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/React-19-149ECA" alt="React 19">
   <img src="https://img.shields.io/badge/TypeScript-6-3178C6" alt="TypeScript 6">
   <img src="https://img.shields.io/badge/Tailwind%20CSS-4-0284C7" alt="Tailwind CSS 4">
-  <img src="https://img.shields.io/badge/FastAPI-0.123-00897B" alt="FastAPI 0.123">
+  <img src="https://img.shields.io/badge/FastAPI-0.141-00897B" alt="FastAPI 0.141">
   <img src="https://img.shields.io/badge/Vitest-4-6E9F18" alt="Vitest 4">
 </p>
 
@@ -69,14 +69,15 @@ Papyr labels every claim so the repository can be read honestly: the source tree
 | Product, architecture, security, integration, and roadmap documentation | Available now |
 | Five-tool catalogue (Compress, Merge, Split, JPG to PDF, PDF to JPG) | Specified |
 | Localization across the five tool pages — English, Spanish, Indonesian | Specified |
-| Versioned tool APIs under `/api/v1` | Specified |
-| Cloudflare R2 temporary-object lifecycle with a one-hour retention target | Specified |
+| Versioned `/api/v1` endpoints: capabilities, task status, and signed downloads | Available now |
+| Cloudflare R2 temporary-object lifecycle with a one-hour retention target | Available now |
 | Ghostscript compression subprocess (official, unmodified distribution) | Specified |
-| Per-tool limits and stable error categories | Specified |
+| Per-tool limits and stable error categories | Available now |
 | Shared upload, progress, error, and download experience | Planned |
 | Full legal, support, and status content and functionality | Planned |
 | Blog publishing programme | Planned |
-| Redis queue and bounded worker processing | Planned |
+| Redis queue and bounded worker processing | Available now |
+| Privacy-safe structured logging and minimal-metadata task records | Available now |
 | Production deployment and release procedures | Planned |
 
 ## Architecture
@@ -99,6 +100,8 @@ flowchart LR
 ```
 
 Native engines never execute on the asynchronous API event loop. Workers run with per-job CPU, memory, wall-clock, file-count, and page-count limits, ephemeral writable directories, no unrelated network access, and no provider credentials. Temporary objects use opaque, non-identifying keys with application-driven deletion and a one-hour retention target.
+
+The versioned backend contracts are implemented and tested: capabilities, task status, and signed downloads under `/api/v1`, backed by a Redis durable queue and minimal-metadata task store, a one-worker processing loop, adaptive fair-use controls, and a cleanup coordinator that enforces the one-hour retention target. Upload and enqueue endpoints, tool execution, and the concrete threat scanner are later phases.
 
 For the complete target contracts, see the [technical architecture specification](docs/specifications/architecture.md) and the [architecture overview](docs/architecture.md).
 

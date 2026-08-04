@@ -198,6 +198,12 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      redis:
+        image: redis:7.4.10-alpine@sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2
+        ports:
+          - 6379:6379
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -225,6 +231,7 @@ jobs:
           R2_SECRET_ACCESS_KEY: test
           R2_BUCKET_NAME: test
           ALLOWED_ORIGINS: http://localhost:3000
+          REDIS_URL: redis://localhost:6379/15
 
   security-trivy:
     name: Security (Trivy filesystem/config scan)
@@ -345,8 +352,8 @@ jobs:
       - name: Install pip-audit (pinned 2.10.1)
         run: pip install pip-audit==2.10.1
 
-      - name: 'pip-audit (deterministic: pinned versions only, no resolution)'
-        run: pip-audit -r requirements.txt -r requirements-dev.txt --disable-pip --no-deps
+      - name: 'pip-audit (transitive: full dependency tree of the pinned requirements)'
+        run: pip-audit -r requirements.txt -r requirements-dev.txt
 
   qa-pins:
     name: QA (action pin truth)
@@ -360,6 +367,14 @@ jobs:
 
       - name: Verify SHA pins against upstream tags
         run: bash scripts/verify-pins.sh
+
+      - name: Install PyYAML (workflow guard dependency)
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned PyYAML
+        run: pip install pyyaml==6.0.3
 
       - name: Guard regression (unpinned action must be rejected)
         run: bash scripts/test-check-ci.sh
@@ -418,6 +433,74 @@ jobs:
 
       - name: Structural compose gate + yamllint
         run: bash scripts/check-compose.sh
+
+  qa-production-api:
+    name: QA (production API image build + non-root smoke + compose config)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      PAPYR_COMPOSE_DIR: "${{ github.workspace }}/deploy"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build the production API image
+        run: |
+          set -euo pipefail
+          docker build \
+            --file backend/Dockerfile.production \
+            --tag papyr-api:ci \
+            backend
+
+      - name: Non-root health smoke (cap_drop ALL, read-only rootfs)
+        run: |
+          set -euo pipefail
+          # Start in the background with the image's INHERITED CMD/entrypoint
+          # (no trailing command: a command override would replace uvicorn and
+          # the API would never start), probe /health, always cleaning up.
+          docker run \
+            -d \
+            --rm \
+            --user 1001:1001 \
+            --cap-drop ALL \
+            --read-only \
+            --tmpfs /tmp:exec,mode=1777,size=64M \
+            --tmpfs /opt/papyr/temp:exec,mode=1777,size=64M \
+            --tmpfs /home/appuser/.cache:size=64M \
+            -e R2_ACCOUNT_ID=test \
+            -e R2_ACCESS_KEY_ID=test \
+            -e R2_SECRET_ACCESS_KEY=test \
+            -e R2_BUCKET_NAME=test \
+            -e ALLOWED_ORIGINS=http://localhost:3000 \
+            --name papyr-api-smoke \
+            papyr-api:ci
+          trap 'docker rm -f papyr-api-smoke >/dev/null 2>&1 || true' EXIT
+          probe() {
+            docker exec --user 1001:1001 papyr-api-smoke \
+              python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/health', timeout=5)"
+          }
+          for i in $(seq 1 30); do
+            if probe >/dev/null 2>&1; then
+              echo "smoke: /health healthy after ${i} attempt(s)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "smoke: /health never became healthy" >&2
+          docker logs papyr-api-smoke >&2 || true
+          exit 1
+
+      - name: Compose config gate with non-secret fixtures (digest-form image)
+        run: |
+          set -euo pipefail
+          PAPYR_API_IMAGE=papyr-api@sha256:0000000000000000000000000000000000000000000000000000000000000000 \
+          PAPYR_ENV_FILE="$PAPYR_COMPOSE_DIR/.env.test" \
+          docker compose \
+            --project-directory "$PAPYR_COMPOSE_DIR" \
+            -f "$PAPYR_COMPOSE_DIR/docker-compose.yml" \
+            config --quiet
 
   qa-yaml:
     name: QA (yamllint CI YAML)
