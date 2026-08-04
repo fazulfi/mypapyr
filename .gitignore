@@ -5,6 +5,10 @@
 .env.*
 !.env.example
 !.env.*.example
+# CI Compose fixture: deploy/.env.test carries only non-secret dummy values for
+# `docker compose config --quiet`; unlike the secrets matched by .env.* it is
+# a tracked, reviewer-visible deliverable (never a real credential file).
+!deploy/.env.test
 # Live credential file (defense-in-depth; also matched by .env.*)
 /.env.papyr
 *.pem
