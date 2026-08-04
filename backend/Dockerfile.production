@@ -22,11 +22,13 @@
 #     tmpfs (/opt/papyr/temp = TMPDIR, /tmp, /home/appuser/.cache).
 #   * Port contract: 3000 (matches deploy compose `expose: 3000`, nginx
 #     upstream `api:3000`, and the API_PORT template value).
-#   * NO OCR (tesseract), NO LibreOffice, NO Redis/worker logic, NO PDF
-#     engines: the five-tool engine dependencies (pikepdf/img2pdf/Pillow/
-#     pypdfium2; Ghostscript as an unmodified `-dSAFER` subprocess) are not
-#     installed here and MUST be added in
-#     the `builder` stage only. Static container checks assert their absence here.
+#   * NO OCR (tesseract), NO LibreOffice, NO Redis/worker logic, and NO tool
+#     engines: the five-tool engine dependencies (img2pdf/Pillow/pypdfium2;
+#     Ghostscript as an unmodified `-dSAFER` subprocess) are NOT installed
+#     here and MUST be added only when the worker image is introduced.
+#   * One sanctioned PDF dependency IS installed: pikepdf (SEC-02 sanitizer,
+#     pinned in requirements.txt, installed by the `builder` stage into
+#     /opt/venv) — the sanitization pass runs in this control-plane image.
 #   * Build context is a whitelist (backend/.dockerignore): only app code
 #     and the pinned requirements enter; `.env*` files never do.
 #
@@ -47,9 +49,9 @@ ENV PATH=/opt/venv/bin:$PATH
 WORKDIR /build
 
 # Only the pinned runtime requirements enter the image (requirements.txt is
-# the authority: fastapi==0.123.5, uvicorn[standard]==0.39.0 today). Engine
-# build deps for the five tools are DEFERRED — add them here, never in the
-# runtime stage.
+# the authority: fastapi==0.141.1, uvicorn[standard]==0.39.0, pikepdf==10.11.0
+# (SEC-02 sanitizer) today). The five-tool engine build deps are DEFERRED to
+# the worker image — add them there, never in this control-plane image.
 COPY --chown=root:root requirements.txt ./
 RUN python -m venv /opt/venv \
     && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
@@ -95,4 +97,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 ENTRYPOINT ["/usr/bin/tini", "--"]
 # Single bounded uvicorn process (no --reload, no watchfiles) — admission
 # control plane posture; worker scaling is a separate, approved decision.
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "3000"]
+# --no-access-log: task ids are capability tokens (status/download paths),
+# and uvicorn's access logger writes request lines verbatim, bypassing the
+# application PrivacyFormatter — access records must never be emitted.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "3000", "--no-access-log"]
