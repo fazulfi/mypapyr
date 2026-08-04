@@ -163,6 +163,12 @@ class _FailingClient:
     def scan_iter(self, match: str | None = None, count: int = 100) -> Iterator[bytes]:
         raise self._error
 
+    def ping(self) -> bool:
+        raise self._error
+
+    def close(self) -> None:
+        raise self._error
+
 
 class _AbortingPipeline:
     """Pipeline whose execute first mutates the watched key, forcing WatchError."""
@@ -1143,3 +1149,46 @@ def test_lua_cancel_mechanism_fails_closed_on_redis_error(
     for line in lines:
         assert task_id not in line
         assert "secret connection detail" not in line
+
+
+# --- connectivity probe (readiness) and safe shutdown ------------------------
+
+
+def test_ping_succeeds_against_reachable_client(store: TaskStore) -> None:
+    store.ping()
+
+
+def test_ping_fails_closed_when_redis_unreachable(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    failing = cast(RedisLike, _FailingClient(ConnectionError("secret connection detail")))
+    broken = TaskStore(make_settings(), client=failing, clock=FakeClock(T0))
+    with caplog.at_level(logging.ERROR), pytest.raises(StoreUnavailableError):
+        broken.ping()
+    lines = [record.getMessage() for record in caplog.records]
+    assert any("task store" in line for line in lines)
+    for line in lines:
+        assert "secret connection detail" not in line
+
+
+class _RecordingCloseClient:
+    """Client recording whether close() was called on it."""
+
+    closed = False
+
+    def close(self) -> None:
+        type(self).closed = True
+
+
+def test_close_releases_the_client_connection(store: TaskStore) -> None:
+    _RecordingCloseClient.closed = False
+    recording = cast(RedisLike, _RecordingCloseClient())
+    wrapped = TaskStore(make_settings(), client=recording, clock=FakeClock(T0))
+    assert _RecordingCloseClient.closed is False
+    wrapped.close()
+    assert _RecordingCloseClient.closed is True
+
+
+def test_close_is_idempotent_on_reusable_stores(store: TaskStore) -> None:
+    store.close()
+    store.close()
