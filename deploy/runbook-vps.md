@@ -16,6 +16,7 @@ Place the reviewed release versions under a dedicated application directory:
 
 - `deploy/docker-compose.yml`
 - `deploy/nginx/conf.d/production.conf`
+- `deploy/r2-lifecycle.json` (R2's one-day-minimum, day-granular lifecycle safety-net template; application cleanup remains the hard 3,600-second enforcement and the rule is applied out of band during release)
 - `.env.production` provisioned from a secret manager, never copied from the public example
 
 ## Deployment variables
@@ -33,12 +34,12 @@ export PAPYR_API_IMAGE=registry/papyr-api@sha256:<digest>
 Fail-closed behavior (designed, not a regression):
 
 - `docker compose` refuses to load when `PAPYR_ENV_FILE` is unset, empty, or points at a missing file: the api/workers `env_file` is `${PAPYR_ENV_FILE:?...}` and the error names the variable. The committed template is never a valid env source.
-- `pull`/`up` fail at image resolution when `PAPYR_API_IMAGE` is not a real reference: the compose default is the `papyr-api:__SET_ME__` placeholder, which does not exist.
-- `--profile app` selects only the API service. `redis` and `workers` live on the `queue` profile and `nginx` on `edge`; all three keep `__SET_ME__` image tags and cannot be activated by the API-only commands below.
+- `pull`/`up` fail at image resolution when `PAPYR_API_IMAGE` is not a real reference: the api `image` is `${PAPYR_API_IMAGE:?...}` with no default, and `check-compose.sh` rejects floating tags and any mutable fallback for it.
+- `--profile app` selects only the API service. `redis` and `workers` live on the `queue` profile and `nginx` on `edge`. Redis 7.4.10 is digest-pinned (`redis:7.4.10-alpine@sha256:…`) and R-09-configured; only `nginx` and `workers` keep `__SET_ME__` image placeholders. None of the three can be activated by the API-only commands below.
 
 ## Isolated API deployment
 
-This procedure activates **only the `api` service** of the four-slot skeleton. `redis`, `workers`, and `nginx` are deferred placeholders and must not be deployed.
+This procedure activates **only the `api` service** of the four-slot skeleton. `redis` is digest-pinned (Redis 7.4.10) and R-09-configured on the `queue` profile; `workers` and `nginx` are deferred placeholders. None of the three is deployed by this API-only procedure.
 
 ```bash
 # 1. Build the foundation image locally (immutable base digest is pinned in
@@ -72,7 +73,7 @@ docker compose -p papyr-app --env-file "$PAPYR_ENV_FILE" -f deploy/docker-compos
 
 The deploy-time image reference must be immutable: `PAPYR_API_IMAGE` must be the pushed image digest (e.g. `registry/papyr-api@sha256:…`) before `up`. Rolling back to the previous healthy image means re-running step 5 with the previous digest. The app image digest gate (registry push) is completed by the release procedure, not by this template.
 
-> Full-stack note: generic `pull` and `up` sequences covering the whole skeleton apply only after the queue, worker, and edge services have real images and production configuration. Until then they are intentionally not runnable.
+> Full-stack note: generic `pull` and `up` sequences covering the whole skeleton apply only after the `workers` and `nginx` placeholders become real images (redis is already digest-pinned). Until then they are intentionally not runnable.
 
 ## Operations
 
