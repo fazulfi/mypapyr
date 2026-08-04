@@ -225,7 +225,8 @@ fi
 # (including pin truth) so the fixed workflow is proven to pass, not just the
 # broken mutations to fail.
 cp "$WF_DIR/ci.yml" "$FIXTURE/.github/workflows/ci.yml"
-if ! (cd "$FIXTURE" && sh scripts/check-ci.sh >/dev/null 2>&1); then
+if ! OUT=$(cd "$FIXTURE" && sh scripts/check-ci.sh 2>&1); then
+    printf '%s\n' "$OUT" >&2
     fail "canonical (fixed) workflow was rejected by check-ci (must pass)"
 fi
 
