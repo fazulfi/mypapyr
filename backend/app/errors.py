@@ -285,7 +285,7 @@ def register_error_handlers(app: FastAPI) -> None:
     # FastAPI 0.129+ defines fastapi.exceptions.HTTPException as a distinct
     # subclass of starlette's; router-generated 404/405 raise the starlette
     # class while routes raise the fastapi one. Registering both keeps the
-    # envelope on every HTTP error under the CI pin (0.123.5, same class
+    # envelope on every HTTP error under the CI pin (0.141.1, same class
     # aliased twice — the second registration simply overwrites) and under
     # newer FastAPI (both classes handled).
     app.add_exception_handler(FastAPIHTTPException, http_exception_handler)

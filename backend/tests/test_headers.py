@@ -150,6 +150,20 @@ def test_preflight_advertises_configured_headers_when_requested() -> None:
         assert header in allowed
 
 
+def test_preflight_permits_request_id_correlation_header() -> None:
+    client = _client(settings=_settings())
+    response = client.options(
+        "/ping",
+        headers={
+            "Origin": CI_ALLOWED_ORIGIN,
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "x-request-id",
+        },
+    )
+    assert response.status_code == 200
+    assert "x-request-id" in response.headers["access-control-allow-headers"].lower()
+
+
 def test_credentials_header_absent_by_default() -> None:
     client = _client(settings=_settings())
     response = client.get("/ping", headers={"Origin": CI_ALLOWED_ORIGIN})
@@ -172,7 +186,11 @@ def test_build_cors_config_uses_explicit_origins() -> None:
     assert config["allow_origins"] == ["http://a.test", "http://b.test"]
     assert config["allow_credentials"] is False
     assert config["allow_methods"] == ["GET", "POST", "OPTIONS"]
-    assert config["allow_headers"] == ["Content-Type", "Authorization"]
+    assert config["allow_headers"] == [
+        "Content-Type",
+        "Authorization",
+        "X-Request-ID",
+    ]
 
 
 def test_build_cors_config_rejects_wildcard_origin() -> None:
