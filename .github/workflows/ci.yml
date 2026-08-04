@@ -201,6 +201,8 @@ jobs:
     services:
       redis:
         image: redis:7.4.10-alpine@sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2
+        ports:
+          - 6379:6379
         options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
@@ -229,7 +231,7 @@ jobs:
           R2_SECRET_ACCESS_KEY: test
           R2_BUCKET_NAME: test
           ALLOWED_ORIGINS: http://localhost:3000
-          REDIS_URL: redis://redis:6379/15
+          REDIS_URL: redis://localhost:6379/15
 
   security-trivy:
     name: Security (Trivy filesystem/config scan)
@@ -365,6 +367,14 @@ jobs:
 
       - name: Verify SHA pins against upstream tags
         run: bash scripts/verify-pins.sh
+
+      - name: Install PyYAML (workflow guard dependency)
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned PyYAML
+        run: pip install pyyaml==6.0.3
 
       - name: Guard regression (unpinned action must be rejected)
         run: bash scripts/test-check-ci.sh
