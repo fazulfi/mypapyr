@@ -40,20 +40,20 @@ Server job:
 4. A bounded worker claims the job, processes it in an isolated container, and writes source, intermediate, and result objects to R2.
 5. The API exposes task status; the frontend polls while the tab is open.
 6. On completion the frontend downloads the result directly from R2 through a short-lived signed URL.
-7. All server-side objects are deleted no later than one hour after upload receipt, by application-driven deletion with a storage lifecycle rule as a safety net.
+7. All server-side objects are deleted no later than one hour after upload receipt by application-driven deletion. The R2 lifecycle rule is an independent, day-granular safety net and does not extend or replace that hard maximum.
 
 ## 3. Current versus target inventory
 
 | Area | Current (available now) | Target (specified) |
 | --- | --- | --- |
 | Frontend | Minimal Next.js shell, strict TypeScript, lint, format, unit tests, production build configuration | Localized product shell, five tool interfaces, browser processing, shared upload, progress, and result components |
-| Backend API | FastAPI service foundation: app factory, strict configuration, health and readiness endpoints, request correlation, stable error envelope, validation schemas, and the pure server task state machine | Versioned `/api/v1` admission, validation, limits, task state, cancellation, and signed-download issuance |
-| Queue | No queue implementation; Redis service exists as a Compose template | Redis durable minimal-metadata task queue with bounded scheduling |
-| Workers | No worker implementation; worker service exists as a Compose template | Bounded worker processes; one active worker executing one concurrent job at launch |
-| Storage | No storage integration | Cloudflare R2 temporary objects with a one-hour lifecycle safety net |
+| Backend API | FastAPI service foundation: app factory, strict configuration, health and readiness endpoints, request correlation, stable error envelope, validation schemas, the pure server task state machine, and versioned `/api/v1` capabilities, task status, and signed-download endpoints | Versioned `/api/v1` admission (upload), cancellation, and native tool execution |
+| Queue | Redis-backed minimal-metadata task store and durable Streams queue (`jobs`/`workers`) with queue caps and an admission seam; adaptive fair-use controls implemented | Bounded scheduling with the upload path wired to the admission seam |
+| Workers | One-worker processing foundation: single in-flight job, per-tool timeouts, stale-claim recovery, and terminal acknowledgement | Bounded worker processes; one active worker executing one concurrent native job at launch |
+| Storage | Cloudflare R2 client with opaque keys, presigned downloads, cleanup coordination, and a lifecycle rule template; live lifecycle rule applied at release | One-hour temporary-object lifecycle safety net in production |
 | Edge and proxy | Nginx server-block template with placeholders only | Hardened Nginx reverse proxy behind Cloudflare |
 | Monitoring | None | Host resource monitoring, external uptime checks, automated status experience, incident alerts |
-| Delivery | CI with 18 required checks (17 on pushes to main, where the PR-only dependency review is skipped) and no deployment steps | Eighteen required CI checks with no deployment steps; separately authorized release and deployment procedures |
+| Delivery | CI with 19 required checks (18 on pushes to main, where the PR-only dependency review is skipped) and no deployment steps | Nineteen required CI checks with no deployment steps; separately authorized release and deployment procedures |
 
 ## 4. Component boundaries
 
@@ -99,7 +99,7 @@ Native processing executes in dedicated worker processes with per-job CPU, memor
 
 ### 4.5 Object storage
 
-Cloudflare R2 is the target temporary object store with opaque, non-identifying keys; separate source, intermediate, and result namespaces or equivalent policy boundaries; application-driven deletion; a lifecycle safety net enforcing a one-hour maximum-retention target; and no document-derived data in object metadata.
+Cloudflare R2 is the target temporary object store with opaque, non-identifying keys; separate source, intermediate, and result namespaces or equivalent policy boundaries; application-driven deletion enforcing the hard 3600-second maximum; an independent R2 day-granular lifecycle safety net; and no document-derived data in object metadata.
 
 ## 5. Browser versus server processing decision model
 
@@ -209,7 +209,7 @@ The subprocess boundary is one defense layer among several; it is not presented 
 
 ### 9.2 Deletion model
 
-The application actively deletes temporary objects according to each job's absolute deadline. A storage lifecycle rule provides independent backup cleanup and is verified against the promised retention rather than treated as the primary timer. Cleanup is idempotent, observable without logging content or sensitive identifiers, and recoverable after restarts. Cleanup telemetry records counts and timing only.
+The application actively deletes temporary objects according to each job's absolute deadline, which cannot exceed 3600 seconds from upload receipt. R2 lifecycle expiration is day-granular, so its one-day minimum rule provides independent backup cleanup and is not the primary timer or an extension of the hard maximum. Cleanup is idempotent, observable without logging content or sensitive identifiers, and recoverable after restarts. Cleanup telemetry records counts and timing only.
 
 ### 9.3 Object key hygiene
 
@@ -275,7 +275,7 @@ The target backend topology is Nginx, FastAPI, Redis, and bounded workers in one
 CI is continuous integration only. The repository CI:
 
 - Runs on every push and pull request to the main branch.
-- Requires 18 checks on pull requests (17 on pushes to main, where the PR-only dependency review is skipped), across three groups: core quality (frontend format and lint, frontend unit tests with coverage, frontend production build, Playwright E2E, backend lint and format, backend strict mypy, backend tests with an 80 percent coverage floor), security and supply chain (Trivy filesystem and configuration scan, gitleaks full-history secret scan, dependency review, npm audit, pip audit), and repository QA (action pin verification, Dockerfile lint, Compose structural validation, workflow YAML lint, markdownlint, shellcheck).
+- Requires 19 checks on pull requests (18 on pushes to main, where the PR-only dependency review is skipped), across three groups: core quality (frontend format and lint, frontend unit tests with coverage, frontend production build, Playwright E2E, backend lint and format, backend strict mypy, backend tests with an 80 percent coverage floor), security and supply chain (Trivy filesystem and configuration scan, gitleaks full-history secret scan, dependency review, npm audit, pip audit), and repository QA (action pin verification, Dockerfile lint, production-image build and non-root smoke, Compose structural validation, workflow YAML lint, markdownlint, shellcheck).
 - Third-party actions are pinned to immutable commit SHAs.
 - Jobs use least-privilege read-only permissions and do not persist checkout credentials.
 - Contains no deployment steps and consumes no production credentials.
@@ -337,18 +337,18 @@ Status values match the product specification: **Available now**, **Specified**,
 | Next.js frontend foundation | Available now | `frontend/` source and tests |
 | FastAPI service foundation (app factory, strict configuration, health and readiness endpoints, request correlation, stable error envelope, validation schemas) | Available now | `backend/` source and tests |
 | Deployment templates (Compose, Nginx, environment, runbook) | Available now | `deploy/` |
-| Continuous integration (18 required checks: quality, security and supply chain, repository QA) | Available now | `.github/workflows/ci.yml` |
+| Continuous integration (19 required checks: quality, security and supply chain, repository QA) | Available now | `.github/workflows/ci.yml` |
 | Shared trilingual shell: locale routing, accessible navigation, supporting route shells, localized 404, and unit and E2E gates | Available now | `frontend/src/app/[locale]/`, `frontend/src/components/`, `frontend/src/lib/i18n.ts`, `frontend/src/proxy.ts` |
 | Legal, support, and status route shells (privacy, terms, cookies and advertising, contact, status, roadmap) | Available now | `frontend/src/app/[locale]/` |
 | Blog route shell | Available now | `frontend/src/app/[locale]/blog/` |
-| Versioned `/api/v1` contract | Specified | Section 6 |
-| Capability and limits contract | Specified | Section 6.2 |
+| Versioned `/api/v1` contract | Available now | `backend/app/routers/{status,capabilities,download}.py` and their tests; upload and enqueue endpoints remain later phases |
+| Capability and limits contract | Available now | `backend/app/routers/capabilities.py` and its tests |
 | Server task state machine (pure transition core) | Available now | `backend/app/tasks/state_machine.py` and its tests |
-| Task status API contract | Specified | Section 6.4 |
-| Redis durable minimal-metadata queue | Specified | Section 7 |
-| Bounded workers and fair scheduling | Specified | Section 7 |
+| Task status API contract | Available now | `backend/app/routers/status.py` and its tests |
+| Redis durable minimal-metadata queue | Available now | `backend/app/queue/` and its tests |
+| Bounded workers and fair scheduling | Available now | `backend/app/worker/`, `backend/app/security/fair_use.py`, and their tests; the admission seam ships allow-all by default until the upload path lands |
 | Ghostscript subprocess boundary for Compress | Specified | Section 8 |
-| R2 object lifecycle and one-hour retention | Specified | Section 9 |
+| R2 object lifecycle and one-hour retention | Available now | `backend/app/utils/r2.py`, `backend/app/tasks/cleanup.py`, `deploy/r2-lifecycle.json`, and their tests; the lifecycle rule is applied during a separately authorized release |
 | Browser versus server routing model | Specified | Section 5 |
 | Threat model and security controls | Specified | Section 10 |
 | Observability and status experience | Specified | Section 11 |
