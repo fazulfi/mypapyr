@@ -34,6 +34,7 @@ from app.health import register_health_routes
 from app.middleware import add_request_id_middleware
 from app.queue.store import TaskStore
 from app.routers.capabilities import router as capabilities_router
+from app.routers.compress import router as compress_router
 from app.routers.download import router as download_router
 from app.routers.status import router as status_router
 from app.security import add_security_middleware
@@ -93,6 +94,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # fallbacks); mounting is purely declarative.
     application.include_router(status_router)
     application.include_router(capabilities_router)
+    application.include_router(compress_router)
     application.include_router(download_router)
 
     application.state.settings = settings
