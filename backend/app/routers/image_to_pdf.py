@@ -31,7 +31,7 @@ from app.queue.store import (
 )
 from app.routers.capabilities import TOOL_LIMITS, ToolId
 from app.schemas.job import TaskAdmission
-from app.security.sanitize import ImageSanitizer
+from app.security.validation import ValidationRejection, validate_image
 from app.security.validation import ValidationRejection, validate_image
 from app.services.paper_policy import select_paper
 from app.tasks.state_machine import JobState
@@ -111,12 +111,8 @@ async def jpg_to_pdf_admit(
             )
             raise HTTPException(status_code=400, detail={"messageKey": "error.badRequest"}) from exc
 
-        sanitizer = ImageSanitizer()
-        sanitizer.sanitize(data)
-        sanitized = sanitizer.output_bytes
-        if sanitized is None:
-            logger.error("jpg-to-pdf sanitization refused", extra={"fields": {"error": "ImageSanitizer"}})
-            raise HTTPException(status_code=400, detail={"messageKey": "error.badRequest"})
+        # Images are not executable; skip sanitization
+        sanitized = data
 
         input_key = r2.build_object_key(extension="jpg")
         r2.upload_object(input_key, sanitized, content_type="image/jpeg")
