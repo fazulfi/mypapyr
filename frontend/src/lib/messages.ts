@@ -12,6 +12,21 @@ export const messages = {
       menuClose: "Close menu",
       cta: "Get started",
     },
+    states: {
+      queued: "Waiting in queue",
+      preparing: "Preparing your file",
+      processing: "Processing your file",
+      done: "Done",
+      error: "Something went wrong",
+      download: "Download",
+    },
+    uploader: {
+      browse: "Browse files",
+      drop: "Drop your files here or",
+    },
+    reset: {
+      processAnother: "Process another file",
+    },
     languages: { en: "English", es: "Español", id: "Bahasa Indonesia" },
     home: {
       description: "Papyr PDF tools.",
@@ -121,6 +136,21 @@ export const messages = {
       menu: "Menú",
       menuClose: "Cerrar menú",
       cta: "Comenzar",
+    },
+    states: {
+      queued: "En cola",
+      preparing: "Preparando tu archivo",
+      processing: "Procesando tu archivo",
+      done: "Listo",
+      error: "Algo salió mal",
+      download: "Descargar",
+    },
+    uploader: {
+      browse: "Elegir archivos",
+      drop: "Arrastra tus archivos aquí o",
+    },
+    reset: {
+      processAnother: "Procesar otro archivo",
     },
     languages: { en: "English", es: "Español", id: "Bahasa Indonesia" },
     home: {
@@ -232,6 +262,21 @@ export const messages = {
       menu: "Menu navigasi",
       menuClose: "Tutup menu",
       cta: "Mulai",
+    },
+    states: {
+      queued: "Menunggu dalam antrean",
+      preparing: "Menyiapkan file Anda",
+      processing: "Memproses file Anda",
+      done: "Selesai",
+      error: "Terjadi kesalahan",
+      download: "Unduh",
+    },
+    uploader: {
+      browse: "Pilih file",
+      drop: "Seret file Anda ke sini atau",
+    },
+    reset: {
+      processAnother: "Proses file lain",
     },
     languages: { en: "English", es: "Español", id: "Bahasa Indonesia" },
     home: {
