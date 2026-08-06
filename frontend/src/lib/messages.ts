@@ -141,6 +141,20 @@ export const messages = {
           submitting: "Submitting...",
         },
       },
+      merge: {
+        title: "Merge PDF",
+        description: "Combine multiple PDFs into one document.",
+        errors: { uploadFailed: "Upload failed" },
+        actions: { merge: "Merge PDFs" },
+        status: { submitting: "Merging..." },
+      },
+      split: {
+        title: "Split PDF",
+        description: "Extract pages from a PDF document.",
+        errors: { splittingFailed: "Error while splitting", uploadFailed: "Upload failed" },
+        actions: { start: "Start Splitting", uploading: "Uploading..." },
+        status: { processing: "Processing" },
+      },
     },
   },
   es: {
