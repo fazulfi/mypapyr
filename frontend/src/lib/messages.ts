@@ -141,6 +141,34 @@ export const messages = {
           submitting: "Submitting...",
         },
       },
+      merge: {
+        title: "Merge PDF",
+        description: "Combine multiple PDFs into one document. All files stay in your browser.",
+        errors: { fileTooLarge: "File too large (max 200MB combined)", needAtLeastTwo: "Select at least 2 files", uploadFailed: "Upload failed", downloadFailed: "Download failed" },
+        actions: { merge: "Merge PDFs" },
+        status: { submitting: "Merging..." },
+      },
+      split: {
+        title: "Split PDF",
+        description: "Extract pages from a PDF document.",
+        errors: { fileTooLarge: "File too large (max 100MB)", uploadFailed: "Upload failed", downloadFailed: "Download failed" },
+        actions: { split: "Split PDF", uploading: "Uploading..." },
+        status: { submitting: "Submitting..." },
+      },
+      jpgToPdf: {
+        title: "JPG to PDF",
+        description: "Convert your JPG images into a single PDF document.",
+        errors: { fileTooLarge: "File too large (max 100MB)", uploadFailed: "Upload failed", downloadFailed: "Download failed" },
+        actions: { convert: "Convert to PDF", uploading: "Uploading..." },
+        status: { submitting: "Submitting..." }
+      },
+      pdfToJpg: {
+        title: "PDF to JPG",
+        description: "Convert your PDF pages into high-quality JPG images.",
+        errors: { fileTooLarge: "File too large (max 100MB per page)", uploadFailed: "Upload failed", downloadFailed: "Download failed" },
+        actions: { convert: "Convert to JPG", uploading: "Uploading..." },
+        status: { submitting: "Submitting..." }
+      },
     },
   },
   es: {
@@ -284,6 +312,34 @@ export const messages = {
           submitting: "Enviando...",
         },
       },
+      merge: {
+        title: "Unir PDF",
+        description: "Combina varios PDFs en un solo documento. Todos los archivos permanecen en tu navegador.",
+        errors: { fileTooLarge: "Archivo demasiado grande (máx. 200MB combinados)", needAtLeastTwo: "Selecciona al menos 2 archivos", uploadFailed: "Error de subida" },
+        actions: { merge: "Unir PDF", uploading: "Subiendo..." },
+        status: { submitting: "Enviando..." }
+      },
+      split: {
+        title: "Dividir PDF",
+        description: "Extrae páginas de tu PDF y crea un nuevo documento.",
+        errors: { fileTooLarge: "Archivo demasiado grande (máx. 100MB)", uploadFailed: "Error de subida" },
+        actions: { split: "Dividir PDF", uploading: "Subiendo..." },
+        status: { submitting: "Enviando..." }
+      },
+      jpgToPdf: {
+        title: "JPG a PDF",
+        description: "Convierte tus imágenes JPG en un solo documento PDF.",
+        errors: { fileTooLarge: "Archivo demasiado grande (máx. 100MB)", uploadFailed: "Error de subida" },
+        actions: { convert: "Convertir a PDF", uploading: "Subiendo..." },
+        status: { submitting: "Enviando..." }
+      },
+      pdfToJpg: {
+        title: "PDF a JPG",
+        description: "Convierte las páginas de tu PDF en imágenes JPG de alta calidad.",
+        errors: { fileTooLarge: "Archivo demasiado grande (máx. 16MP por página)", uploadFailed: "Error de subida" },
+        actions: { convert: "Convertir a JPG", uploading: "Subiendo..." },
+        status: { submitting: "Enviando..." }
+      },
     },
   },
   id: {
@@ -426,6 +482,34 @@ export const messages = {
         status: {
           submitting: "Mengirim...",
         },
+      },
+      merge: {
+        title: "Gabung PDF",
+        description: "Gabungkan beberapa PDF menjadi satu dokumen. Semua file tetap ada di browser Anda.",
+        errors: { fileTooLarge: "File terlalu besar (maks. 200MB gabungan)", needAtLeastTwo: "Pilih minimal 2 file", uploadFailed: "Gagal mengunggah", downloadFailed: "Gagal mengunduh" },
+        actions: { merge: "Gabung PDF", uploading: "Mengunggah..." },
+        status: { submitting: "Mengirim..." }
+      },
+      split: {
+        title: "Pisah PDF",
+        description: "Ekstrak halaman dari PDF dan buat dokumen baru.",
+        errors: { fileTooLarge: "File terlalu besar (maks. 100MB)", uploadFailed: "Gagal mengunggah", downloadFailed: "Gagal mengunduh" },
+        actions: { split: "Pisah PDF", uploading: "Mengunggah..." },
+        status: { submitting: "Mengirim..." }
+      },
+      jpgToPdf: {
+        title: "JPG ke PDF",
+        description: "Konversi gambar JPG Anda menjadi satu dokumen PDF.",
+        errors: { fileTooLarge: "File terlalu besar (maks. 100MB)", uploadFailed: "Gagal mengunggah", downloadFailed: "Gagal mengunduh" },
+        actions: { convert: "Konversi ke PDF", uploading: "Mengunggah..." },
+        status: { submitting: "Mengirim..." }
+      },
+      pdfToJpg: {
+        title: "PDF ke JPG",
+        description: "Konversi halaman PDF Anda menjadi gambar JPG berkualitas tinggi.",
+        errors: { fileTooLarge: "File terlalu besar (maks. 16MP per halaman)", uploadFailed: "Gagal mengunggah", downloadFailed: "Gagal mengunduh" },
+        actions: { convert: "Konversi ke JPG", uploading: "Mengunggah..." },
+        status: { submitting: "Mengirim..." }
       },
     },
   },
