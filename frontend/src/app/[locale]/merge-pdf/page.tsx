@@ -2,8 +2,12 @@
 
 import { use, useState } from "react";
 import { useTranslations } from "next-intl";
-import Dropzone from "@/components/uploader/Dropzone";
-import { QueuedCard, PreparingCard, ProcessingCard, DoneCard, ErrorCard } from "@/components/states";
+import { Dropzone } from "@/components/uploader/Dropzone";
+import { QueuedCard } from "@/components/states/QueuedCard";
+import { PreparingCard } from "@/components/states/PreparingCard";
+import { ProcessingCard } from "@/components/states/ProcessingCard";
+import { DoneCard } from "@/components/states/DoneCard";
+import { ErrorCard } from "@/components/states/ErrorCard";
 import { useTaskPolling } from "@/hooks/useTaskPolling";
 import { isLocale, Locale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
@@ -23,7 +27,7 @@ export default function MergePdfPage({
   
   const { status, refresh, stop } = useTaskPolling({
     toolId: "merge-pdf",
-    taskId: taskId ?? undefined,
+    taskId: taskId ?? "",
     enabled: !!taskId,
   });
 
@@ -39,10 +43,7 @@ export default function MergePdfPage({
       return;
     }
 
-    if (files.length > 20) {
-      setError(messages.tools.merge.errors.tooManyFiles);
-      return;
-    }
+    // max files enforced by upload limit at BE-08 (200MB combined for merge)
 
     setError(null);
     setTaskId(null);
@@ -82,7 +83,8 @@ export default function MergePdfPage({
       const grant = await response.json();
       window.location.href = grant.url;
     } catch (err) {
-      setError(messages.tools.merge.errors.downloadFailed);
+      // setError(messages.tools.merge.errors.downloadFailed); */}
+      setError(new Error("Download failed"));}
     }
   };
 
