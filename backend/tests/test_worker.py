@@ -69,6 +69,8 @@ XReadResult = list[tuple[bytes, list[tuple[bytes, dict[bytes, bytes]]]]]
 
 SUCCESS_RESULT = ResultSummary(output_count=1, total_bytes=1024)
 
+SUCCESS_OBJECTS = ("tmp/2026-08-03/" + "a" * 32 + ".pdf",)
+
 
 class FakeClock:
     """Injectable worker clock: fixed start, explicit advances."""
@@ -109,14 +111,22 @@ def make_record(clock: FakeClock, *, task_id: str | None = None) -> TaskRecord:
 class SuccessExecutor:
     """Executor returning a fixed success outcome; records invocations."""
 
-    def __init__(self, result: ResultSummary = SUCCESS_RESULT) -> None:
+    def __init__(
+        self,
+        result: ResultSummary = SUCCESS_RESULT,
+        *,
+        objects: tuple[str, ...] = SUCCESS_OBJECTS,
+    ) -> None:
         self.result = result
+        self.objects = objects
         self.calls: list[ClaimedJob] = []
 
     def execute(self, job: ClaimedJob, report: Callable[[Progress], None]) -> ExecutionOutcome:
         del report
         self.calls.append(job)
-        return ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=self.result)
+        return ExecutionOutcome(
+            kind=ExecutionKind.SUCCESS, result=self.result, objects=self.objects
+        )
 
 
 class FailureExecutor:
@@ -156,7 +166,9 @@ class HangingExecutor:
     def execute(self, job: ClaimedJob, report: Callable[[Progress], None]) -> ExecutionOutcome:
         del job, report
         self.release.wait(2)
-        return ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT)
+        return ExecutionOutcome(
+            kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT, objects=SUCCESS_OBJECTS
+        )
 
 
 class BlockingExecutor:
@@ -169,7 +181,9 @@ class BlockingExecutor:
     def execute(self, job: ClaimedJob, report: Callable[[Progress], None]) -> ExecutionOutcome:
         self.started.set()
         self.release.wait(5)
-        return ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT)
+        return ExecutionOutcome(
+            kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT, objects=SUCCESS_OBJECTS
+        )
 
 
 class ProgressExecutor:
@@ -178,20 +192,26 @@ class ProgressExecutor:
     def execute(self, job: ClaimedJob, report: Callable[[Progress], None]) -> ExecutionOutcome:
         del job
         report(Progress(unit="engine_progress", value=5, total=10))
-        return ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT)
+        return ExecutionOutcome(
+            kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT, objects=SUCCESS_OBJECTS
+        )
 
 
 class SpawnSuccessExecutor:
     def execute(self, job: ClaimedJob, report: Callable[[Progress], None]) -> ExecutionOutcome:
         del job, report
-        return ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT)
+        return ExecutionOutcome(
+            kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT, objects=SUCCESS_OBJECTS
+        )
 
 
 class SpawnProgressExecutor:
     def execute(self, job: ClaimedJob, report: Callable[[Progress], None]) -> ExecutionOutcome:
         del job
         report(Progress(unit="engine_progress", value=5, total=10))
-        return ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT)
+        return ExecutionOutcome(
+            kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT, objects=SUCCESS_OBJECTS
+        )
 
 
 class SpawnRaisingExecutor:
@@ -214,7 +234,9 @@ class SpawnHangingExecutor:
         del job, report
         Path(self._pid_path).write_text(str(os.getpid()), encoding="utf-8")
         time.sleep(60)
-        return ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT)
+        return ExecutionOutcome(
+            kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT, objects=SUCCESS_OBJECTS
+        )
 
 
 class SpawnSigtermIgnoringExecutor:
@@ -226,7 +248,9 @@ class SpawnSigtermIgnoringExecutor:
         signal.signal(signal.SIGTERM, signal.SIG_IGN)
         Path(self._pid_path).write_text(str(os.getpid()), encoding="utf-8")
         time.sleep(60)
-        return ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT)
+        return ExecutionOutcome(
+            kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT, objects=SUCCESS_OBJECTS
+        )
 
 
 class SpawnFirstHangsThenSucceedsExecutor:
@@ -239,7 +263,9 @@ class SpawnFirstHangsThenSucceedsExecutor:
         if job.task_id == self._first_task_id:
             Path(self._pid_path).write_text(str(os.getpid()), encoding="utf-8")
             time.sleep(60)
-        return ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT)
+        return ExecutionOutcome(
+            kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT, objects=SUCCESS_OBJECTS
+        )
 
 
 class StubRunner:
@@ -257,7 +283,9 @@ class StubRunner:
         outcome = (
             self._outcomes.pop(0)
             if self._outcomes
-            else ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT)
+            else ExecutionOutcome(
+                kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT, objects=SUCCESS_OBJECTS
+            )
         )
         return outcome
 
@@ -1001,7 +1029,7 @@ def test_claim_conflict_terminal_done_acks_without_execution(
         record.task_id,
         JobEvent.RESULT_UPLOADED,
         expected_state=JobState.PROCESSING,
-        payload=TransitionPayload(result=SUCCESS_RESULT),
+        payload=TransitionPayload(result=SUCCESS_RESULT, objects=SUCCESS_OBJECTS),
     )
     _deliver(raw_client)
     time.sleep(0.05)
@@ -1357,14 +1385,18 @@ _SPAWN_TIMEOUT = timedelta(seconds=4)
 def test_subprocess_runner_success_round_trip() -> None:
     runner = SubprocessJobRunner(SpawnSuccessExecutor())
     outcome = runner.run(_claimed_job(), _discard_report, _SPAWN_TIMEOUT)
-    assert outcome == ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT)
+    assert outcome == ExecutionOutcome(
+        kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT, objects=SUCCESS_OBJECTS
+    )
 
 
 def test_subprocess_runner_forwards_progress() -> None:
     received: list[Progress] = []
     runner = SubprocessJobRunner(SpawnProgressExecutor())
     outcome = runner.run(_claimed_job(), received.append, _SPAWN_TIMEOUT)
-    assert outcome == ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT)
+    assert outcome == ExecutionOutcome(
+        kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT, objects=SUCCESS_OBJECTS
+    )
     assert received == [Progress(unit="engine_progress", value=5, total=10)]
 
 
@@ -1388,7 +1420,9 @@ def test_subprocess_runner_rejects_unpicklable_executor() -> None:
     class LocalExecutor:
         def execute(self, job: ClaimedJob, report: Callable[[Progress], None]) -> ExecutionOutcome:
             del job, report
-            return ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT)
+            return ExecutionOutcome(
+                kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT, objects=SUCCESS_OBJECTS
+            )
 
     with pytest.raises(WorkerError):
         SubprocessJobRunner(LocalExecutor())
@@ -1450,7 +1484,9 @@ def test_worker_production_construction_fails_fast_on_unpicklable_executor(
     class LocalExecutor:
         def execute(self, job: ClaimedJob, report: Callable[[Progress], None]) -> ExecutionOutcome:
             del job, report
-            return ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT)
+            return ExecutionOutcome(
+                kind=ExecutionKind.SUCCESS, result=SUCCESS_RESULT, objects=SUCCESS_OBJECTS
+            )
 
     with pytest.raises(WorkerError):
         JobWorker(make_settings(), store, client=None, executor=LocalExecutor())

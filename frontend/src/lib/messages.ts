@@ -12,6 +12,21 @@ export const messages = {
       menuClose: "Close menu",
       cta: "Get started",
     },
+    states: {
+      queued: "Waiting in queue",
+      preparing: "Preparing your file",
+      processing: "Processing your file",
+      done: "Done",
+      error: "Something went wrong",
+      download: "Download",
+    },
+    uploader: {
+      browse: "Browse files",
+      drop: "Drop your files here or",
+    },
+    reset: {
+      processAnother: "Process another file",
+    },
     languages: { en: "English", es: "Español", id: "Bahasa Indonesia" },
     home: {
       description: "Papyr PDF tools.",
@@ -110,6 +125,23 @@ export const messages = {
       title: "Page not found",
       description: "The page you are looking for does not exist.",
     },
+    tools: {
+      compress: {
+        title: "Compress PDF",
+        description: "Reduce the file size of your PDF while keeping quality. Processed on our servers and deleted within one hour.",
+        errors: {
+          fileTooLarge: "File exceeds the maximum size limit.",
+          uploadFailed: "Upload failed, please try again.",
+        },
+        actions: {
+          compress: "Compress",
+          uploading: "Uploading...",
+        },
+        status: {
+          submitting: "Submitting...",
+        },
+      },
+    },
   },
   es: {
     siteName: "Papyr",
@@ -121,6 +153,21 @@ export const messages = {
       menu: "Menú",
       menuClose: "Cerrar menú",
       cta: "Comenzar",
+    },
+    states: {
+      queued: "En cola",
+      preparing: "Preparando tu archivo",
+      processing: "Procesando tu archivo",
+      done: "Listo",
+      error: "Algo salió mal",
+      download: "Descargar",
+    },
+    uploader: {
+      browse: "Elegir archivos",
+      drop: "Arrastra tus archivos aquí o",
+    },
+    reset: {
+      processAnother: "Procesar otro archivo",
     },
     languages: { en: "English", es: "Español", id: "Bahasa Indonesia" },
     home: {
@@ -221,6 +268,23 @@ export const messages = {
       title: "Página no encontrada",
       description: "La página que buscas no existe.",
     },
+    tools: {
+      compress: {
+        title: "Comprimir PDF",
+        description: "Reduce el tamaño de tu PDF manteniendo la calidad. Se procesa en nuestros servidores y se elimina en una hora.",
+        errors: {
+          fileTooLarge: "El archivo supera el límite de tamaño máximo.",
+          uploadFailed: "Error al subir, inténtalo de nuevo.",
+        },
+        actions: {
+          compress: "Comprimir",
+          uploading: "Subiendo...",
+        },
+        status: {
+          submitting: "Enviando...",
+        },
+      },
+    },
   },
   id: {
     siteName: "Papyr",
@@ -232,6 +296,21 @@ export const messages = {
       menu: "Menu navigasi",
       menuClose: "Tutup menu",
       cta: "Mulai",
+    },
+    states: {
+      queued: "Menunggu dalam antrean",
+      preparing: "Menyiapkan file Anda",
+      processing: "Memproses file Anda",
+      done: "Selesai",
+      error: "Terjadi kesalahan",
+      download: "Unduh",
+    },
+    uploader: {
+      browse: "Pilih file",
+      drop: "Seret file Anda ke sini atau",
+    },
+    reset: {
+      processAnother: "Proses file lain",
     },
     languages: { en: "English", es: "Español", id: "Bahasa Indonesia" },
     home: {
@@ -331,6 +410,23 @@ export const messages = {
     notFound: {
       title: "Halaman tidak ditemukan",
       description: "Halaman yang Anda cari tidak ada.",
+    },
+    tools: {
+      compress: {
+        title: "Kompres PDF",
+        description: "Kurangi ukuran PDF Anda dengan tetap menjaga kualitas. Diproses di server kami dan dihapus dalam satu jam.",
+        errors: {
+          fileTooLarge: "File melebihi batas ukuran maksimum.",
+          uploadFailed: "Gagal mengunggah, silakan coba lagi.",
+        },
+        actions: {
+          compress: "Kompres",
+          uploading: "Mengunggah...",
+        },
+        status: {
+          submitting: "Mengirim...",
+        },
+      },
     },
   },
 } as const;

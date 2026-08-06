@@ -115,6 +115,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 _RESULT = ResultSummary(output_count=1, total_bytes=2048)
+_SEAM_OBJECT = "tmp/2026-08-03/" + "d" * 32 + ".pdf"
 
 
 class FakeClock:
@@ -463,14 +464,14 @@ def test_store_cas_stale_expected_state_conflict(store: TaskStore) -> None:
             "task-cas",
             JobEvent.RESULT_UPLOADED,
             expected_state=JobState.QUEUED,
-            payload=TransitionPayload(result=_RESULT),
+            payload=TransitionPayload(result=_RESULT, objects=(_SEAM_OBJECT,)),
         )
 
     done = store.transition_state(
         "task-cas",
         JobEvent.RESULT_UPLOADED,
         expected_state=JobState.PROCESSING,
-        payload=TransitionPayload(result=_RESULT),
+        payload=TransitionPayload(result=_RESULT, objects=(_SEAM_OBJECT,)),
     )
     assert done.state is JobState.DONE
     assert done.result == _RESULT
@@ -781,7 +782,7 @@ def test_worker_end_to_end_claim_process_ack(store: TaskStore, redis_client: Rea
     queue = JobQueue(_make_settings(), store, client=cast(StreamsRedisLike, redis_client))
     queue.enqueue(_record("task-e2e", tool="compress"), route="compress")
 
-    executor = RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT))
+    executor = RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,)))
     worker = JobWorker(
         _make_settings(),
         store,
@@ -811,7 +812,7 @@ def test_queue_capacity_recovers_after_successful_terminal_ack(
         settings,
         store,
         client=cast(StreamsRedisLike, redis_client),
-        executor=RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT)),
+        executor=RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,))),
         options=WorkerOptions(consumer_name="worker-cap-terminal"),
     )
     assert worker.run_once() is True
@@ -840,7 +841,7 @@ def test_queue_max_wait_ignores_terminally_acked_completed_entry(
         settings,
         store,
         client=cast(StreamsRedisLike, redis_client),
-        executor=RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT)),
+        executor=RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,))),
         options=WorkerOptions(consumer_name="worker-wait-terminal"),
     )
     assert worker.run_once() is True
@@ -858,7 +859,7 @@ def test_worker_single_in_flight_job(store: TaskStore, redis_client: RealRedis) 
     queue.enqueue(_record("task-once", tool="merge"))
 
     executor = RecordingExecutor(
-        ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT), hold=True
+        ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,)), hold=True
     )
     worker = JobWorker(
         _make_settings(),
@@ -891,7 +892,7 @@ def test_worker_reclaims_stale_claim(store: TaskStore, redis_client: RealRedis) 
         _make_settings(),
         store,
         client=cast(StreamsRedisLike, redis_client),
-        executor=RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT)),
+        executor=RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,))),
         options=WorkerOptions(consumer_name="worker-crashed"),
     )
     assert crashed.run_once() is True  # claims and processes normally
@@ -903,7 +904,7 @@ def test_worker_reclaims_stale_claim(store: TaskStore, redis_client: RealRedis) 
     assert store.get("task-stale-2").state is JobState.QUEUED
 
     _wait_pending_idle(redis_client, GROUP_NAME, min_idle=2.0)
-    recorder = RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT))
+    recorder = RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,)))
     recoverer = JobWorker(
         _make_settings(),
         store,
@@ -936,11 +937,11 @@ def test_worker_acknowledges_terminal_without_reexecution(
         "task-terminal",
         JobEvent.RESULT_UPLOADED,
         expected_state=JobState.PROCESSING,
-        payload=TransitionPayload(result=_RESULT),
+        payload=TransitionPayload(result=_RESULT, objects=(_SEAM_OBJECT,)),
     )
 
     _wait_pending_idle(redis_client, GROUP_NAME, min_idle=2.0)
-    recorder = RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT))
+    recorder = RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,)))
     recoverer = JobWorker(
         _make_settings(),
         store,
@@ -969,7 +970,7 @@ def test_worker_drops_deleted_pending_entry(store: TaskStore, redis_client: Real
     assert redis_client.xdel("jobs", entry_id) == 1
 
     _wait_pending_idle(redis_client, GROUP_NAME, min_idle=2.0)
-    recorder = RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT))
+    recorder = RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,)))
     recoverer = JobWorker(
         _make_settings(),
         store,
@@ -1233,7 +1234,7 @@ def test_cancel_queued_wins_atomically_real_redis(
     # the atomic record cancel purged the still-unclaimed stream entry
     assert redis_client.xrange("jobs", "-", "+") == []
 
-    executor = RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT))
+    executor = RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,)))
     worker = JobWorker(
         _make_settings(),
         store,
@@ -1253,7 +1254,7 @@ def test_cancel_after_pickup_reports_no_longer_available_real_redis(
     queue.enqueue(_record("task-cancel-picked", tool="split"), route="split")
 
     executor = RecordingExecutor(
-        ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT), hold=True
+        ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,)), hold=True
     )
     worker = JobWorker(
         _make_settings(),
@@ -1293,7 +1294,7 @@ def test_cancel_worker_race_single_terminal_state(
         task_id = f"task-cancel-race-{index}"
         queue = JobQueue(_make_settings(), store, client=cast(StreamsRedisLike, redis_client))
         queue.enqueue(_record(task_id, tool="compress"), route="compress")
-        executor = RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT))
+        executor = RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,)))
         worker = JobWorker(
             _make_settings(),
             store,

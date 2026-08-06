@@ -11,11 +11,13 @@ separately.
 
 from __future__ import annotations
 
+import io
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import cast
 
 import fakeredis
+import pikepdf
 from fastapi import APIRouter, FastAPI
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
@@ -23,17 +25,19 @@ from fastapi.testclient import TestClient
 from app import routers as routers_package
 from app.config import Settings
 from app.main import app, create_app
+from app.queue.queue import JobQueue, QueueOptions, StreamsRedisLike
 from app.queue.store import RedisLike, TaskRecord, TaskStore, TransitionPayload
 from app.routers.download import router as download_router
 from app.schemas.job import ResultSummary
 from app.tasks.state_machine import JobEvent, JobState
-from app.utils.r2 import R2Client
+from app.utils.r2 import R2Client, UploadReceipt
 
 STATUS_PATH = "/api/v1/tools/{tool}/tasks/{task_id}/status"
 CAPABILITIES_PATH = "/api/v1/capabilities"
 DOWNLOAD_PATH = "/api/v1/tools/{tool}/tasks/{task_id}/download/{output}"
+COMPRESS_TASKS_PATH = "/api/v1/tools/compress-pdf/tasks"
 
-ROUTER_PATHS = (STATUS_PATH, CAPABILITIES_PATH, DOWNLOAD_PATH)
+ROUTER_PATHS = (STATUS_PATH, CAPABILITIES_PATH, COMPRESS_TASKS_PATH, DOWNLOAD_PATH)
 
 
 class _RecordingR2(R2Client):
@@ -43,6 +47,27 @@ class _RecordingR2(R2Client):
         self, key: str, expires_at: datetime, *, now: datetime | None = None
     ) -> str:
         return "https://example.invalid/presigned"
+
+
+class _UploadR2(R2Client):
+    """R2Client-backed stub recording uploads without a network client."""
+
+    def __init__(self) -> None:
+        self.uploaded: list[tuple[str, bytes]] = []
+
+    def build_object_key(self, *, extension: str | None = None, now: datetime | None = None) -> str:
+        del extension, now
+        return f"tmp/2026-08-06/{uuid.uuid4().hex}.pdf"
+
+    def upload_object(self, key: str, body: bytes, **kwargs: object) -> UploadReceipt:
+        del kwargs
+        self.uploaded.append((key, body))
+        return UploadReceipt(
+            key=key,
+            size_bytes=len(body),
+            content_type="application/pdf",
+            uploaded_at=datetime.now(UTC),
+        )
 
 
 def _settings() -> Settings:
@@ -66,6 +91,27 @@ def _injected_app(*, store: TaskStore | None = None, r2: R2Client | None = None)
 
 def _make_store() -> TaskStore:
     return TaskStore(_settings(), client=cast(RedisLike, fakeredis.FakeRedis()))
+
+
+def _valid_pdf_bytes() -> bytes:
+    pdf = pikepdf.Pdf.new()
+    pdf.add_blank_page()
+    buf = io.BytesIO()
+    pdf.save(buf)
+    return buf.getvalue()
+
+
+def _compress_app(*, store: TaskStore, r2: R2Client) -> FastAPI:
+    instance = create_app()
+    instance.state.task_store = store
+    instance.state.r2_client = r2
+    instance.state.job_queue = JobQueue(
+        _settings(),
+        store,
+        client=cast(StreamsRedisLike, fakeredis.FakeRedis()),
+        options=QueueOptions(clock=lambda: datetime.now(UTC)),
+    )
+    return instance
 
 
 def _mounted_api_routes(application: FastAPI) -> list[APIRoute]:
@@ -97,9 +143,10 @@ def test_factory_mounts_each_router_path_exactly_once() -> None:
 def test_factory_mounts_the_three_router_instances() -> None:
     instance = create_app()
     mounted = {route.path for route in _mounted_api_routes(instance)}
-    assert DOWNLOAD_PATH in mounted
-    assert STATUS_PATH in mounted
     assert CAPABILITIES_PATH in mounted
+    assert STATUS_PATH in mounted
+    assert COMPRESS_TASKS_PATH in mounted
+    assert DOWNLOAD_PATH in mounted
 
 
 def test_health_and_readiness_preserved_after_wiring() -> None:
@@ -164,7 +211,10 @@ def test_download_reachable_on_factory_app_with_injected_deps() -> None:
         record.task_id,
         JobEvent.RESULT_UPLOADED,
         expected_state=JobState.PROCESSING,
-        payload=TransitionPayload(result=ResultSummary(output_count=1, total_bytes=1024)),
+        payload=TransitionPayload(
+            result=ResultSummary(output_count=1, total_bytes=1024),
+            objects=("tmp/2026-08-03/" + "c" * 32 + ".pdf",),
+        ),
     )
     instance = _injected_app(store=store, r2=_RecordingR2(_settings()))
     response = TestClient(instance).get(
@@ -176,6 +226,48 @@ def test_download_reachable_on_factory_app_with_injected_deps() -> None:
     assert body["expires_at"]
     assert response.headers["cache-control"] == "no-store"
     assert response.headers["x-request-id"]
+
+
+def test_compress_admission_success_on_factory_app() -> None:
+    """POST valid PDF via factory → 202 TaskAdmission envelope, queued task."""
+    store = _make_store()
+    r2 = _UploadR2()
+    client = TestClient(_compress_app(store=store, r2=r2))
+    response = client.post(COMPRESS_TASKS_PATH, files={"file": ("test.pdf", _valid_pdf_bytes())})
+    assert response.status_code == 202
+    data = response.json()
+    assert data["state"] == "queued"
+    assert data["task_id"]
+    assert data["expires_at"]
+    record = store.get(data["task_id"])
+    assert record.tool == "compress-pdf"
+    assert record.state == JobState.QUEUED
+    assert len(record.objects) == 1
+    assert len(r2.uploaded) == 1
+    assert r2.uploaded[0][0] == record.objects[0]
+
+
+def test_compress_admission_rejects_safe_4xx_on_factory_app() -> None:
+    """Non-PDF upload → 400 validation envelope, no upload, no task created."""
+    store = _make_store()
+    r2 = _UploadR2()
+    client = TestClient(_compress_app(store=store, r2=r2))
+    response = client.post(COMPRESS_TASKS_PATH, files={"file": ("test.pdf", b"Not a PDF at all.")})
+    assert response.status_code == 400
+    body = response.json()
+    assert body["error"]["code"] == "bad_request"
+    assert body["error"]["category"] == "validation"
+    assert body["error"]["messageKey"] == "error.badRequest"
+    assert body["error"]["retryable"] is False
+    assert body["request_id"]
+    assert len(r2.uploaded) == 0
+
+
+def test_factory_mounts_compress_tasks_route() -> None:
+    routes = _mounted_api_routes(create_app())
+    assert COMPRESS_TASKS_PATH in [route.path for route in routes], (
+        "compress-pdf tasks route not found"
+    )
 
 
 def test_security_headers_present_on_routed_responses() -> None:
@@ -205,6 +297,7 @@ def test_module_level_app_includes_routed_paths() -> None:
     routes = _mounted_api_routes(app)
     for path in ROUTER_PATHS:
         assert path in [route.path for route in routes]
+    assert COMPRESS_TASKS_PATH in [route.path for route in routes]
 
 
 def test_router_instances_stay_out_of_the_package_init() -> None:

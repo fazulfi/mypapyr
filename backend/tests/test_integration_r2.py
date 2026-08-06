@@ -314,7 +314,7 @@ def _make_done_record(
         task_id,
         JobEvent.RESULT_UPLOADED,
         expected_state=JobState.PROCESSING,
-        payload=TransitionPayload(result=_RESULT),
+        payload=TransitionPayload(result=_RESULT, objects=objects),
     )
 
 

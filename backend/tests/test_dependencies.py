@@ -130,6 +130,7 @@ def test_runtime_pins_are_exact() -> None:
         "redis": "8.1.0",
         "boto3": "1.43.62",
         "pikepdf": "10.11.0",
+        "python-multipart": "0.0.20",
     }
 
 

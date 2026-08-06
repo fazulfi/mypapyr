@@ -70,6 +70,7 @@ EXPECTED_STATUS_FIELDS = (
 )
 
 RESULT = ResultSummary(output_count=1, total_bytes=4096)
+RESULT_OBJECT = "tmp/2026-08-03/" + "e" * 32 + ".pdf"
 ERROR = ErrorSummary(
     code="engine_error",
     category="engine",
@@ -468,7 +469,7 @@ def test_done_status_endpoint_carries_result_and_completed_at(
         record.task_id,
         JobEvent.RESULT_UPLOADED,
         expected_state=JobState.PROCESSING,
-        payload=TransitionPayload(result=RESULT),
+        payload=TransitionPayload(result=RESULT, objects=(RESULT_OBJECT,)),
     )
     response = TestClient(_status_app(store)).get(_status_url(record.task_id))
     assert response.status_code == 200
@@ -630,7 +631,7 @@ def test_status_responses_carry_no_private_internals(store: TaskStore, clock: Fa
         record.task_id,
         JobEvent.RESULT_UPLOADED,
         expected_state=JobState.PROCESSING,
-        payload=TransitionPayload(result=RESULT),
+        payload=TransitionPayload(result=RESULT, objects=(RESULT_OBJECT,)),
     )
     failed = store.create(make_record(clock))
     clock.advance(10)

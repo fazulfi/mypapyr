@@ -77,6 +77,7 @@ from app.worker.worker import (
 ORIGIN_A = "https://origin-a.example"
 
 RESULT = ResultSummary(output_count=1, total_bytes=2048)
+RESULT_OBJECT = "tmp/2026-08-03/" + "b" * 32 + ".pdf"
 
 
 def make_settings(*, max_queue_length: int = 2000) -> Settings:
@@ -149,7 +150,7 @@ class SuccessExecutor:
     def execute(self, job: ClaimedJob, report: ProgressReporter) -> ExecutionOutcome:
         del report
         self.jobs.append(job)
-        return ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=RESULT)
+        return ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=RESULT, objects=(RESULT_OBJECT,))
 
 
 class FailingAppend:
@@ -305,7 +306,7 @@ def test_worker_reconciliation_release_is_idempotent() -> None:
         "recon-1",
         JobEvent.RESULT_UPLOADED,
         expected_state=JobState.PROCESSING,
-        payload=TransitionPayload(result=RESULT),
+        payload=TransitionPayload(result=RESULT, objects=(RESULT_OBJECT,)),
     )
     policy.release_fingerprint_claim(fingerprint=fingerprint_origin(ORIGIN_A), claim="recon-1")
     assert conc_value(raw, ORIGIN_A) == 0
