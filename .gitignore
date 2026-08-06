@@ -68,3 +68,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+## Developer/temp files
+tdd/
+audit-outputs/
