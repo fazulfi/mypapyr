@@ -164,7 +164,10 @@ def test_download_reachable_on_factory_app_with_injected_deps() -> None:
         record.task_id,
         JobEvent.RESULT_UPLOADED,
         expected_state=JobState.PROCESSING,
-        payload=TransitionPayload(result=ResultSummary(output_count=1, total_bytes=1024)),
+        payload=TransitionPayload(
+            result=ResultSummary(output_count=1, total_bytes=1024),
+            objects=("tmp/2026-08-03/" + "c" * 32 + ".pdf",),
+        ),
     )
     instance = _injected_app(store=store, r2=_RecordingR2(_settings()))
     response = TestClient(instance).get(

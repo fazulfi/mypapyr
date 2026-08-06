@@ -142,11 +142,17 @@ class ExecutionKind(StrEnum):
 
 @dataclass(frozen=True)
 class ExecutionOutcome:
-    """Executor result: a result summary on success, an error on failure."""
+    """Executor result: a result summary on success, an error on failure.
+
+    ``objects`` carries the published output object keys on a successful
+    outcome; the worker maps a success without ``objects`` to a safe
+    engine error instead of publishing a done record with no outputs.
+    """
 
     kind: ExecutionKind
     result: ResultSummary | None = None
     error: ErrorSummary | None = None
+    objects: tuple[str, ...] | None = None
 
 
 _FAILED_CRASH_OUTCOME = ExecutionOutcome(kind=ExecutionKind.FAILURE, error=ENGINE_ERROR_FALLBACK)
@@ -807,10 +813,14 @@ class JobWorker:
     ) -> TaskRecord | None:
         if outcome is None:
             event, payload = JobEvent.TIMEOUT, TransitionPayload(error=TIMEOUT_ERROR)
-        elif outcome.kind is ExecutionKind.SUCCESS and outcome.result is not None:
+        elif (
+            outcome.kind is ExecutionKind.SUCCESS
+            and outcome.result is not None
+            and outcome.objects is not None
+        ):
             event, payload = (
                 JobEvent.RESULT_UPLOADED,
-                TransitionPayload(result=outcome.result),
+                TransitionPayload(result=outcome.result, objects=outcome.objects),
             )
         else:
             error = outcome.error if outcome.kind is ExecutionKind.FAILURE else None

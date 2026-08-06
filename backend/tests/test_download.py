@@ -242,7 +242,10 @@ def create_done(
         record.task_id,
         JobEvent.RESULT_UPLOADED,
         expected_state=JobState.PROCESSING,
-        payload=TransitionPayload(result=RESULT),
+        payload=TransitionPayload(
+            result=ResultSummary(output_count=len(objects), total_bytes=RESULT.total_bytes),
+            objects=objects,
+        ),
     )
 
 

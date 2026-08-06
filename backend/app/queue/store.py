@@ -203,10 +203,15 @@ class TransitionPayload:
     ``result`` belongs on transitions to ``done``; ``error`` on transitions
     to ``failed``. The store enforces the pairing (mirroring the schemas'
     ``TaskStatus`` validator); both must be omitted on other transitions.
+
+    ``objects`` holds the published output object keys on transitions to
+    ``done``; the store enforces that they are required there (matching
+    ``result.output_count``) and omitted everywhere else.
     """
 
     result: ResultSummary | None = None
     error: ErrorSummary | None = None
+    objects: tuple[str, ...] | None = None
 
 
 class PipelineLike(Protocol):
@@ -521,20 +526,29 @@ def _validate_new_record(record: TaskRecord, now: datetime, max_ttl: int) -> Tas
 def _validate_transition_payload(event: JobEvent, payload: TransitionPayload | None) -> None:
     result = payload.result if payload is not None else None
     error = payload.error if payload is not None else None
+    objects = payload.objects if payload is not None else None
     if event is JobEvent.RESULT_UPLOADED:
         if result is None:
             raise InvalidRecordError("result is required when the target state is done")
         if error is not None:
             raise InvalidRecordError("error is only allowed when the target state is failed")
+        if objects is None:
+            raise InvalidRecordError("objects are required when the target state is done")
+        if result.output_count != len(objects):
+            raise InvalidRecordError("output_count must match the number of published objects")
         return
     if event in (JobEvent.ENGINE_ERROR, JobEvent.TIMEOUT, JobEvent.SAFETY_SHUTDOWN):
         if error is None:
             raise InvalidRecordError("error is required when the target state is failed")
         if result is not None:
             raise InvalidRecordError("result is only allowed when the target state is done")
+        if objects is not None:
+            raise InvalidRecordError("objects are only allowed when the target state is done")
         return
-    if result is not None or error is not None:
-        raise InvalidRecordError("result and error are only allowed on terminal transitions")
+    if result is not None or error is not None or objects is not None:
+        raise InvalidRecordError(
+            "result, error and objects are only allowed on terminal transitions"
+        )
 
 
 def _build_client(settings: Settings) -> RedisLike:
@@ -865,7 +879,13 @@ class TaskStore:
                 progress=record.progress,
                 result=result,
                 error=error,
-                objects=record.objects,
+                objects=(
+                    payload.objects
+                    if event is JobEvent.RESULT_UPLOADED
+                    and payload is not None
+                    and payload.objects is not None
+                    else record.objects
+                ),
             )
 
         return self._mutate(task_id, expected_state, None, build)

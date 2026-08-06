@@ -115,6 +115,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 _RESULT = ResultSummary(output_count=1, total_bytes=2048)
+_SEAM_OBJECT = "tmp/2026-08-03/" + "d" * 32 + ".pdf"
 
 
 class FakeClock:
@@ -463,14 +464,14 @@ def test_store_cas_stale_expected_state_conflict(store: TaskStore) -> None:
             "task-cas",
             JobEvent.RESULT_UPLOADED,
             expected_state=JobState.QUEUED,
-            payload=TransitionPayload(result=_RESULT),
+            payload=TransitionPayload(result=_RESULT, objects=(_SEAM_OBJECT,)),
         )
 
     done = store.transition_state(
         "task-cas",
         JobEvent.RESULT_UPLOADED,
         expected_state=JobState.PROCESSING,
-        payload=TransitionPayload(result=_RESULT),
+        payload=TransitionPayload(result=_RESULT, objects=(_SEAM_OBJECT,)),
     )
     assert done.state is JobState.DONE
     assert done.result == _RESULT
@@ -936,7 +937,7 @@ def test_worker_acknowledges_terminal_without_reexecution(
         "task-terminal",
         JobEvent.RESULT_UPLOADED,
         expected_state=JobState.PROCESSING,
-        payload=TransitionPayload(result=_RESULT),
+        payload=TransitionPayload(result=_RESULT, objects=(_SEAM_OBJECT,)),
     )
 
     _wait_pending_idle(redis_client, GROUP_NAME, min_idle=2.0)

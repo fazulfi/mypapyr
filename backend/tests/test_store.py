@@ -486,7 +486,7 @@ def test_result_uploaded_sets_result_and_completed_at(store: TaskStore, clock: F
         record.task_id,
         JobEvent.RESULT_UPLOADED,
         expected_state=JobState.PROCESSING,
-        payload=TransitionPayload(result=result),
+        payload=TransitionPayload(result=result, objects=(_FIXTURE_OBJECT,)),
     )
     assert done.state is JobState.DONE
     assert done.result == result
@@ -559,7 +559,7 @@ def test_deadline_reached_is_not_a_persisted_transition(store: TaskStore, clock:
         record.task_id,
         JobEvent.RESULT_UPLOADED,
         expected_state=JobState.PROCESSING,
-        payload=TransitionPayload(result=result),
+        payload=TransitionPayload(result=result, objects=(_FIXTURE_OBJECT,)),
     )
     with pytest.raises(InvalidRecordError):
         store.transition_state(
@@ -1080,7 +1080,7 @@ def test_cancel_terminal_record_conflicts(client_a: RedisLike, clock: FakeClock)
         "cancel-done",
         JobEvent.RESULT_UPLOADED,
         expected_state=JobState.PROCESSING,
-        payload=TransitionPayload(result=result),
+        payload=TransitionPayload(result=result, objects=(_FIXTURE_OBJECT,)),
     )
 
     with pytest.raises(TaskConflictError):
