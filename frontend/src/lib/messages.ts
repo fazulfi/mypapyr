@@ -125,6 +125,23 @@ export const messages = {
       title: "Page not found",
       description: "The page you are looking for does not exist.",
     },
+    tools: {
+      compress: {
+        title: "Compress PDF",
+        description: "Reduce the file size of your PDF while keeping quality. Processed on our servers and deleted within one hour.",
+        errors: {
+          fileTooLarge: "File exceeds the maximum size limit.",
+          uploadFailed: "Upload failed, please try again.",
+        },
+        actions: {
+          compress: "Compress",
+          uploading: "Uploading...",
+        },
+        status: {
+          submitting: "Submitting...",
+        },
+      },
+    },
   },
   es: {
     siteName: "Papyr",
@@ -251,6 +268,23 @@ export const messages = {
       title: "Página no encontrada",
       description: "La página que buscas no existe.",
     },
+    tools: {
+      compress: {
+        title: "Comprimir PDF",
+        description: "Reduce el tamaño de tu PDF manteniendo la calidad. Se procesa en nuestros servidores y se elimina en una hora.",
+        errors: {
+          fileTooLarge: "El archivo supera el límite de tamaño máximo.",
+          uploadFailed: "Error al subir, inténtalo de nuevo.",
+        },
+        actions: {
+          compress: "Comprimir",
+          uploading: "Subiendo...",
+        },
+        status: {
+          submitting: "Enviando...",
+        },
+      },
+    },
   },
   id: {
     siteName: "Papyr",
@@ -376,6 +410,23 @@ export const messages = {
     notFound: {
       title: "Halaman tidak ditemukan",
       description: "Halaman yang Anda cari tidak ada.",
+    },
+    tools: {
+      compress: {
+        title: "Kompres PDF",
+        description: "Kurangi ukuran PDF Anda dengan tetap menjaga kualitas. Diproses di server kami dan dihapus dalam satu jam.",
+        errors: {
+          fileTooLarge: "File melebihi batas ukuran maksimum.",
+          uploadFailed: "Gagal mengunggah, silakan coba lagi.",
+        },
+        actions: {
+          compress: "Kompres",
+          uploading: "Mengunggah...",
+        },
+        status: {
+          submitting: "Mengirim...",
+        },
+      },
     },
   },
 } as const;
