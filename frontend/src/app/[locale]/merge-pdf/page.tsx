@@ -83,8 +83,8 @@ export default function MergePdfPage({
       const grant = await response.json();
       window.location.href = grant.url;
     } catch (err) {
-      // setError(messages.tools.merge.errors.downloadFailed); */}
-      setError(new Error("Download failed"));}
+      // setError temporarily disabled due to missing ES translation
+      setError("downloadFailed")
     }
   };
 

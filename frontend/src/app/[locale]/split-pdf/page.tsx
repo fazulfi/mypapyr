@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import React from "react";
 
-import Dropzone from "@/components/uploader/Dropzone";
+import { Dropzone } from "@/components/uploader/Dropzone";
 import DoneCard from "@/components/states/DoneCard";
 import ErrorCard from "@/components/states/ErrorCard";
 import PreparingCard from "@/components/states/PreparingCard";
