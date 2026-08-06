@@ -450,21 +450,3 @@ export type Messages = (typeof messages)[Locale];
 export function getMessages(locale: Locale): Messages {
   return messages[locale];
 }
-  "`'tools/merge'`: {
-    title: "Merge PDF Files",
-    description: "Combine multiple PDFs into one document in your chosen order.",
-    errors: {
-      needAtLeastTwo: "Please select at least 2 PDF files to merge.",
-      tooManyFiles: "You can merge up to 20 PDF files at once.",
-      uploadFailed: "Upload failed. Please try again.",
-      downloadFailed: "Download failed. The task may have completed.",
-    },
-    actions: {
-      merge: "Merge PDFs",
-      uploading: "Uploading...",
-    },
-    status: {
-      submitting: "Preparing documents...",
-    },
-  },
-
