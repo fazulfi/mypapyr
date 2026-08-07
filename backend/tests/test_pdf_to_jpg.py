@@ -26,6 +26,7 @@ from app.config import Settings
 from app.main import app, create_app
 from app.queue.queue import STREAM_KEY, JobQueue, QueueOptions, StreamsRedisLike
 from app.queue.store import RedisLike, TaskStore
+from app.security.classification import ScannerStatus, ScannerVerdict
 from app.security.sanitize import PdfSanitizer
 from app.utils.r2 import R2Client, UploadReceipt
 
@@ -69,6 +70,13 @@ class _UploadR2(R2Client):
         )
 
 
+class _CleanScanner:
+    """Scanner double returning CLEAN verdict (U-SEC admission gate seam)."""
+
+    def scan(self, data: bytes) -> ScannerVerdict:
+        return ScannerVerdict(status=ScannerStatus.CLEAN)
+
+
 def _valid_pdf_bytes() -> bytes:
     pdf = pikepdf.Pdf.new()
     pdf.add_blank_page()
@@ -95,6 +103,7 @@ def _pdf_to_jpg_app(*, store: TaskStore, r2: R2Client, queue: JobQueue | None = 
         client=fakeredis.FakeRedis(),
         options=QueueOptions(clock=lambda: datetime.now(UTC)),
     )
+    instance.state.scanner = _CleanScanner()
     return instance
 
 

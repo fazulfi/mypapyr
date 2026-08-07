@@ -32,6 +32,7 @@ from typing import cast
 from fastapi import APIRouter, FastAPI, HTTPException, Request, UploadFile, status
 
 from app.config import Settings, load
+from app.health import enforce_scan_gate
 from app.queue.queue import JobQueue
 from app.queue.store import (
     StoreUnavailableError,
@@ -109,6 +110,8 @@ async def compress_pdf_admit(request: Request, file: UploadFile) -> TaskAdmissio
             extra={"fields": {"error": type(exc).__name__}},
         )
         raise HTTPException(status_code=400, detail={"messageKey": "error.badRequest"}) from exc
+
+    enforce_scan_gate(request, data)
 
     sanitizer = PdfSanitizer()
     sanitizer.sanitize(data)

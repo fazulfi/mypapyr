@@ -50,6 +50,11 @@ DEFAULT_REDIS_URL = "redis://localhost:6379/0"
 # R2_ENDPOINT (root .env.example:35) documented but unconsumed — now consumed.
 DEFAULT_LOG_LEVEL = "info"
 DEFAULT_R2_REGION = "auto"
+# --- Scanner settings (U-SEC owns these fields) ---
+DEFAULT_CLAMD_HOST = "localhost"
+DEFAULT_CLAMD_PORT = 3310
+DEFAULT_SCANNER_TIMEOUT_SECONDS = 10
+MAX_SCANNER_TIMEOUT_SECONDS = 3600
 
 _SECRET_FIELD = "r2_secret_access_key"
 _REDACTED = "**********"
@@ -141,6 +146,18 @@ def _optional_log_level(env: Mapping[str, str], name: str, default: str) -> str:
     return raw
 
 
+def _optional_bool(env: Mapping[str, str], name: str, default: bool) -> bool:
+    value = env.get(name)
+    if value is None or not value.strip():
+        return default
+    raw = value.strip().lower()
+    if raw in {"true", "1", "yes", "on"}:
+        return True
+    if raw in {"false", "0", "no", "off"}:
+        return False
+    raise InvalidSettingError(f"Setting {name!r} must be a boolean, got {raw!r}")
+
+
 @dataclass(frozen=True)
 class Settings:
     """Typed, immutable backend settings."""
@@ -163,6 +180,10 @@ class Settings:
     default_timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS
     worker_cpus: float = DEFAULT_WORKER_CPUS
     worker_memory_bytes: int = DEFAULT_WORKER_MEMORY_BYTES
+    clamd_host: str = DEFAULT_CLAMD_HOST
+    clamd_port: int = DEFAULT_CLAMD_PORT
+    scanner_timeout_seconds: int = DEFAULT_SCANNER_TIMEOUT_SECONDS
+    scanner_enabled: bool = True
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> Settings:
@@ -202,6 +223,15 @@ class Settings:
             worker_memory_bytes=_optional_int(
                 source, "WORKER_MEMORY_BYTES", DEFAULT_WORKER_MEMORY_BYTES
             ),
+            clamd_host=_optional_str(source, "CLAMD_HOST", DEFAULT_CLAMD_HOST),
+            clamd_port=_optional_bounded_int(source, "CLAMD_PORT", DEFAULT_CLAMD_PORT, 65535),
+            scanner_timeout_seconds=_optional_bounded_int(
+                source,
+                "SCANNER_TIMEOUT_SECONDS",
+                DEFAULT_SCANNER_TIMEOUT_SECONDS,
+                MAX_SCANNER_TIMEOUT_SECONDS,
+            ),
+            scanner_enabled=_optional_bool(source, "SCANNER_ENABLED", True),
         )
 
     def __repr__(self) -> str:

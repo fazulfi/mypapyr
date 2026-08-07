@@ -22,6 +22,7 @@ from typing import cast
 from fastapi import APIRouter, FastAPI, Form, HTTPException, Request, UploadFile, status
 
 from app.config import Settings, load
+from app.health import enforce_scan_gate
 from app.queue.queue import JobQueue
 from app.queue.store import (
     StoreUnavailableError,
@@ -103,6 +104,9 @@ async def split_pdf_admit(
             extra={"fields": {"error": type(exc).__name__}},
         )
         raise HTTPException(status_code=400, detail={"messageKey": "error.badRequest"}) from exc
+
+    # SEC-01 scanner gate (U-SEC): fail-closed admission
+    enforce_scan_gate(request, data)
 
     sanitizer = PdfSanitizer()
     sanitizer.sanitize(data)

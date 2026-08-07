@@ -29,8 +29,17 @@ from app.queue.queue import JobQueue, QueueOptions, StreamsRedisLike
 from app.queue.store import RedisLike, TaskRecord, TaskStore, TransitionPayload
 from app.routers.download import router as download_router
 from app.schemas.job import ResultSummary
+from app.security.classification import ScannerStatus, ScannerVerdict
 from app.tasks.state_machine import JobEvent, JobState
 from app.utils.r2 import R2Client, UploadReceipt
+
+
+class _CleanScanner:
+    """Scanner double returning CLEAN verdict (U-SEC admission gate seam)."""
+
+    def scan(self, data: bytes) -> ScannerVerdict:
+        return ScannerVerdict(status=ScannerStatus.CLEAN)
+
 
 STATUS_PATH = "/api/v1/tools/{tool}/tasks/{task_id}/status"
 CAPABILITIES_PATH = "/api/v1/capabilities"
@@ -111,6 +120,7 @@ def _compress_app(*, store: TaskStore, r2: R2Client) -> FastAPI:
         client=cast(StreamsRedisLike, fakeredis.FakeRedis()),
         options=QueueOptions(clock=lambda: datetime.now(UTC)),
     )
+    instance.state.scanner = _CleanScanner()
     return instance
 
 
@@ -152,6 +162,7 @@ def test_factory_mounts_the_three_router_instances() -> None:
 def test_health_and_readiness_preserved_after_wiring() -> None:
     instance = create_app()
     instance.state.task_store = _make_store()
+    instance.state.scanner = _CleanScanner()
     client = TestClient(instance)
     health = client.get("/health")
     assert health.status_code == 200

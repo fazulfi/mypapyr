@@ -17,6 +17,7 @@ from app.config import Settings
 from app.queue.queue import JobQueue, QueueOptions, StreamsRedisLike
 from app.queue.store import RedisLike, TaskStore
 from app.routers import compress as compress_module
+from app.security.classification import ScannerStatus, ScannerVerdict
 from app.security.sanitize import PdfSanitizer
 from app.utils.r2 import R2Client
 
@@ -34,6 +35,13 @@ def _settings() -> Settings:
         worker_cpus=1,
         worker_memory_bytes=2 * 1024**3,
     )
+
+
+class _CleanScanner:
+    """Scanner double returning CLEAN verdict (U-SEC admission gate seam)."""
+
+    def scan(self, data: bytes) -> ScannerVerdict:
+        return ScannerVerdict(status=ScannerStatus.CLEAN)
 
 
 @pytest.fixture
@@ -114,6 +122,7 @@ def factory_app(
     app.state.task_store = store
     app.state.r2_client = r2
     app.state.job_queue = queue
+    app.state.scanner = _CleanScanner()
     return app
 
 
@@ -130,6 +139,7 @@ def _app_with(store: TaskStore, r2: FakeR2, queue: JobQueue | None = None) -> Fa
         client=fakeredis.FakeRedis(),
         options=QueueOptions(clock=lambda: datetime.now(UTC)),
     )
+    app.state.scanner = _CleanScanner()
     return app
 
 

@@ -30,6 +30,7 @@ from app import health
 from app.config import Settings
 from app.main import create_app
 from app.queue.store import RedisLike, TaskStore
+from app.security.classification import ScannerStatus, ScannerVerdict
 
 # The five CI-injected foundation variables (ci.yml backend-test job);
 # readiness is ready only when all of them load.
@@ -42,6 +43,13 @@ _FULL_ENV: Mapping[str, str] = {
 }
 
 _FOUNDATION_SETTINGS = Settings.from_env(dict(_FULL_ENV))
+
+
+class _CleanScanner:
+    """Scanner double returning CLEAN verdict (U-SEC seam for readiness)."""
+
+    def scan(self, data: bytes) -> ScannerVerdict:
+        return ScannerVerdict(status=ScannerStatus.CLEAN)
 
 
 def _fake_store() -> TaskStore:
@@ -68,7 +76,8 @@ def _registered_app(env: Mapping[str, str], store: TaskStore | None = None) -> F
     """Fresh app with liveness and readiness routes.
 
     The environment override keeps negative cases free of global-environment
-    mutation; the store override makes the Redis probe deterministic.
+    mutation; the store override makes the Redis probe deterministic; the
+    scanner override keeps the U-SEC scanner probe deterministic.
     """
     application = FastAPI()
     application.get("/health")(health_ok)
@@ -76,6 +85,7 @@ def _registered_app(env: Mapping[str, str], store: TaskStore | None = None) -> F
     application.dependency_overrides[health.env_provider] = lambda: env
     if store is not None:
         application.state.task_store = store
+    application.state.scanner = _CleanScanner()
     return application
 
 
@@ -113,7 +123,7 @@ def test_readiness_healthy_with_config_and_redis() -> None:
     assert response.status_code == 200
     assert response.json() == {
         "status": "ready",
-        "checks": {"foundation": "ok", "redis": "ok"},
+        "checks": {"foundation": "ok", "redis": "ok", "scanner": "ok"},
         "deferred": ["worker"],
     }
 
@@ -124,7 +134,11 @@ def test_readiness_degraded_without_config() -> None:
     assert response.status_code == 503
     assert response.json() == {
         "status": "not_ready",
-        "checks": {"foundation": "missing_required_config", "redis": "unavailable"},
+        "checks": {
+            "foundation": "missing_required_config",
+            "redis": "unavailable",
+            "scanner": "ok",
+        },
         "deferred": ["worker"],
     }
 
@@ -135,7 +149,7 @@ def test_readiness_not_ready_when_redis_unavailable() -> None:
     assert response.status_code == 503
     assert response.json() == {
         "status": "not_ready",
-        "checks": {"foundation": "ok", "redis": "unavailable"},
+        "checks": {"foundation": "ok", "redis": "unavailable", "scanner": "ok"},
         "deferred": ["worker"],
     }
 
@@ -168,10 +182,11 @@ def test_factory_integration_mounts_readiness_on_real_app() -> None:
 
     The factory presets ``app.state.task_store`` from the injected settings,
     so the readiness probe reports the wired store. A healthy fakeredis
-    store is injected to keep the check deterministic.
+    store and a clean scanner are injected to keep the checks deterministic.
     """
     instance = create_app(settings=_FOUNDATION_SETTINGS)
     instance.state.task_store = _fake_store()
+    instance.state.scanner = _CleanScanner()
     client = TestClient(instance)
     assert client.get("/health").json() == {"status": "ok"}
     readiness = client.get("/health/ready")
