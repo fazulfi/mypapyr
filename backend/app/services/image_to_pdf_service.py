@@ -29,11 +29,6 @@ from typing import Any, BinaryIO, Protocol, cast
 
 from PIL import Image, ImageOps
 
-try:
-    import img2pdf
-except ImportError:
-    img2pdf = None
-
 from app.config import Settings
 from app.queue.store import (
     StoreUnavailableError,
@@ -95,6 +90,10 @@ def images_to_pdf(req: ImageToPdfRequest, *, timeout: float | None = None) -> by
     if not req.images:
         raise ValueError("at least one image is required")
     normalised = [_normalise_image(item) for item in req.images]
+    try:
+        img2pdf = cast(Any, importlib.import_module("img2pdf"))
+    except ImportError:
+        img2pdf = None
     if img2pdf is None:
         images = [Image.open(BytesIO(item)).convert("RGB") for item in normalised]
         output = BytesIO()
@@ -102,9 +101,11 @@ def images_to_pdf(req: ImageToPdfRequest, *, timeout: float | None = None) -> by
         return output.getvalue()
     kwargs: dict[str, object] = {}
     kwargs["pagesize"] = (
-        img2pdf.papersizes.LETTER if req.paper is PaperStandard.LETTER else img2pdf.papersizes.A4
+        img2pdf.papersizes["letter"]
+        if req.paper is PaperStandard.LETTER
+        else img2pdf.papersizes["a4"]
     )
-    return img2pdf.convert(normalised, **kwargs)
+    return cast(bytes, img2pdf.convert(normalised, **kwargs))
 
 
 class S3ReadClient(Protocol):
