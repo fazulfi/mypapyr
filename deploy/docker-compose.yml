@@ -1,73 +1,84 @@
-name: papyr
+name: papyr-app
 
 # ============================================================================
-# Papyr deployment skeleton with an isolated API profile.
+# Papyr deployment topology unified per Phase-5 U-COMPOSE
+# (BLKR-02 part 2, BLKR-11).
 #
-# The stack declares exactly four service slots: api, nginx, redis, workers.
-#   * api     — the only currently activatable service; its image is built
-#               from backend/Dockerfile.production.
-#   * nginx   — deferred edge slot with an image placeholder.
-#   * redis   — queue-storage slot; image pinned by immutable digest to the
-#               approved R-09 persistence/eviction policy (queue profile).
-#   * workers — deferred worker slot; resource bounds and one-worker posture
-#               are declared per R-07/DEC-189, the image reference stays a
-#               __SET_ME__ placeholder until a real worker image exists.
-# Deferred slots are NOT activatable: nginx/workers carry __SET_ME__ image
-# placeholders, they live behind their own profiles, and their skeleton
-# wiring stays non-functional until the release procedure assigns real
-# values. They MUST NOT be deployed as-is.
+# Single Compose project, single explicit internal network:
+#   * api     - control plane; internal expose 3000; depends on healthy redis
+#               and clamd so /health/ready truthfully reflects foundation +
+#               queue + scanner availability.
+#   * nginx   - deferred edge slot (profile "edge"); requires a healthy api.
+#   * redis   - durable queue storage; digest-pinned official image; the R-09
+#               AOF/noeviction persistence contract; internal-only; profile
+#               "queue".
+#   * workers - bounded worker (2G / 1.5 cpus, one instance per DEC-189);
+#               depends on healthy redis + clamd; mirrors the api hardened
+#               posture; declares its own /health probe (worker entrypoint).
+#   * clamd   - official ClamAV daemon; required digest-form image variable;
+#               internal-only port 3310; backs API readiness and admission
+#               scans; profile "queue".
 #
-# Profile contract (activation safety): `--profile app` selects ONLY api.
-#   * api     -> profile "app"   (the only currently activatable profile)
-#   * nginx   -> profile "edge"  (deferred)
-#   * redis   -> profile "queue"
-#   * workers -> profile "queue"
-# `docker compose up -d` with no flags starts nothing (every service is
-# profiled); `--profile app up -d` reaches only api because redis/workers
-# live on the separate "queue" profile.
+# Profile activation safety: `--profile app` selects only api; `--profile
+# queue` selects redis + workers + clamd; `--profile edge` selects nginx.
+# PRODUCTION ACTIVATION runs BOTH profiles (full backend stack):
+#   docker compose -p papyr-app --env-file "$PAPYR_ENV_FILE" \
+#     -f deploy/docker-compose.yml --profile app --profile queue up -d
+# `--profile app` ALONE is NOT production-ready (it starts api-only, with no
+# redis/worker/scanner, so /health/ready would report not-ready). nginx
+# (`--profile edge`) stays deferred and is excluded from the app+queue command.
+# Run with `-p papyr-app` so ONE project / ONE network is used and the API
+# resolves redis + clamd by stable in-project service DNS. This is the fix
+# for the split-brain defect (two projects / two networks -> Redis not
+# resolvable -> /health/ready 503).
 #
-# Foundation isolation (no Redis/worker assumptions):
-#   * api has NO depends_on — it boots, healths, and serves standalone.
-#   * api publishes nothing (internal compose network only, expose: 3000).
-#   * redis/workers ports are NEVER published (internal-only).
-#   * At deploy time use the separate `papyr-app` compose project so no
-#     unrelated compose project or service is touched.
+# Immutable image contract (no mutable defaults, no hardcoded digests for
+# images the repo builds; third-party digests only where authoritative):
+#   * api     -> ${PAPYR_API_IMAGE:?...}     (immutable-injected, digest form)
+#   * workers -> ${PAPYR_WORKERS_IMAGE:?...} (required, digest form)
+#   * clamd   -> ${PAPYR_CLAMD_IMAGE:?...}   (required, digest form; must be
+#               the official Alpine-based clamav/clamav image that provides
+#               busybox `nc` and a clamd answering PING->PONG on TCP 3310,
+#               because the healthcheck below probes exactly that contract)
+#   * redis   -> redis:7.4.10-alpine@sha256:... (authoritative digest pin)
 #
-# Immutable image contract: api's image is selected via the required
-# PAPYR_API_IMAGE variable and MUST be a digest-form reference
-# (registry/path@sha256:…); no default or mutable tag is permitted.
-# check-compose.sh rejects floating tags and any mutable default for api.
-# redis is pinned by digest in this file (check-compose.sh rejects floating
-# tags and __SET_ME__ for it); nginx/workers keep __SET_ME__ placeholders
-# until real images exist (a digest cannot be pinned for an image the repo
-# does not build).
+# Env-file strategy (fail closed): api and workers load their container
+# environment from the provisioned `.env.production` via ${PAPYR_ENV_FILE:?...};
+# the committed template carries empty required values so an accidental load
+# fails fast at boot. The safe internal runtime contracts are set inline in
+# `environment:` (which overrides env_file per Compose precedence) so the API
+# and worker ALWAYS resolve Redis and clamd by Compose service DNS:
+#   * REDIS_URL=redis://redis:6379/0 (service DNS, db 0, no credentials)
+#   * CLAMD_HOST=clamd               (service DNS)
+# Settings defaults (redis://localhost:6379/0, CLAMD_HOST=localhost) would not
+# resolve across containers, so they are overridden here explicitly.
 #
-# R2 lifecycle contract: deploy/r2-lifecycle.json declares the approved
-# temporary-object lifecycle (tmp/ prefix expires after 1 day; incomplete
-# multipart uploads abort after 1 day) in the R2 lifecycle API request-body
-# shape, applied out-of-band (wrangler `r2 bucket lifecycle set`). No
-# secrets, no live mutation from this repository.
-#
-# Env-file contract (fail closed): the container environment is never read
-# from the committed template. `${PAPYR_ENV_FILE:?…}` makes every `docker
-# compose` load refuse to proceed unless the operator sets PAPYR_ENV_FILE to
-# the provisioned `.env.production` path (installed mode 0600 out of band);
-# an unset/empty variable or a missing file is an immediate, named error.
-# The committed template additionally carries EMPTY required values, so even
-# a manual copy of it fails fast at boot (backend/app/config.py rejects
-# empty required variables) instead of booting with placeholders.
+# Security posture: read-only rootfs, cap_drop ALL, no-new-privileges where
+# feasible (clamd drops ALL; redis keeps only the caps its entrypoint needs).
+# Resource limits use top-level cpus/mem_limit/pids_limit so they are
+# effective for non-Swarm `docker compose`. Health probes are truthful
+# (clamd PING/PONG daemon probe, never a version-only check).
 # ============================================================================
 
 services:
   api:
-    image: "${PAPYR_API_IMAGE:?PAPYR_API_IMAGE required: set it to the immutable digest-form API image reference (registry/path@sha256:...)}"
+    image: "${PAPYR_API_IMAGE:?PAPYR_API_IMAGE required: immutable digest-form reference (registry/path@sha256:...)}"
     profiles: ["app"]
     env_file:
-      - "${PAPYR_ENV_FILE:?PAPYR_ENV_FILE required: set it to the provisioned .env.production path}"
+      - "${PAPYR_ENV_FILE:?PAPYR_ENV_FILE required: provisioned .env.production path}"
+    environment:
+      - CLAMD_HOST=clamd
+      - REDIS_URL=redis://redis:6379/0
+    networks:
+      - papyr
     expose:
       - "3000"
     restart: unless-stopped
-    # --- Hardened container posture -------------------------------------
+    depends_on:
+      redis:
+        condition: service_healthy
+      clamd:
+        condition: service_healthy
     read_only: true
     security_opt:
       - no-new-privileges:true
@@ -77,7 +88,6 @@ services:
       - /tmp:exec,mode=1777,size=512M
       - /home/appuser/.cache:size=128M
       - /opt/papyr/temp:exec,mode=1777,size=512M
-    # Conservative resource budgets for the initial service.
     cpus: "1.0"
     mem_limit: 512M
     pids_limit: 256
@@ -97,21 +107,18 @@ services:
   nginx:
     image: nginx:__SET_ME__
     profiles: ["edge"]
+    networks:
+      - papyr
     depends_on:
       api:
         condition: service_healthy
-    # Port publication is deferred: the placeholder
-    # "127.0.0.1:__SET_ME__:80" was removed because it is invalid port syntax
-    # and made `docker compose config` fail for the whole file (B2). The
-    # release procedure assigns the real host port before nginx leaves the
-    # skeleton state; until then nginx stays unpublishable behind its "edge"
-    # profile and __SET_ME__ image tag.
     ports: []
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
     restart: unless-stopped
     cpus: "0.25"
     mem_limit: 256M
+    pids_limit: 128
     logging:
       driver: json-file
       options:
@@ -119,8 +126,6 @@ services:
         max-file: "3"
         labels: "com.papyr.service=nginx"
     healthcheck:
-      # Skeleton probe for the default nginx page. Replace this with the
-      # final edge health route when the edge service is activated.
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
       interval: 30s
       timeout: 10s
@@ -128,17 +133,23 @@ services:
       retries: 3
 
   workers:
-    image: papyr-workers:__SET_ME__
+    image: "${PAPYR_WORKERS_IMAGE:?PAPYR_WORKERS_IMAGE required: immutable digest-form reference (registry/path@sha256:...)}"
     profiles: ["queue"]
     deploy:
       replicas: 1
     env_file:
-      - "${PAPYR_ENV_FILE:?PAPYR_ENV_FILE required: set it to the provisioned .env.production path}"
+      - "${PAPYR_ENV_FILE:?PAPYR_ENV_FILE required: provisioned .env.production path}"
+    environment:
+      - CLAMD_HOST=clamd
+      - REDIS_URL=redis://redis:6379/0
+    networks:
+      - papyr
     depends_on:
       redis:
         condition: service_healthy
+      clamd:
+        condition: service_healthy
     restart: unless-stopped
-    # --- Hardened container posture (mirrors api) -------------------------
     read_only: true
     security_opt:
       - no-new-privileges:true
@@ -149,11 +160,6 @@ services:
       - DAC_OVERRIDE
       - SETGID
       - SETUID
-    # R-07 approved worker bounds: memory 2G / cpus 1.5. The tmpfs
-    # workspace is the per-job ceiling (DEC-189 one job per instance, so
-    # the container ceiling is the per-job ceiling); 1G covers the largest
-    # per-tool disk ceilings (C2: maxZipBytes 256 MB, maxResultBytes
-    # 512 MB) plus engine scratch.
     tmpfs:
       - /tmp:exec,mode=1777,size=256M
       - /opt/papyr/workspace:exec,mode=1777,size=1G
@@ -166,18 +172,54 @@ services:
         max-size: "10m"
         max-file: "3"
         labels: "com.papyr.service=workers"
-  # No healthcheck is invented for a non-existent worker image; the real
-  # worker image must declare its own probe.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+
+  clamd:
+    image: "${PAPYR_CLAMD_IMAGE:?PAPYR_CLAMD_IMAGE required: immutable digest-form reference (registry/path@sha256:...)}"
+    profiles: ["queue"]
+    networks:
+      - papyr
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    # Required image contract: PAPYR_CLAMD_IMAGE must be official Alpine-based clamav/clamav
+    # providing busybox `nc` and a clamd answering PING→PONG on TCP 3310
+    # (docs.clamav.net Docker). This comment encodes the mandatory runtime contract.
+    tmpfs:
+      - /tmp:size=128M
+    volumes:
+      - clamd-db:/var/lib/clamav
+    cpus: "0.5"
+    mem_limit: 2G
+    pids_limit: 128
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "com.papyr.service=clamd"
+    healthcheck:
+      # Truthful clamd liveness: TCP PING to the daemon on 3310 must be answered
+      # with PONG. This is NOT a version/binary check; it fails whenever clamd
+      # is not listening or not responsive, so a dead daemon cannot be healthy.
+      test: ["CMD-SHELL", "echo PING | nc -w 5 127.0.0.1 3310 | grep -q PONG"]
+      interval: 30s
+      timeout: 10s
+      start_period: 120s
+      retries: 5
+
   redis:
     image: redis:7.4.10-alpine@sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2
     profiles: ["queue"]
-    # R-09 approved persistence/eviction policy (gate-entry.md section 5):
-    # AOF with appendfsync everysec plus RDB snapshots (explicit save
-    # points) as secondary recovery aid; maxmemory ~384 MB with noeviction
-    # so valid tasks are never silently evicted and OOM writes fail loudly
-    # to the monitored error path. mem_limit 768M keeps the hard cgroup
-    # limit well above maxmemory (AOF/RDB/fork headroom; a limit below
-    # maxmemory would kernel-OOM-kill the server instead of failing writes).
+    networks:
+      - papyr
     command:
       - redis-server
       - --appendonly
@@ -195,6 +237,7 @@ services:
     restart: unless-stopped
     cpus: "0.5"
     mem_limit: 768M
+    pids_limit: 256
     logging:
       driver: json-file
       options:
@@ -202,18 +245,19 @@ services:
         max-file: "3"
         labels: "com.papyr.service=redis"
     healthcheck:
-      # Liveness (PONG) plus the R-09 mandatory memory-warning watermark:
-      # every probe prints used_memory/maxmemory and emits a WARNING once
-      # the watermark crosses, so operators are warned before a hard OOM
-      # write failure is the only signal. The probe never fails on high
-      # memory (unhealthy would restart redis and lose the queue); it stays
-      # observable in the health stream (docker inspect) for alerting.
       test: ["CMD-SHELL", "redis-cli ping | grep -q PONG && redis-cli info memory | awk -F: -v warn=80 '/^used_memory:/{u=$2} /^maxmemory:/{m=$2} END{if(m>0){pct=u*100/m; printf \"redis memory %d%% of maxmemory\\n\", pct; if(pct>=warn) print \"WARNING redis memory watermark reached; noeviction will reject writes\"}}'"]
       interval: 30s
       timeout: 5s
       start_period: 5s
       retries: 3
 
+networks:
+  papyr:
+    driver: bridge
+    internal: false
+
 volumes:
+  clamd-db:
+    driver: local
   redis-data:
     driver: local
