@@ -168,6 +168,62 @@ if (cd "$FIXTURE" && sh scripts/check-ci.sh >/dev/null 2>&1); then
     fail "CMD-overriding smoke and/or post-subcommand compose env were NOT rejected (guard exit 0)"
 fi
 
+# ----- Three-image-variable gate: all three image fixtures required ----------
+# The qa-production-api compose-config step must export ALL three digest-form
+# image variables (API/WORKERS/CLAMD) BEFORE docker compose config --quiet.
+# A mutant without WORKERS and CLAMD (even if placed correctly) fails.
+cp "$WF_DIR/ci.yml" "$FIXTURE/.github/workflows/ci.yml"
+"$PYTHON" - "$FIXTURE/.github/workflows/ci.yml" <<'PY'
+import sys
+
+p = sys.argv[1]
+with open(p, encoding="utf-8") as fh:
+    s = fh.read()
+
+
+def replace_step(s: str, name: str, body: str) -> str:
+    """Replace the run: | body of the step whose - name: equals name."""
+    idx = s.find("- name: " + name)
+    if idx < 0:
+        raise SystemExit("fixture: step not found: " + name)
+    run_idx = s.find("run: |", idx)
+    if run_idx < 0:
+        raise SystemExit("fixture: run: | not found in step: " + name)
+    body_start = s.find("\n", run_idx) + 1
+    nxt = s.find("\n      - name:", body_start)
+    import re as _re
+    if nxt < 0:
+        m = _re.search(r"\n[ ]+[A-Za-z_]", s[body_start:])
+        nxt = (body_start + m.start()) if m else len(s)
+    else:
+        nxt = nxt + 1
+    return s[:run_idx] + "run: |\n" + body + s[nxt:]
+
+
+# Mutate: remove WORKERS_IMAGE and CLAMD_IMAGE while keeping proper placement
+three_image_bad = r'''          set -euo pipefail
+          PAPYR_API_IMAGE=papyr-api@sha256:0000000000000000000000000000000000000000000000000000000000000000 \
+          PAPYR_ENV_FILE="$PAPYR_COMPOSE_DIR/.env.test" \
+          docker compose \
+            --project-directory "$PAPYR_COMPOSE_DIR" \
+            -f "$PAPYR_COMPOSE_DIR/docker-compose.yml" \
+            config --quiet
+'''
+
+s = replace_step(
+    s,
+    "Compose config gate with non-secret fixtures (digest-form image)",
+    three_image_bad,
+)
+
+with open(p, "w", encoding="utf-8", newline="\n") as fh:
+    fh.write(s)
+PY
+
+if (cd "$FIXTURE" && sh scripts/check-ci.sh >/dev/null 2>&1); then
+    fail "missing WORKERS_IMAGE and CLAMD_IMAGE image fixtures were NOT rejected (guard exit 0)"
+fi
+
 # ----- repo-level fixture contract -----------------------------------------
 # deploy/.env.test is the non-secret Compose fixture. It must be present,
 # must be visible to git (the narrow .gitignore exception, not `.env.*`), and

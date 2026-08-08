@@ -241,17 +241,33 @@ if "trap" not in smoke_step and "docker rm -f" not in smoke_step:
     raise SystemExit("qa-production-api smoke must always clean up the container (trap or docker rm -f)")
 if "/health" not in smoke_step:
     raise SystemExit("qa-production-api smoke must probe /health")
-# PAPYR_API_IMAGE and PAPYR_ENV_FILE must be exported as environment variables
-# BEFORE `docker compose ... config --quiet`. Assignments trailing the
-# subcommand are positional arguments that never reach Compose.
+# PAPYR_API_IMAGE / PAPYR_WORKERS_IMAGE / PAPYR_CLAMD_IMAGE / PAPYR_ENV_FILE
+# must ALL be exported as environment variables BEFORE `docker compose ...
+# config --quiet`. The compose file gates every image on `${PAPYR_*_IMAGE:?...}`
+# (fail-closed), so rendering the model without any one of them aborts.
+# Assignments trailing the subcommand are positional arguments that never
+# reach Compose. Every image fixture must be digest-form (`@sha256:<64 hex>`).
+import re as _re
+
 _compose_lines = compose_step.splitlines()
 _cfg = next((i for i, ln in enumerate(_compose_lines) if "config --quiet" in ln), -1)
 if _cfg < 0:
     raise SystemExit("qa-production-api docker compose gate missing config --quiet")
 _before = "\n".join(_compose_lines[:_cfg])
 _after = "\n".join(_compose_lines[_cfg + 1 :])
-if "PAPYR_API_IMAGE=" not in _before or "PAPYR_ENV_FILE=" not in _before:
-    raise SystemExit("qa-production-api must export PAPYR_API_IMAGE and PAPYR_ENV_FILE BEFORE docker compose config --quiet")
+_required_env = ("PAPYR_API_IMAGE=", "PAPYR_WORKERS_IMAGE=", "PAPYR_CLAMD_IMAGE=", "PAPYR_ENV_FILE=")
+_missing_env = [name for name in _required_env if name not in _before]
+if _missing_env:
+    raise SystemExit(
+        "qa-production-api must export %s BEFORE docker compose config --quiet"
+        % ", ".join(_required_env)
+    )
+for name in ("PAPYR_API_IMAGE=", "PAPYR_WORKERS_IMAGE=", "PAPYR_CLAMD_IMAGE="):
+    if not _re.search(name + r"\S*@sha256:[0-9a-f]{64}", _before):
+        raise SystemExit(
+            "qa-production-api %s must be a non-secret digest-form fixture (@sha256:<64 hex>)"
+            % name.rstrip("=")
+        )
 if "PAPYR_" in _compose_lines[_cfg] or "PAPYR_" in _after:
     raise SystemExit("qa-production-api compose env assignments must not trail the config --quiet subcommand")
 if "secrets" in run_text.lower() or "docker push" in run_text.lower():
