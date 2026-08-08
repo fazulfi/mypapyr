@@ -38,19 +38,19 @@ def _settings() -> Settings:
     )
 
 
-def test_executor_registry_module_exists():
+def test_executor_registry_module_exists() -> None:
     assert app.worker.registry is not None
 
 
-def test_build_executor_factory_exists():
+def test_build_executor_factory_exists() -> None:
     assert callable(build_executor)
 
 
-def test_executor_factories_mapping_exists():
+def test_executor_factories_mapping_exists() -> None:
     assert isinstance(EXECUTOR_FACTORIES, dict)
 
 
-def test_all_five_tools_have_registered_executors():
+def test_all_five_tools_have_registered_executors() -> None:
     expected_tools = {
         ToolId.COMPRESS_PDF,
         ToolId.MERGE_PDF,
@@ -61,32 +61,32 @@ def test_all_five_tools_have_registered_executors():
     assert set(EXECUTOR_FACTORIES.keys()) == expected_tools
 
 
-def test_build_executor_raises_for_unknown_route():
+def test_build_executor_raises_for_unknown_route() -> None:
     with pytest.raises(UnknownRouteError):
         build_executor("unknown-tool", _settings())
 
 
-def test_compress_executor_buildable_via_registry():
+def test_compress_executor_buildable_via_registry() -> None:
     executor = build_executor("compress-pdf", _settings())
     assert isinstance(executor, CompressExecutor)
 
 
-def test_merge_executor_buildable_via_registry():
+def test_merge_executor_buildable_via_registry() -> None:
     executor = build_executor("merge-pdf", _settings())
     assert isinstance(executor, MergeExecutor)
 
 
-def test_split_executor_buildable_via_registry():
+def test_split_executor_buildable_via_registry() -> None:
     executor = build_executor("split-pdf", _settings())
     assert isinstance(executor, SplitExecutor)
 
 
-def test_image_to_pdf_executor_buildable_via_registry():
+def test_image_to_pdf_executor_buildable_via_registry() -> None:
     executor = build_executor("jpg-to-pdf", _settings())
     assert isinstance(executor, ImageToPdfExecutor)
 
 
-def test_pdf_to_jpg_executor_buildable_via_registry():
+def test_pdf_to_jpg_executor_buildable_via_registry() -> None:
     executor = build_executor("pdf-to-jpg", _settings())
     assert isinstance(executor, PdfToImageExecutor)
 
