@@ -133,7 +133,7 @@ def test_runtime_pins_are_exact() -> None:
         "img2pdf": "0.6.3",
         "Pillow": "12.3.0",
         "pypdfium2": "5.12.1",
-        "python-multipart": "0.0.20",
+        "python-multipart": "0.0.31",
     }
 
 
