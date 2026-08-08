@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { use } from "react";
 
 import type { Locale } from "@/lib/i18n";
@@ -15,8 +15,15 @@ import { ErrorCard } from "@/components/states/ErrorCard";
 import type { ToolState } from "@/lib/toolState";
 import { useTaskPolling } from "@/hooks/useTaskPolling";
 import { downloadTaskResult } from "@/lib/taskDownloads";
+import { parseRangeSpec } from "@/lib/splitRanges";
 
 const MAX_SIZE_BYTES = 104857600; // 100 MiB
+
+function formatTemplate(template: string, params: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (match, key: string) =>
+    key in params ? String(params[key]) : match,
+  );
+}
 
 function derivePhase(
   status: ReturnType<typeof useTaskPolling>["status"],
@@ -34,6 +41,8 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
   const [files, setFiles] = useState<File[]>([]);
   const [taskId, setTaskId] = useState<string | null>(null);
   const [uploadPhase, setUploadPhase] = useState<"idle" | "uploading" | "error">("idle");
+  const [rangeText, setRangeText] = useState("");
+  const [serverRejected, setServerRejected] = useState(false);
 
   const { status } = useTaskPolling({
     toolId: "split-pdf",
@@ -41,16 +50,38 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
     enabled: taskId !== null,
   });
 
+  const rangeSpec = useMemo(() => parseRangeSpec(rangeText), [rangeText]);
+  const rangeError = rangeSpec.ok ? null : rangeSpec.error;
+  const previewRanges = rangeSpec.ok ? rangeSpec.ranges : [];
+  const rangeErrorMessage = rangeError === null ? null : copy.tools.split.ranges.errors[rangeError];
+
   async function handleSubmit(selected: File[]): Promise<void> {
-    if (selected.length === 0) return;
+    if (selected.length === 0 || !rangeSpec.ok) return;
     setUploadPhase("uploading");
+    setServerRejected(false);
     try {
       const form = new FormData();
       for (const file of selected) form.append("file", file);
+      if (rangeSpec.canonical !== "") form.append("ranges", rangeSpec.canonical);
       const response = await fetch("/api/v1/tools/split-pdf/tasks", {
         method: "POST",
         body: form,
       });
+      if (response.status === 400) {
+        let messageKey = "";
+        try {
+          const body = (await response.json()) as { detail?: { messageKey?: string } };
+          messageKey = body?.detail?.messageKey ?? "";
+        } catch {
+          messageKey = "";
+        }
+        if (messageKey === "error.badRequest") {
+          setServerRejected(true);
+          setUploadPhase("idle");
+          return;
+        }
+        throw new Error("Upload failed: " + response.status);
+      }
       if (!response.ok) throw new Error("Upload failed: " + response.status);
       const body = (await response.json()) as { task_id: string };
       setTaskId(body.task_id);
@@ -64,6 +95,8 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
     setFiles([]);
     setTaskId(null);
     setUploadPhase("idle");
+    setRangeText("");
+    setServerRejected(false);
   }
 
   async function handleDownload(): Promise<void> {
@@ -102,10 +135,84 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
             disabled={phase === "uploading"}
             locale={locale}
           />
+          <div className="mt-6">
+            <label htmlFor="split-ranges" className="block text-sm font-semibold text-slate-700">
+              {copy.tools.split.ranges.label}
+            </label>
+            <p id="split-ranges-help" className="mt-1 text-sm text-slate-600">
+              {copy.tools.split.ranges.help}
+            </p>
+            <input
+              id="split-ranges"
+              name="ranges"
+              type="text"
+              autoComplete="off"
+              spellCheck={false}
+              value={rangeText}
+              onChange={(event) => {
+                setRangeText(event.target.value);
+                setServerRejected(false);
+              }}
+              disabled={phase === "uploading"}
+              aria-invalid={rangeError !== null || undefined}
+              aria-describedby={
+                rangeError === null ? "split-ranges-help" : "split-ranges-help split-ranges-error"
+              }
+              className="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+            {rangeErrorMessage !== null && (
+              <p
+                id="split-ranges-error"
+                role="alert"
+                className="mt-2 text-sm font-medium text-red-700"
+              >
+                {rangeErrorMessage}
+              </p>
+            )}
+          </div>
+          {serverRejected && (
+            <div role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
+              <p className="text-sm font-medium text-red-800">
+                {copy.tools.split.ranges.errors.serverRejected}
+              </p>
+            </div>
+          )}
+          {rangeError === null && (
+            <section
+              aria-live="polite"
+              className="mt-4 rounded-lg border border-slate-200 bg-white p-4"
+            >
+              <h2 className="text-sm font-semibold text-slate-700">
+                {copy.tools.split.ranges.previewHeading}
+              </h2>
+              {previewRanges.length > 0 ? (
+                <ol className="mt-2 space-y-1">
+                  {previewRanges.map((range, index) => (
+                    <li key={`output-${index}`} className="text-sm text-slate-600">
+                      {formatTemplate(
+                        range.start === range.end
+                          ? copy.tools.split.ranges.previewItemSingle
+                          : copy.tools.split.ranges.previewItemRange,
+                        {
+                          index: index + 1,
+                          pages:
+                            range.start === range.end
+                              ? String(range.start)
+                              : `${range.start}-${range.end}`,
+                        },
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="mt-2 text-sm text-slate-600">{copy.tools.split.ranges.defaultNote}</p>
+              )}
+            </section>
+          )}
           <button
             type="button"
             onClick={() => void handleSubmit(files)}
-            disabled={files.length === 0 || phase === "uploading"}
+            disabled={files.length === 0 || phase === "uploading" || rangeError !== null}
             className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             {phase === "uploading"
