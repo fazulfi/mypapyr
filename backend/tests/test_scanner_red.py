@@ -21,14 +21,14 @@ import socket
 import struct
 import threading
 import time
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from datetime import UTC, datetime
-from typing import Final
+from typing import Final, cast
 
 import fakeredis
 import pikepdf
 import pytest
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 from PIL import Image
 from starlette.requests import Request
@@ -37,12 +37,12 @@ from app import health
 from app.config import InvalidSettingError, Settings
 from app.errors import register_error_handlers
 from app.main import create_app
-from app.queue.queue import JobQueue, QueueOptions
-from app.queue.store import TaskStore
+from app.queue.queue import JobQueue, QueueOptions, StreamsRedisLike
+from app.queue.store import RedisLike, TaskStore
 from app.routers import compress, image_to_pdf, merge, pdf_to_jpg, split
 from app.security.classification import ScannerStatus, ScannerVerdict, ThreatScanner
 from app.security.scanner import ClamdScanner
-from app.utils.r2 import R2Client
+from app.utils.r2 import R2Client, UploadReceipt
 
 _FULL_ENV: Final[Mapping[str, str]] = {
     "R2_ACCOUNT_ID": "test-account",
@@ -95,9 +95,22 @@ class _FakeR2(R2Client):
     def build_object_key(self, *, extension: str | None = None, now: datetime | None = None) -> str:
         return f"tmp/test/{len(self.uploaded)}.{extension or 'bin'}"
 
-    def upload_object(self, key: str, body: bytes, **kwargs: object) -> tuple[str, int]:
+    def upload_object(
+        self,
+        key: str,
+        body: bytes,
+        *,
+        content_type: str | None = None,
+        expires_at: datetime | None = None,
+        metadata: Mapping[str, str] | None = None,
+    ) -> UploadReceipt:
         self.uploaded.append((key, body))
-        return key, len(body)
+        return UploadReceipt(
+            key=key,
+            size_bytes=len(body),
+            content_type=content_type or "application/pdf",
+            uploaded_at=datetime.now(UTC),
+        )
 
     def delete_object(self, key: str) -> bool:
         return True
@@ -127,7 +140,7 @@ def _request_for(app: FastAPI) -> Request:
 
 
 def _healthy_store() -> TaskStore:
-    return TaskStore(_settings(), client=fakeredis.FakeRedis())
+    return TaskStore(_settings(), client=cast(RedisLike, fakeredis.FakeRedis()))
 
 
 def _registered_app(
@@ -155,7 +168,7 @@ def _registered_app(
 class _FakeClamd:
     """A real localhost TCP listener speaking one scripted clamd exchange."""
 
-    def __init__(self, responder: object) -> None:
+    def __init__(self, responder: Callable[[socket.socket, bytes], None]) -> None:
         self._responder = responder
         self._server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -219,7 +232,9 @@ def fake_clamd_factory() -> Iterator[list[_FakeClamd]]:
         daemon.close()
 
 
-def _make_clamd(created: list[_FakeClamd], responder: object) -> tuple[str, int]:
+def _make_clamd(
+    created: list[_FakeClamd], responder: Callable[[socket.socket, bytes], None]
+) -> tuple[str, int]:
     daemon = _FakeClamd(responder)
     created.append(daemon)
     return "127.0.0.1", daemon.port
@@ -491,21 +506,21 @@ def _single_file_app(path: str, scanner: object) -> tuple[FastAPI, _FakeR2, _Rec
     register_error_handlers(app)
     app.include_router(router)
     app.state.settings = _settings()
-    app.state.task_store = TaskStore(_settings(), client=fakeredis.FakeRedis())
+    app.state.task_store = TaskStore(_settings(), client=cast(RedisLike, fakeredis.FakeRedis()))
     app.state.r2_client = r2
     app.state.job_queue = queue
     app.state.scanner = scanner
     return app, r2, queue
 
 
-def _multi_file_app(router: object, scanner: object) -> tuple[FastAPI, _FakeR2, _RecordingQueue]:
+def _multi_file_app(router: APIRouter, scanner: object) -> tuple[FastAPI, _FakeR2, _RecordingQueue]:
     r2 = _FakeR2()
     queue = _RecordingQueue()
     app = FastAPI()
     register_error_handlers(app)
     app.include_router(router)
     app.state.settings = _settings()
-    app.state.task_store = TaskStore(_settings(), client=fakeredis.FakeRedis())
+    app.state.task_store = TaskStore(_settings(), client=cast(RedisLike, fakeredis.FakeRedis()))
     app.state.r2_client = r2
     app.state.job_queue = queue
     app.state.scanner = scanner
@@ -606,11 +621,13 @@ def test_compress_clean_scanner_still_admits() -> None:
     """CLEAN verdict preserves existing admission behavior (202 + upload)."""
 
     r2 = _FakeR2()
-    store = TaskStore(_settings(), client=fakeredis.FakeRedis(), clock=lambda: datetime.now(UTC))
+    store = TaskStore(
+        _settings(), client=cast(RedisLike, fakeredis.FakeRedis()), clock=lambda: datetime.now(UTC)
+    )
     queue = JobQueue(
         _settings(),
         store,
-        client=fakeredis.FakeRedis(),
+        client=cast(StreamsRedisLike, fakeredis.FakeRedis()),
         options=QueueOptions(clock=lambda: datetime.now(UTC)),
     )
     app = FastAPI()
@@ -651,7 +668,7 @@ def test_router_scan_gate_blocks_when_scanner_cannot_resolve() -> None:
     app = FastAPI()
     app.include_router(compress.router)
     # Deliberately no app.state.settings and no app.state.scanner.
-    app.state.task_store = TaskStore(_settings(), client=fakeredis.FakeRedis())
+    app.state.task_store = TaskStore(_settings(), client=cast(RedisLike, fakeredis.FakeRedis()))
     app.state.r2_client = r2
     app.state.job_queue = queue
     response = TestClient(app).post(

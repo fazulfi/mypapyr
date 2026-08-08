@@ -25,8 +25,10 @@ from __future__ import annotations
 import hashlib
 import io
 import sys
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import cast
 
 import fakeredis
 import pikepdf
@@ -37,11 +39,11 @@ from pikepdf import Name
 
 from app.config import Settings
 from app.errors import register_error_handlers
-from app.queue.queue import STREAM_KEY, JobQueue, QueueOptions
-from app.queue.store import TaskStore
+from app.queue.queue import STREAM_KEY, JobQueue, QueueOptions, StreamsRedisLike
+from app.queue.store import RedisLike, TaskStore
 from app.routers import pdf_to_jpg
 from app.security.classification import ScannerStatus, ScannerVerdict
-from app.utils.r2 import R2Client
+from app.utils.r2 import R2Client, UploadReceipt
 
 _FIXTURE_DIR = Path(__file__).parent / "fixtures" / "hostile"
 
@@ -62,10 +64,22 @@ class _FakeR2(R2Client):
     def build_object_key(self, *, extension: str | None = None, now: datetime | None = None) -> str:
         return f"tmp/test/{len(self.uploaded)}.{extension or 'bin'}"
 
-    def upload_object(self, key: str, body: bytes, **kwargs: object) -> tuple[str, int]:
-        del kwargs
+    def upload_object(
+        self,
+        key: str,
+        body: bytes,
+        *,
+        content_type: str | None = None,
+        expires_at: datetime | None = None,
+        metadata: Mapping[str, str] | None = None,
+    ) -> UploadReceipt:
         self.uploaded.append((key, body))
-        return key, len(body)
+        return UploadReceipt(
+            key=key,
+            size_bytes=len(body),
+            content_type=content_type or "application/pdf",
+            uploaded_at=datetime.now(UTC),
+        )
 
     def delete_object(self, key: str) -> bool:
         return True
@@ -122,14 +136,14 @@ def _make_test_app(
     app.state.settings = settings
     app.state.task_store = TaskStore(
         settings,
-        client=fakeredis.FakeRedis(server=server),
+        client=cast(RedisLike, fakeredis.FakeRedis(server=server)),
         clock=lambda: datetime.now(UTC),
     )
     app.state.r2_client = r2
     app.state.job_queue = JobQueue(
         settings,
         app.state.task_store,
-        client=fakeredis.FakeRedis(server=server),
+        client=cast(StreamsRedisLike, fakeredis.FakeRedis(server=server)),
         options=QueueOptions(clock=lambda: datetime.now(UTC)),
     )
     app.state.scanner = scanner_obj
@@ -142,15 +156,16 @@ def _get_pdf_structure(data: bytes) -> dict[str, bool]:
     try:
         with pikepdf.open(io.BytesIO(data)) as pdf:
             root = pdf.Root
-            return {
-                "has_open_action": Name.OpenAction in root,
-                "has_javascript_names": (
-                    Name.Names in root
-                    and isinstance(root.get(Name.Names), pikepdf.Dictionary)
-                    and Name.JavaScript in root.get(Name.Names)
-                ),
-                "has_attachments": bool(pdf.attachments),
-            }
+            result: dict[str, bool] = {}
+            if Name.OpenAction in root:
+                result["has_open_action"] = True
+            else:
+                result["has_open_action"] = False
+            names_dict = root.get(Name.Names)
+            has_js = isinstance(names_dict, pikepdf.Dictionary) and Name.JavaScript in names_dict
+            result["has_javascript_names"] = has_js
+            result["has_attachments"] = bool(pdf.attachments)
+            return result
     except Exception:
         return {"parse_error": True}
 
