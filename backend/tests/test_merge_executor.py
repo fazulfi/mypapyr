@@ -55,6 +55,7 @@ class FakeMergeEngine:
         self.calls.append((list(sources), timeout))
         if self._error is not None:
             raise self._error
+        assert self._result is not None, "FakeMergeEngine built without a result"
         return self._result
 
 
@@ -73,6 +74,8 @@ class FakeReadClient:
 
     def get_object(self, **kwargs: object) -> dict[str, object]:
         key = kwargs["Key"]
+        if not isinstance(key, str):
+            raise TypeError("Key must be a string")
         if key == self._fail_key:
             raise RuntimeError("download failed")
         return {"Body": FakeBody(self._data_by_key[key])}
@@ -160,7 +163,7 @@ def _executor(
     store = FakeStore(record=record, error=store_error)
     executor._store = store  # type: ignore[assignment]
     executor._r2 = r2  # type: ignore[assignment]
-    executor._read_client = FakeReadClient(data_by_key, fail_key=fail_download_key)  # type: ignore[assignment]
+    executor._read_client = FakeReadClient(data_by_key, fail_key=fail_download_key)
     return executor, r2, store, engine
 
 

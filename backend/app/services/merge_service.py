@@ -155,24 +155,24 @@ class MergeExecutor:
     def __init__(self, *, settings: Settings, engine: MergeEngine | None = None) -> None:
         self._settings = settings
         self._engine = engine if engine is not None else MergeEngine()
-        self._store = None
-        self._r2 = None
-        self._read_client = None
+        self._store: TaskStore | None = None
+        self._r2: R2Client | None = None
+        self._read_client: S3ReadClient | None = None
 
     @property
-    def _get_store(self):
+    def _get_store(self) -> TaskStore:
         if self._store is None:
             self._store = TaskStore(self._settings)
         return self._store
 
     @property
-    def _get_r2(self):
+    def _get_r2(self) -> R2Client:
         if self._r2 is None:
             self._r2 = R2Client(self._settings)
         return self._r2
 
     @property
-    def _get_read_client(self):
+    def _get_read_client(self) -> S3ReadClient:
         if self._read_client is None:
             self._read_client = _build_read_client(self._settings)
         return self._read_client
