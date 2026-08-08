@@ -1,12 +1,24 @@
 # syntax=docker/dockerfile:1.7
 # AGPL-3.0: Ghostscript is built from the official Artifex source tarball.
 FROM python:3.13-slim-bookworm@sha256:9d7f287598e1a5a978c015ee176d8216435aaf335ed69ac3c38dd1bbb10e8d64 AS builder
-ARG GS_VERSION=10.05.1
-ARG GS_SHA256=22f2bdca15c28830c9715cddc5c296ea66898bfdab0b604a4e0bcfeb03af6cad
+ARG GS_VERSION=10.07.1
+ARG GS_SHA256=1cdb766de8db8f1e589c817f09c5855ea5f65dfc8540e465a69ac14c18416025
 WORKDIR /build
+# hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates wget xz-utils pkg-config libexpat1-dev libfontconfig1-dev libfreetype6-dev libjpeg-dev libpng-dev libtiff-dev libjbig2dec0-dev libcups2-dev libpaper-dev && rm -rf /var/lib/apt/lists/*
-RUN wget -O ghostscript.tar.xz "https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10051/ghostscript-${GS_VERSION}.tar.xz" && echo "${GS_SHA256}  ghostscript.tar.xz" | sha256sum -c - && tar -xf ghostscript.tar.xz && cd "ghostscript-${GS_VERSION}" && ./configure --disable-debug --with-freetype --prefix=/opt/ghostscript && make -j"$(nproc)" && make install
+# Build Ghostscript: download, verify integrity, extract into a known WORKDIR, then build
+RUN mkdir -p /build/source && \
+    wget --progress=dot:giga -O /build/tmp_gs.tar.xz "https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10071/ghostscript-${GS_VERSION}.tar.xz" && \
+    printf '%s  /build/tmp_gs.tar.xz\n' "${GS_SHA256}" > /build/tmp_gs.sha256 && \
+    sha256sum -c /build/tmp_gs.sha256 && \
+    tar -xf /build/tmp_gs.tar.xz --strip-components=1 -C /build/source && \
+    rm -f /build/tmp_gs.tar.xz /build/tmp_gs.sha256
+WORKDIR /build/source
+RUN ./configure --disable-debug --with-freetype --prefix=/opt/ghostscript && \
+    make -j"$(nproc)" && \
+    make install
 FROM python:3.13-slim-bookworm@sha256:9d7f287598e1a5a978c015ee176d8216435aaf335ed69ac3c38dd1bbb10e8d64 AS runtime
+# hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends fonts-dejavu-core libcups2 libfontconfig1 libfreetype6 libjpeg62-turbo libpng16-16 libtiff6 libjbig2dec0 libpaper1 tini && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /opt/ghostscript /opt/ghostscript
 ENV PATH="/opt/ghostscript/bin:${PATH}" LD_LIBRARY_PATH="/opt/ghostscript/lib" PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 GHOSTSCRIPT_ARGS="-dSAFER"
@@ -19,4 +31,5 @@ USER appuser
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000"]
+# Worker entrypoint (python -m app.worker): consumes five-tool registry, runs JobWorker loop, serves /health
+CMD ["python", "-m", "app.worker"]

@@ -84,6 +84,7 @@ from app.queue.store import (
     TransitionPayload,
 )
 from app.schemas.job import ErrorSummary, ResultSummary
+from app.security.classification import ScannerStatus, ScannerVerdict
 from app.security.fair_use import (
     CONCURRENCY_KEY_PREFIX,
     FREQUENCY_KEY_PREFIX,
@@ -238,6 +239,19 @@ class RecordingDeleter:
     def delete_object(self, key: str) -> bool:
         self.deleted.append(key)
         return True
+
+
+class _CleanScanner:
+    """Typed CLEAN scanner double for the readiness probe (U-SEC seam).
+
+    The readiness contract probes the scanner alongside foundation and redis;
+    this focused Redis test injects a deterministic CLEAN verdict so it asserts
+    the three-check contract without requiring a live clamd daemon.
+    """
+
+    def scan(self, data: bytes) -> ScannerVerdict:
+        del data
+        return ScannerVerdict(status=ScannerStatus.CLEAN)
 
 
 class PendingIdleAdapter:
@@ -782,7 +796,9 @@ def test_worker_end_to_end_claim_process_ack(store: TaskStore, redis_client: Rea
     queue = JobQueue(_make_settings(), store, client=cast(StreamsRedisLike, redis_client))
     queue.enqueue(_record("task-e2e", tool="compress"), route="compress")
 
-    executor = RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,)))
+    executor = RecordingExecutor(
+        ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,))
+    )
     worker = JobWorker(
         _make_settings(),
         store,
@@ -812,7 +828,9 @@ def test_queue_capacity_recovers_after_successful_terminal_ack(
         settings,
         store,
         client=cast(StreamsRedisLike, redis_client),
-        executor=RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,))),
+        executor=RecordingExecutor(
+            ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,))
+        ),
         options=WorkerOptions(consumer_name="worker-cap-terminal"),
     )
     assert worker.run_once() is True
@@ -841,7 +859,9 @@ def test_queue_max_wait_ignores_terminally_acked_completed_entry(
         settings,
         store,
         client=cast(StreamsRedisLike, redis_client),
-        executor=RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,))),
+        executor=RecordingExecutor(
+            ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,))
+        ),
         options=WorkerOptions(consumer_name="worker-wait-terminal"),
     )
     assert worker.run_once() is True
@@ -859,7 +879,8 @@ def test_worker_single_in_flight_job(store: TaskStore, redis_client: RealRedis) 
     queue.enqueue(_record("task-once", tool="merge"))
 
     executor = RecordingExecutor(
-        ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,)), hold=True
+        ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,)),
+        hold=True,
     )
     worker = JobWorker(
         _make_settings(),
@@ -892,7 +913,9 @@ def test_worker_reclaims_stale_claim(store: TaskStore, redis_client: RealRedis) 
         _make_settings(),
         store,
         client=cast(StreamsRedisLike, redis_client),
-        executor=RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,))),
+        executor=RecordingExecutor(
+            ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,))
+        ),
         options=WorkerOptions(consumer_name="worker-crashed"),
     )
     assert crashed.run_once() is True  # claims and processes normally
@@ -904,7 +927,9 @@ def test_worker_reclaims_stale_claim(store: TaskStore, redis_client: RealRedis) 
     assert store.get("task-stale-2").state is JobState.QUEUED
 
     _wait_pending_idle(redis_client, GROUP_NAME, min_idle=2.0)
-    recorder = RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,)))
+    recorder = RecordingExecutor(
+        ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,))
+    )
     recoverer = JobWorker(
         _make_settings(),
         store,
@@ -941,7 +966,9 @@ def test_worker_acknowledges_terminal_without_reexecution(
     )
 
     _wait_pending_idle(redis_client, GROUP_NAME, min_idle=2.0)
-    recorder = RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,)))
+    recorder = RecordingExecutor(
+        ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,))
+    )
     recoverer = JobWorker(
         _make_settings(),
         store,
@@ -970,7 +997,9 @@ def test_worker_drops_deleted_pending_entry(store: TaskStore, redis_client: Real
     assert redis_client.xdel("jobs", entry_id) == 1
 
     _wait_pending_idle(redis_client, GROUP_NAME, min_idle=2.0)
-    recorder = RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,)))
+    recorder = RecordingExecutor(
+        ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,))
+    )
     recoverer = JobWorker(
         _make_settings(),
         store,
@@ -1234,7 +1263,9 @@ def test_cancel_queued_wins_atomically_real_redis(
     # the atomic record cancel purged the still-unclaimed stream entry
     assert redis_client.xrange("jobs", "-", "+") == []
 
-    executor = RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,)))
+    executor = RecordingExecutor(
+        ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,))
+    )
     worker = JobWorker(
         _make_settings(),
         store,
@@ -1254,7 +1285,8 @@ def test_cancel_after_pickup_reports_no_longer_available_real_redis(
     queue.enqueue(_record("task-cancel-picked", tool="split"), route="split")
 
     executor = RecordingExecutor(
-        ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,)), hold=True
+        ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,)),
+        hold=True,
     )
     worker = JobWorker(
         _make_settings(),
@@ -1294,7 +1326,9 @@ def test_cancel_worker_race_single_terminal_state(
         task_id = f"task-cancel-race-{index}"
         queue = JobQueue(_make_settings(), store, client=cast(StreamsRedisLike, redis_client))
         queue.enqueue(_record(task_id, tool="compress"), route="compress")
-        executor = RecordingExecutor(ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,)))
+        executor = RecordingExecutor(
+            ExecutionOutcome(kind=ExecutionKind.SUCCESS, result=_RESULT, objects=(_SEAM_OBJECT,))
+        )
         worker = JobWorker(
             _make_settings(),
             store,
@@ -1357,14 +1391,22 @@ def test_factory_wires_store_and_readiness_against_real_redis(
     """The production reproduction: ``create_app`` with production-style
     settings (compose Redis binding) wires the task store, readiness probes
     it accurately, and unknown tasks return the BE-06 404 contract instead
-    of an internal_error."""
+    of an internal_error.
+
+    The readiness contract requires three checks: foundation / redis / scanner.
+    This focused integration test injects a typed CLEAN scanner via ``app.state.scanner``
+    so the scanner check passes deterministically; without the injector, no running clamd
+    would cause the scanner check to fail (unavailable → 503).
+    """
     app = create_app(settings=_make_settings())
+    # Inject the scanner seam so the three-check readiness returns 200 without clamd.
+    app.state.scanner = _CleanScanner()
     client = TestClient(app)
 
     ready = client.get("/health/ready")
     assert ready.status_code == 200
     assert ready.json()["status"] == "ready"
-    assert ready.json()["checks"] == {"foundation": "ok", "redis": "ok"}
+    assert ready.json()["checks"] == {"foundation": "ok", "redis": "ok", "scanner": "ok"}
     assert ready.json()["deferred"] == ["worker"]
 
     response = client.get("/api/v1/tools/compress-pdf/tasks/does-not-exist/status")

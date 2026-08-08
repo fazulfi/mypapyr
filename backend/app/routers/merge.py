@@ -18,12 +18,13 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any, cast
+from typing import cast
 
 from fastapi import APIRouter, FastAPI, HTTPException, Request, UploadFile, status
 from pydantic import BaseModel
 
 from app.config import Settings, load
+from app.health import enforce_scan_gate
 from app.queue.queue import JobQueue
 from app.queue.store import (
     StoreUnavailableError,
@@ -41,12 +42,12 @@ from app.utils.r2 import R2Client
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix='/api/v1/tools/merge-pdf', tags=['merge'])
+router = APIRouter(prefix="/api/v1/tools/merge-pdf", tags=["merge"])
 
 
 def _resolve_settings(request: Request) -> Settings:
     application = cast(FastAPI, request.app)
-    preset = getattr(application.state, 'settings', None)
+    preset = getattr(application.state, "settings", None)
     if isinstance(preset, Settings):
         return preset
     return load()
@@ -54,7 +55,7 @@ def _resolve_settings(request: Request) -> Settings:
 
 def _resolve_task_store(request: Request, settings: Settings) -> TaskStore:
     application = cast(FastAPI, request.app)
-    preset = getattr(application.state, 'task_store', None)
+    preset = getattr(application.state, "task_store", None)
     if isinstance(preset, TaskStore):
         return preset
     return TaskStore(settings)
@@ -62,7 +63,7 @@ def _resolve_task_store(request: Request, settings: Settings) -> TaskStore:
 
 def _resolve_r2(request: Request, settings: Settings) -> R2Client:
     application = cast(FastAPI, request.app)
-    preset = getattr(application.state, 'r2_client', None)
+    preset = getattr(application.state, "r2_client", None)
     if isinstance(preset, R2Client):
         return preset
     return R2Client(settings)
@@ -70,7 +71,7 @@ def _resolve_r2(request: Request, settings: Settings) -> R2Client:
 
 def _resolve_queue(request: Request, settings: Settings, store: TaskStore) -> JobQueue:
     application = cast(FastAPI, request.app)
-    preset = getattr(application.state, 'job_queue', None)
+    preset = getattr(application.state, "job_queue", None)
     if isinstance(preset, JobQueue):
         return preset
     return JobQueue(settings, store)
@@ -78,71 +79,77 @@ def _resolve_queue(request: Request, settings: Settings, store: TaskStore) -> Jo
 
 class MergeTaskRequest(BaseModel):
     """Schema for multipart merge request."""
+
     pass
 
 
-@router.post('/tasks', response_model=TaskAdmission, status_code=status.HTTP_202_ACCEPTED)
+@router.post("/tasks", response_model=TaskAdmission, status_code=status.HTTP_202_ACCEPTED)
 async def merge_pdf_admit(request: Request, files: list[UploadFile]) -> TaskAdmission:
     """Admit multiple sanitized PDFs for merging; returns 202 TaskAdmission."""
     # Validate file count
     settings = _resolve_settings(request)
     limit = TOOL_LIMITS[ToolId.MERGE_PDF]
-    
+
     if len(files) > limit.max_files:
         logger.error(
-            'merge too many files',
-            extra={'fields': {'error': 'ValidationRejection'}},
+            "merge too many files",
+            extra={"fields": {"error": "ValidationRejection"}},
         )
-        raise HTTPException(status_code=400, detail={'messageKey': 'error.badRequest'})
-    
+        raise HTTPException(status_code=400, detail={"messageKey": "error.badRequest"})
+
     # Process each file independently
     sanitized_objects = []
     now = datetime.now(UTC)
-    
+
     for i, file in enumerate(files):
         data = await file.read()
-        
+
         # Validate
         max_pages = limit.max_pages if limit.max_pages is not None else 1000
         try:
             validate_pdf(
                 data,
                 declared_mime=file.content_type,
-                declared_extension='.pdf',
+                declared_extension=".pdf",
                 max_size_bytes=limit.max_file_bytes,
                 max_pages=max_pages,
             )
         except ValidationRejection as exc:
             logger.error(
-                'merge file %d validation rejected', i,
-                extra={'fields': {'error': type(exc).__name__}},
+                "merge file %d validation rejected",
+                i,
+                extra={"fields": {"error": type(exc).__name__}},
             )
-            raise HTTPException(status_code=400, detail={'messageKey': 'error.badRequest'}) from exc
-        
+            raise HTTPException(status_code=400, detail={"messageKey": "error.badRequest"}) from exc
+
+        # SEC-01 scanner gate (U-SEC): fail-closed admission per-file
+        enforce_scan_gate(request, data)
+
         # Sanitize (NEVER trust client!)
         sanitizer = PdfSanitizer()
         sanitizer.sanitize(data)
         sanitized = sanitizer.output_bytes
         if sanitized is None:
             logger.error(
-                'merge file %d sanitization refused', i,
-                extra={'fields': {'error': 'PdfSanitizer'}},
+                "merge file %d sanitization refused",
+                i,
+                extra={"fields": {"error": "PdfSanitizer"}},
             )
-            raise HTTPException(status_code=400, detail={'messageKey': 'error.badRequest'})
-        
+            raise HTTPException(status_code=400, detail={"messageKey": "error.badRequest"})
+
         # Upload sanitized bytes only
         r2 = _resolve_r2(request, settings)
-        input_key = r2.build_object_key(extension='pdf')
-        r2.upload_object(input_key, sanitized, content_type='application/pdf')
+        input_key = r2.build_object_key(extension="pdf")
+        r2.upload_object(input_key, sanitized, content_type="application/pdf")
         sanitized_objects.append(input_key)
-    
+
     # Build record with ALL input keys
     store = _resolve_task_store(request, settings)
-    
+
     record = TaskRecord(
         task_id=str(uuid.uuid4()),
         state=JobState.QUEUED,
-        tool='merge-pdf',
+        tool="merge-pdf",
         created_at=now,
         accepted_at=now,
         updated_at=now,
@@ -150,28 +157,28 @@ async def merge_pdf_admit(request: Request, files: list[UploadFile]) -> TaskAdmi
         queued_at=now,
         objects=tuple(sanitized_objects),
     )
-    
+
     queue = _resolve_queue(request, settings, store)
-    
+
     try:
-        enqueued = queue.enqueue(record, origin=None, route='merge-pdf')
+        enqueued = queue.enqueue(record, origin=None, route="merge-pdf")
     except (StoreUnavailableError, TaskNotFoundError) as exc:
         logger.error(
-            'merge enqueue store unavailable',
-            extra={'fields': {'error': type(exc).__name__}},
+            "merge enqueue store unavailable",
+            extra={"fields": {"error": type(exc).__name__}},
         )
-        raise HTTPException(status_code=503, detail={'messageKey': 'error.internalError'}) from exc
+        raise HTTPException(status_code=503, detail={"messageKey": "error.internalError"}) from exc
     except TaskConflictError as exc:
         logger.error(
-            'merge enqueue conflict',
-            extra={'fields': {'error': type(exc).__name__}},
+            "merge enqueue conflict",
+            extra={"fields": {"error": type(exc).__name__}},
         )
-        raise HTTPException(status_code=409, detail={'messageKey': 'error.internalError'}) from exc
+        raise HTTPException(status_code=409, detail={"messageKey": "error.internalError"}) from exc
     except Exception as exc:
         logger.error(
-            'merge enqueue failed',
-            extra={'fields': {'error': type(exc).__name__}},
+            "merge enqueue failed",
+            extra={"fields": {"error": type(exc).__name__}},
         )
-        raise HTTPException(status_code=503, detail={'messageKey': 'error.internalError'}) from exc
-    
+        raise HTTPException(status_code=503, detail={"messageKey": "error.internalError"}) from exc
+
     return TaskAdmission(task_id=enqueued.task_id, expires_at=enqueued.expires_at)

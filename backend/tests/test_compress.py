@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import uuid
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any, cast
 
@@ -17,8 +18,9 @@ from app.config import Settings
 from app.queue.queue import JobQueue, QueueOptions, StreamsRedisLike
 from app.queue.store import RedisLike, TaskStore
 from app.routers import compress as compress_module
+from app.security.classification import ScannerStatus, ScannerVerdict
 from app.security.sanitize import PdfSanitizer
-from app.utils.r2 import R2Client
+from app.utils.r2 import R2Client, UploadReceipt
 
 
 def _settings() -> Settings:
@@ -34,6 +36,13 @@ def _settings() -> Settings:
         worker_cpus=1,
         worker_memory_bytes=2 * 1024**3,
     )
+
+
+class _CleanScanner:
+    """Scanner double returning CLEAN verdict (U-SEC admission gate seam)."""
+
+    def scan(self, data: bytes) -> ScannerVerdict:
+        return ScannerVerdict(status=ScannerStatus.CLEAN)
 
 
 @pytest.fixture
@@ -84,10 +93,23 @@ class FakeR2(R2Client):
     def build_object_key(self, *, extension: str | None = None, now: datetime | None = None) -> str:
         return f"tmp/2026-01-01/{uuid.uuid4().hex}.{extension or ''}"
 
-    def upload_object(self, key: str, body: bytes, **kw: object) -> tuple[str, int]:
+    def upload_object(
+        self,
+        key: str,
+        body: bytes,
+        *,
+        content_type: str | None = None,
+        expires_at: datetime | None = None,
+        metadata: Mapping[str, str] | None = None,
+    ) -> UploadReceipt:
         self._objects[key] = body
         self.uploaded.append((key, body))
-        return key, len(body)  # type: ignore[return-value]
+        return UploadReceipt(
+            key=key,
+            size_bytes=len(body),
+            content_type=content_type or "application/pdf",
+            uploaded_at=datetime.now(UTC),
+        )
 
     def delete_object(self, key: str) -> bool:
         self._objects.pop(key, None)
@@ -114,6 +136,7 @@ def factory_app(
     app.state.task_store = store
     app.state.r2_client = r2
     app.state.job_queue = queue
+    app.state.scanner = _CleanScanner()
     return app
 
 
@@ -127,9 +150,10 @@ def _app_with(store: TaskStore, r2: FakeR2, queue: JobQueue | None = None) -> Fa
     app.state.job_queue = queue or JobQueue(
         settings,
         store,
-        client=fakeredis.FakeRedis(),
+        client=cast(StreamsRedisLike, fakeredis.FakeRedis()),
         options=QueueOptions(clock=lambda: datetime.now(UTC)),
     )
+    app.state.scanner = _CleanScanner()
     return app
 
 
@@ -151,7 +175,7 @@ def test_compress_router_admits_valid_pdf_uploads_sanitized(factory_app: FastAPI
 
 def test_compress_router_refuses_hostile_pdf_4xx_no_upload(r2: FakeR2) -> None:
     """Password-protected PDF → 4xx fail closed, no R2 upload, no task created."""
-    store = TaskStore(_settings(), client=fakeredis.FakeRedis())
+    store = TaskStore(_settings(), client=cast(RedisLike, fakeredis.FakeRedis()))
     r2 = FakeR2()
     client = TestClient(_app_with(store, r2))
     response = _upload(client, _hostile_password_protected_pdf_bytes())
@@ -161,7 +185,7 @@ def test_compress_router_refuses_hostile_pdf_4xx_no_upload(r2: FakeR2) -> None:
 
 def test_compress_router_refuses_non_pdf_4xx(r2: FakeR2) -> None:
     """Non-PDF input → 4xx fail closed."""
-    store = TaskStore(_settings(), client=fakeredis.FakeRedis())
+    store = TaskStore(_settings(), client=cast(RedisLike, fakeredis.FakeRedis()))
     r2 = FakeR2()
     client = TestClient(_app_with(store, r2))
     response = _upload(client, _non_pdf_bytes())
@@ -176,7 +200,7 @@ def test_compress_router_uploads_sanitized_bytes_not_raw() -> None:
     expected = sanitizer.output_bytes
     assert expected is not None
 
-    store = TaskStore(_settings(), client=fakeredis.FakeRedis())
+    store = TaskStore(_settings(), client=cast(RedisLike, fakeredis.FakeRedis()))
     r2 = FakeR2()
     client = TestClient(_app_with(store, r2))
     response = _upload(client, data)

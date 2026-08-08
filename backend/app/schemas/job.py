@@ -21,6 +21,7 @@ __all__ = [
     "JobState",
     "Progress",
     "ResultSummary",
+    "SplitOptions",
     "TaskAdmission",
     "TaskStatus",
 ]
@@ -66,6 +67,22 @@ class ErrorSummary(BaseModel):
     category: str
     retryable: bool
     message_key: str
+
+
+class SplitOptions(BaseModel):
+    """Split-PDF execution options persisted on the task record (DEC-174).
+
+    ``ranges`` is the admission-validated range specification (e.g.
+    ``"2-5,7"``); an empty string selects the default mode — one output per
+    page. The charset admits digits, commas, hyphens, and spaces only, so no
+    filename, URL, or content can be expressed. Admission validates the full
+    grammar and page bounds before persistence; the executor re-validates
+    defensively before consuming the spec.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    ranges: str = Field(default="", max_length=2000, pattern=r"^[0-9,\- ]*$")
 
 
 class TaskAdmission(BaseModel):

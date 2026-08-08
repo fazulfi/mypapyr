@@ -128,7 +128,8 @@ export const messages = {
     tools: {
       compress: {
         title: "Compress PDF",
-        description: "Reduce the file size of your PDF while keeping quality. Processed on our servers and deleted within one hour.",
+        description:
+          "Reduce the file size of your PDF while keeping quality. Processed on our servers and deleted within one hour.",
         errors: {
           fileTooLarge: "File exceeds the maximum size limit.",
           uploadFailed: "Upload failed, please try again.",
@@ -144,30 +145,73 @@ export const messages = {
       merge: {
         title: "Merge PDF",
         description: "Combine multiple PDFs into one document. All files stay in your browser.",
-        errors: { fileTooLarge: "File too large (max 200MB combined)", needAtLeastTwo: "Select at least 2 files", uploadFailed: "Upload failed", downloadFailed: "Download failed" },
-        actions: { merge: "Merge PDFs" },
+        errors: {
+          fileTooLarge: "File too large (max 200MB combined)",
+          needAtLeastTwo: "Select at least 2 files",
+          uploadFailed: "Upload failed",
+          downloadFailed: "Download failed",
+        },
+        actions: { merge: "Merge PDFs", uploading: "Merging..." },
         status: { submitting: "Merging..." },
       },
       split: {
         title: "Split PDF",
         description: "Extract pages from a PDF document.",
-        errors: { fileTooLarge: "File too large (max 100MB)", uploadFailed: "Upload failed", downloadFailed: "Download failed" },
+        ranges: {
+          label: "Page ranges (optional)",
+          help: "Example: 1-3,5,8-10 — separate entries with commas. Leave empty to create one PDF per page.",
+          defaultNote:
+            "No ranges entered: one output per source page. The exact page count is checked after upload.",
+          previewHeading: "Output preview",
+          previewItemSingle: "Output {index}: page {pages}",
+          previewItemRange: "Output {index}: pages {pages}",
+          errors: {
+            malformed:
+              "Invalid range format. Use page numbers and ranges like 1-3,5,8-10, separated by commas and without spaces inside a range.",
+            reversed:
+              "Each range must ascend: the second number cannot be smaller than the first (write 3-7, not 7-3).",
+            zero: "Page numbers start at 1, so zero is not allowed.",
+            tooManyOutputs:
+              "Too many outputs: each entry creates one output and the maximum is 100.",
+            tooLong: "The range text is too long: the maximum is 2000 characters.",
+            serverRejected:
+              "The server rejected these ranges. Every number must match a page that exists in your PDF, the total number of outputs is limited, and encrypted files cannot be split with custom ranges. Adjust the ranges and try again.",
+          },
+        },
+        errors: {
+          fileTooLarge: "File too large (max 100MB)",
+          uploadFailed: "Upload failed",
+          downloadFailed: "Download failed",
+        },
         actions: { split: "Split PDF", uploading: "Uploading..." },
         status: { submitting: "Submitting..." },
       },
       jpgToPdf: {
         title: "JPG to PDF",
         description: "Convert your JPG images into a single PDF document.",
-        errors: { fileTooLarge: "File too large (max 100MB)", uploadFailed: "Upload failed", downloadFailed: "Download failed" },
+        paperNote: "Page size and orientation are chosen automatically to fit each image.",
+        metadataNote:
+          "Image metadata (EXIF), such as location and timestamps, may remain in the PDF.",
+        errors: {
+          fileTooLarge: "File too large (max 100MB)",
+          uploadFailed: "Upload failed",
+          downloadFailed: "Download failed",
+        },
         actions: { convert: "Convert to PDF", uploading: "Uploading..." },
-        status: { submitting: "Submitting..." }
+        status: { submitting: "Submitting..." },
       },
       pdfToJpg: {
         title: "PDF to JPG",
         description: "Convert your PDF pages into high-quality JPG images.",
-        errors: { fileTooLarge: "File too large (max 100MB per page)", uploadFailed: "Upload failed", downloadFailed: "Download failed" },
+        qualityNote: "Every page is rendered at one high-quality output profile.",
+        resolutionNote: "Conversion cannot add detail that is missing from low-resolution pages.",
+        errors: {
+          fileTooLarge: "File too large (max 100MB per page)",
+          uploadFailed: "Upload failed",
+          downloadFailed: "Download failed",
+        },
         actions: { convert: "Convert to JPG", uploading: "Uploading..." },
-        status: { submitting: "Submitting..." }
+        status: { submitting: "Submitting..." },
       },
     },
   },
@@ -299,7 +343,8 @@ export const messages = {
     tools: {
       compress: {
         title: "Comprimir PDF",
-        description: "Reduce el tamaño de tu PDF manteniendo la calidad. Se procesa en nuestros servidores y se elimina en una hora.",
+        description:
+          "Reduce el tamaño de tu PDF manteniendo la calidad. Se procesa en nuestros servidores y se elimina en una hora.",
         errors: {
           fileTooLarge: "El archivo supera el límite de tamaño máximo.",
           uploadFailed: "Error al subir, inténtalo de nuevo.",
@@ -314,31 +359,76 @@ export const messages = {
       },
       merge: {
         title: "Unir PDF",
-        description: "Combina varios PDFs en un solo documento. Todos los archivos permanecen en tu navegador.",
-        errors: { fileTooLarge: "Archivo demasiado grande (máx. 200MB combinados)", needAtLeastTwo: "Selecciona al menos 2 archivos", uploadFailed: "Error de subida" },
+        description:
+          "Combina varios PDFs en un solo documento. Todos los archivos permanecen en tu navegador.",
+        errors: {
+          fileTooLarge: "Archivo demasiado grande (máx. 200MB combinados)",
+          needAtLeastTwo: "Selecciona al menos 2 archivos",
+          uploadFailed: "Error de subida",
+          downloadFailed: "Error de descarga",
+        },
         actions: { merge: "Unir PDF", uploading: "Subiendo..." },
-        status: { submitting: "Enviando..." }
+        status: { submitting: "Enviando..." },
       },
       split: {
         title: "Dividir PDF",
         description: "Extrae páginas de tu PDF y crea un nuevo documento.",
-        errors: { fileTooLarge: "Archivo demasiado grande (máx. 100MB)", uploadFailed: "Error de subida" },
+        ranges: {
+          label: "Intervalos de páginas (opcional)",
+          help: "Ejemplo: 1-3,5,8-10 — separa las entradas con comas. Déjalo vacío para crear un PDF por página.",
+          defaultNote:
+            "Sin intervalos: se genera una salida por cada página de origen. El número exacto de páginas se comprueba después de subir el archivo.",
+          previewHeading: "Vista previa de salidas",
+          previewItemSingle: "Salida {index}: página {pages}",
+          previewItemRange: "Salida {index}: páginas {pages}",
+          errors: {
+            malformed:
+              "Formato de intervalos no válido. Usa números de página e intervalos como 1-3,5,8-10, separados por comas y sin espacios dentro de un intervalo.",
+            reversed:
+              "Cada intervalo debe ser ascendente: el segundo número no puede ser menor que el primero (escribe 3-7, no 7-3).",
+            zero: "Los números de página empiezan en 1, por lo que el cero no está permitido.",
+            tooManyOutputs: "Demasiadas salidas: cada entrada crea una salida y el máximo es 100.",
+            tooLong: "El texto de intervalos es demasiado largo: el máximo es 2000 caracteres.",
+            serverRejected:
+              "El servidor rechazó estos intervalos. Cada número debe corresponder a una página existente de tu PDF, el número total de salidas está limitado y los archivos cifrados no pueden dividirse con intervalos personalizados. Ajusta los intervalos e inténtalo de nuevo.",
+          },
+        },
+        errors: {
+          fileTooLarge: "Archivo demasiado grande (máx. 100MB)",
+          uploadFailed: "Error de subida",
+          downloadFailed: "Error de descarga",
+        },
         actions: { split: "Dividir PDF", uploading: "Subiendo..." },
-        status: { submitting: "Enviando..." }
+        status: { submitting: "Enviando..." },
       },
       jpgToPdf: {
         title: "JPG a PDF",
         description: "Convierte tus imágenes JPG en un solo documento PDF.",
-        errors: { fileTooLarge: "Archivo demasiado grande (máx. 100MB)", uploadFailed: "Error de subida" },
+        paperNote:
+          "El tamaño y la orientación de la página se eligen automáticamente para cada imagen.",
+        metadataNote:
+          "Los metadatos de la imagen (EXIF), como la ubicación y las marcas de tiempo, pueden permanecer en el PDF.",
+        errors: {
+          fileTooLarge: "Archivo demasiado grande (máx. 100MB)",
+          uploadFailed: "Error de subida",
+          downloadFailed: "Error de descarga",
+        },
         actions: { convert: "Convertir a PDF", uploading: "Subiendo..." },
-        status: { submitting: "Enviando..." }
+        status: { submitting: "Enviando..." },
       },
       pdfToJpg: {
         title: "PDF a JPG",
         description: "Convierte las páginas de tu PDF en imágenes JPG de alta calidad.",
-        errors: { fileTooLarge: "Archivo demasiado grande (máx. 16MP por página)", uploadFailed: "Error de subida" },
+        qualityNote: "Cada página se renderiza con un único perfil de salida de alta calidad.",
+        resolutionNote:
+          "La conversión no puede añadir detalle que falte en páginas de baja resolución.",
+        errors: {
+          fileTooLarge: "Archivo demasiado grande (máx. 16MP por página)",
+          uploadFailed: "Error de subida",
+          downloadFailed: "Error de descarga",
+        },
         actions: { convert: "Convertir a JPG", uploading: "Subiendo..." },
-        status: { submitting: "Enviando..." }
+        status: { submitting: "Enviando..." },
       },
     },
   },
@@ -470,7 +560,8 @@ export const messages = {
     tools: {
       compress: {
         title: "Kompres PDF",
-        description: "Kurangi ukuran PDF Anda dengan tetap menjaga kualitas. Diproses di server kami dan dihapus dalam satu jam.",
+        description:
+          "Kurangi ukuran PDF Anda dengan tetap menjaga kualitas. Diproses di server kami dan dihapus dalam satu jam.",
         errors: {
           fileTooLarge: "File melebihi batas ukuran maksimum.",
           uploadFailed: "Gagal mengunggah, silakan coba lagi.",
@@ -485,31 +576,77 @@ export const messages = {
       },
       merge: {
         title: "Gabung PDF",
-        description: "Gabungkan beberapa PDF menjadi satu dokumen. Semua file tetap ada di browser Anda.",
-        errors: { fileTooLarge: "File terlalu besar (maks. 200MB gabungan)", needAtLeastTwo: "Pilih minimal 2 file", uploadFailed: "Gagal mengunggah", downloadFailed: "Gagal mengunduh" },
+        description:
+          "Gabungkan beberapa PDF menjadi satu dokumen. Semua file tetap ada di browser Anda.",
+        errors: {
+          fileTooLarge: "File terlalu besar (maks. 200MB gabungan)",
+          needAtLeastTwo: "Pilih minimal 2 file",
+          uploadFailed: "Gagal mengunggah",
+          downloadFailed: "Gagal mengunduh",
+        },
         actions: { merge: "Gabung PDF", uploading: "Mengunggah..." },
-        status: { submitting: "Mengirim..." }
+        status: { submitting: "Mengirim..." },
       },
       split: {
         title: "Pisah PDF",
         description: "Ekstrak halaman dari PDF dan buat dokumen baru.",
-        errors: { fileTooLarge: "File terlalu besar (maks. 100MB)", uploadFailed: "Gagal mengunggah", downloadFailed: "Gagal mengunduh" },
+        ranges: {
+          label: "Rentang halaman (opsional)",
+          help: "Contoh: 1-3,5,8-10 — pisahkan entri dengan koma. Biarkan kosong untuk membuat satu PDF per halaman.",
+          defaultNote:
+            "Tanpa rentang: satu output untuk setiap halaman sumber. Jumlah halaman yang pasti diperiksa setelah unggah.",
+          previewHeading: "Pratinjau output",
+          previewItemSingle: "Output {index}: halaman {pages}",
+          previewItemRange: "Output {index}: halaman {pages}",
+          errors: {
+            malformed:
+              "Format rentang tidak valid. Gunakan nomor halaman dan rentang seperti 1-3,5,8-10, dipisahkan dengan koma dan tanpa spasi di dalam rentang.",
+            reversed:
+              "Setiap rentang harus menaik: angka kedua tidak boleh lebih kecil dari angka pertama (tulis 3-7, bukan 7-3).",
+            zero: "Nomor halaman dimulai dari 1, jadi nol tidak diperbolehkan.",
+            tooManyOutputs:
+              "Terlalu banyak output: setiap entri membuat satu output dan maksimumnya adalah 100.",
+            tooLong: "Teks rentang terlalu panjang: maksimum 2000 karakter.",
+            serverRejected:
+              "Server menolak rentang ini. Setiap nomor harus sesuai dengan halaman yang ada di PDF Anda, jumlah total output dibatasi, dan file terenkripsi tidak dapat dipisahkan dengan rentang kustom. Sesuaikan rentang lalu coba lagi.",
+          },
+        },
+        errors: {
+          fileTooLarge: "File terlalu besar (maks. 100MB)",
+          uploadFailed: "Gagal mengunggah",
+          downloadFailed: "Gagal mengunduh",
+        },
         actions: { split: "Pisah PDF", uploading: "Mengunggah..." },
-        status: { submitting: "Mengirim..." }
+        status: { submitting: "Mengirim..." },
       },
       jpgToPdf: {
         title: "JPG ke PDF",
         description: "Konversi gambar JPG Anda menjadi satu dokumen PDF.",
-        errors: { fileTooLarge: "File terlalu besar (maks. 100MB)", uploadFailed: "Gagal mengunggah", downloadFailed: "Gagal mengunduh" },
+        paperNote:
+          "Ukuran dan orientasi halaman dipilih secara otomatis agar sesuai dengan setiap gambar.",
+        metadataNote:
+          "Metadata gambar (EXIF), seperti lokasi dan stempel waktu, dapat tetap ada di PDF.",
+        errors: {
+          fileTooLarge: "File terlalu besar (maks. 100MB)",
+          uploadFailed: "Gagal mengunggah",
+          downloadFailed: "Gagal mengunduh",
+        },
         actions: { convert: "Konversi ke PDF", uploading: "Mengunggah..." },
-        status: { submitting: "Mengirim..." }
+        status: { submitting: "Mengirim..." },
       },
       pdfToJpg: {
         title: "PDF ke JPG",
         description: "Konversi halaman PDF Anda menjadi gambar JPG berkualitas tinggi.",
-        errors: { fileTooLarge: "File terlalu besar (maks. 16MP per halaman)", uploadFailed: "Gagal mengunggah", downloadFailed: "Gagal mengunduh" },
+        qualityNote: "Setiap halaman dirender dengan satu profil keluaran berkualitas tinggi.",
+        resolutionNote:
+          "Konversi tidak dapat menambahkan detail yang hilang dari halaman beresolusi rendah.",
+        errors: {
+          fileTooLarge: "File terlalu besar (maks. 16MP per halaman)",
+          uploadFailed: "Gagal mengunggah",
+          downloadFailed: "Gagal mengunduh",
+        },
         actions: { convert: "Konversi ke JPG", uploading: "Mengunggah..." },
-        status: { submitting: "Mengirim..." }
+        status: { submitting: "Mengirim..." },
       },
     },
   },

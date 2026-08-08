@@ -35,11 +35,11 @@ from app.middleware import add_request_id_middleware
 from app.queue.store import TaskStore
 from app.routers.capabilities import router as capabilities_router
 from app.routers.compress import router as compress_router
+from app.routers.download import router as download_router
 from app.routers.image_to_pdf import router as image_to_pdf_router
 from app.routers.merge import router as merge_router
 from app.routers.pdf_to_jpg import router as pdf_to_jpg_router
 from app.routers.split import router as split_router
-from app.routers.download import router as download_router
 from app.routers.status import router as status_router
 from app.security import add_security_middleware
 from app.utils.logging import setup_logging

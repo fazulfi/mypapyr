@@ -95,6 +95,8 @@ class FakeReadClient:
 
     def get_object(self, **kwargs: object) -> dict[str, object]:
         key = kwargs["Key"]
+        if not isinstance(key, str):
+            raise TypeError("Key must be a string")
         return {"Body": FakeBody(self._data_by_key[key])}
 
 
