@@ -42,10 +42,16 @@ def _settings() -> Settings:
 
 
 class TestEntrypointImportabilityWithoutSideEffects:
-    def test_fresh_import_creates_no_sockets(self):
-        """A never-imported interpreter creates zero sockets while importing."""
+    def test_fresh_import_creates_no_sockets(self) -> None:
+        """A never-imported interpreter creates zero sockets while importing.
+
+        boto3 is imported before instrumentation: on Windows its import chain
+        opens one internal socket, a platform side effect unrelated to the
+        entrypoint contract this test guards.
+        """
         probe = (
             "import socket\n"
+            "import boto3\n"
             "created = []\n"
             "real_init = socket.socket.__init__\n"
             "def tracked(self, *args, **kwargs):\n"
@@ -64,7 +70,7 @@ class TestEntrypointImportabilityWithoutSideEffects:
         )
         assert result.stdout.strip() == "0", result.stderr
 
-    def test_fresh_import_builds_no_redis_clients(self):
+    def test_fresh_import_builds_no_redis_clients(self) -> None:
         """Fresh interpreter: Redis builders never run during entrypoint import."""
         probe = (
             "import app.queue.queue as q\n"
@@ -94,12 +100,12 @@ class TestEntrypointImportabilityWithoutSideEffects:
 
 
 class TestRegistryConsumptionAndUnknownRouteFailClose:
-    def test_registry_unknown_route_fails_closed(self):
+    def test_registry_unknown_route_fails_closed(self) -> None:
         settings = _settings()
         with pytest.raises(UnknownRouteError):
             registry_build_executor("nonexistent-tool", settings)
 
-    def test_all_five_tools_resolve_via_registry(self):
+    def test_all_five_tools_resolve_via_registry(self) -> None:
         tools = ["compress-pdf", "merge-pdf", "split-pdf", "jpg-to-pdf", "pdf-to-jpg"]
         for tool in tools:
             result = registry_build_executor(tool, _settings())
@@ -107,12 +113,12 @@ class TestRegistryConsumptionAndUnknownRouteFailClose:
 
 
 class TestRoutingJobExecutorWiresRegistry:
-    def test_routing_executor_holds_settings_only(self):
+    def test_routing_executor_holds_settings_only(self) -> None:
         settings = _settings()
         executor = RoutingJobExecutor(settings)
         assert executor._settings == settings
 
-    def test_unknown_route_in_execute_raises(self):
+    def test_unknown_route_in_execute_raises(self) -> None:
         settings = _settings()
         executor = RoutingJobExecutor(settings)
         job = MagicMock()
@@ -123,7 +129,7 @@ class TestRoutingJobExecutorWiresRegistry:
 
 
 class TestBuildWorkerWiresRoutingExecutor:
-    def test_build_worker_constructs_with_routing_executor(self):
+    def test_build_worker_constructs_with_routing_executor(self) -> None:
         settings = _settings()
         mock_store = MagicMock()
         mock_client = MagicMock()
@@ -135,19 +141,19 @@ class TestBuildWorkerWiresRoutingExecutor:
 
 
 class TestHealthPayloadTruthfulness:
-    def test_ok_when_healthy(self):
+    def test_ok_when_healthy(self) -> None:
         status, body = health_payload(True)
         assert status == 200
         assert body["status"] == "ok"
 
-    def test_degraded_when_not_healthy(self):
+    def test_degraded_when_not_healthy(self) -> None:
         status, body = health_payload(False)
         assert status == 503
         assert body["status"] == "degraded"
 
 
 class TestSignalHandlersInstallCorrectly:
-    def test_installed_handler_actually_sets_stop_event(self):
+    def test_installed_handler_actually_sets_stop_event(self) -> None:
         """Invoke the handler actually installed by install_signal_handlers()."""
         stop = threading.Event()
         install_signal_handlers(stop)
@@ -165,14 +171,14 @@ class TestSignalHandlersInstallCorrectly:
 
 
 class TestResolveHealthPort:
-    def test_default_to_8000_when_absent(self):
+    def test_default_to_8000_when_absent(self) -> None:
         port = resolve_health_port({})
         assert port == 8000
 
-    def test_respects_env_override_valid(self):
+    def test_respects_env_override_valid(self) -> None:
         port = resolve_health_port({"WORKER_HEALTH_PORT": "9000"})
         assert port == 9000
 
-    def test_defaults_when_invalid(self):
+    def test_defaults_when_invalid(self) -> None:
         port = resolve_health_port({"WORKER_HEALTH_PORT": "not-a-number"})
         assert port == 8000

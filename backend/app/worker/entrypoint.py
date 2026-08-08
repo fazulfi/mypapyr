@@ -12,6 +12,7 @@ from collections.abc import Callable, Mapping
 from functools import partial
 
 from app.config import Settings
+from app.queue.queue import StreamsRedisLike
 from app.queue.store import TaskStore
 from app.worker.registry import build_executor
 from app.worker.worker import (
@@ -46,7 +47,7 @@ def build_worker(
     settings: Settings,
     *,
     store: TaskStore | None = None,
-    stream_client: object | None = None,
+    stream_client: StreamsRedisLike | None = None,
     options: WorkerOptions | None = None,
 ) -> JobWorker:
     """Build JobWorker with registry wiring and test injection seams."""
