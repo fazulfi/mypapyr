@@ -100,7 +100,7 @@ def _pdf_to_jpg_app(*, store: TaskStore, r2: R2Client, queue: JobQueue | None = 
     instance.state.job_queue = queue or JobQueue(
         _settings(),
         store,
-        client=fakeredis.FakeRedis(),
+        client=cast(StreamsRedisLike, fakeredis.FakeRedis()),
         options=QueueOptions(clock=lambda: datetime.now(UTC)),
     )
     instance.state.scanner = _CleanScanner()
@@ -133,7 +133,8 @@ def _mounted_api_routes(application: FastAPI) -> list[APIRoute]:
 
 
 def _stream_fields(server: fakeredis.FakeServer) -> list[Mapping[bytes, bytes]]:
-    entries = fakeredis.FakeRedis(server=server).xrange(STREAM_KEY, "-", "+", count=100)
+    client = cast(StreamsRedisLike, fakeredis.FakeRedis(server=server))
+    entries = client.xrange(STREAM_KEY, "-", "+", count=100)
     return [fields for _, fields in entries]
 
 

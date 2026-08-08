@@ -77,7 +77,7 @@ def extract_pages_as_jpg(
         if width * height > _MAX_PAGE_PIXELS:
             raise ValueError("page exceeds 16 MP")
     if pdfium_module is None:
-        import pypdfium2 as pdfium_module  # noqa: PLC0415
+        pdfium_module = cast(Any, importlib.import_module("pypdfium2"))
     document = pdfium_module.PdfDocument(data)
     selected = list(range(len(document))) if pages is None else pages
     output: list[bytes] = []

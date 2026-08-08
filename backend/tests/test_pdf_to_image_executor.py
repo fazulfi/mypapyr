@@ -13,7 +13,7 @@ import pytest
 
 from app.config import Settings
 from app.queue.store import StoreUnavailableError, TaskNotFoundError, TaskRecord
-from app.services.pdf_to_jpg_service import RENDER_DPI, PdfToImageExecutor
+from app.services.pdf_to_jpg_service import RENDER_DPI, PdfToImageExecutor, Renderer
 from app.tasks.state_machine import JobState
 from app.worker.worker import ClaimedJob, ExecutionKind
 
@@ -46,6 +46,8 @@ class FakeReadClient:
 
     def get_object(self, **kwargs: object) -> dict[str, object]:
         key = kwargs["Key"]
+        if not isinstance(key, str):
+            raise TypeError("Key must be a string")
         if key == self._fail_key:
             raise RuntimeError("download failed")
         return {"Body": FakeBody(self._data_by_key[key])}
@@ -116,7 +118,7 @@ def _executor(
     record: TaskRecord | None = None,
     store_error: Exception | None = None,
     *,
-    renderer=None,
+    renderer: Renderer | None = None,
     fail_delete: bool = False,
     fail_download_key: str | None = None,
 ) -> tuple[PdfToImageExecutor, FakeR2, FakeStore]:
@@ -128,15 +130,15 @@ def _executor(
     store = FakeStore(record=record, error=store_error)
     executor._store = store  # type: ignore[assignment]
     executor._r2 = r2  # type: ignore[assignment]
-    executor._read_client = FakeReadClient(data_by_key, fail_key=fail_download_key)  # type: ignore[assignment]
+    executor._read_client = FakeReadClient(data_by_key, fail_key=fail_download_key)
     return executor, r2, store
 
 
 def test_executor_happy_path_renders_pages_and_uploads_jpegs() -> None:
     record = _record(objects=("input-pdf",))
-    render_calls: list[dict] = []
+    render_calls: list[dict[str, object]] = []
 
-    def fake_renderer(data, *, pages, dpi):
+    def fake_renderer(data: bytes, *, pages: list[int] | None, dpi: int) -> list[bytes]:
         render_calls.append({"data": data, "pages": pages, "dpi": dpi})
         return [b"jpeg-page-1", b"jpeg-page-2", b"jpeg-page-3"]
 
@@ -148,6 +150,7 @@ def test_executor_happy_path_renders_pages_and_uploads_jpegs() -> None:
     assert outcome.result is not None
     assert outcome.result.output_count == 3
     assert outcome.result.total_bytes == len(b"jpeg-page-1") * 3
+    assert outcome.objects is not None
     assert len(outcome.objects) == 3
     assert store.get_calls == ["task-pdf2jpg-1"]
     assert len(r2.uploaded) == 3
@@ -159,9 +162,9 @@ def test_executor_happy_path_renders_pages_and_uploads_jpegs() -> None:
 
 def test_executor_page_order_preserved_in_output_objects() -> None:
     record = _record(objects=("input-pdf",))
-    outputs = [b"page-1-jpeg", b"page-2-jpeg", b"page-3-jpeg"]
+    outputs: list[bytes] = [b"page-1-jpeg", b"page-2-jpeg", b"page-3-jpeg"]
 
-    def fake_renderer(data, *, pages, dpi):
+    def fake_renderer(data: bytes, *, pages: list[int] | None, dpi: int) -> list[bytes]:
         return outputs
 
     executor, r2, _ = _executor(record=record, renderer=fake_renderer)
@@ -177,7 +180,7 @@ def test_executor_page_order_preserved_in_output_objects() -> None:
 def test_executor_deletes_input_after_uploads() -> None:
     record = _record(objects=("input-pdf",))
 
-    def fake_renderer(data, *, pages, dpi):
+    def fake_renderer(data: bytes, *, pages: list[int] | None, dpi: int) -> list[bytes]:
         return [b"jpeg-page-1"]
 
     executor, r2, _ = _executor(record=record, renderer=fake_renderer)
@@ -190,7 +193,7 @@ def test_executor_deletes_input_after_uploads() -> None:
 def test_executor_input_delete_failure_still_returns_success() -> None:
     record = _record(objects=("input-pdf",))
 
-    def fake_renderer(data, *, pages, dpi):
+    def fake_renderer(data: bytes, *, pages: list[int] | None, dpi: int) -> list[bytes]:
         return [b"jpeg-page-1"]
 
     executor, r2, _ = _executor(record=record, renderer=fake_renderer, fail_delete=True)
@@ -204,7 +207,7 @@ def test_executor_input_delete_failure_still_returns_success() -> None:
 def test_executor_render_failure_returns_failure_without_deleting_input() -> None:
     record = _record(objects=("input-pdf",))
 
-    def failing_renderer(data, *, pages, dpi):
+    def failing_renderer(data: bytes, *, pages: list[int] | None, dpi: int) -> list[bytes]:
         raise ValueError("render failed")
 
     executor, r2, _ = _executor(record=record, renderer=failing_renderer)
