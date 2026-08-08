@@ -13,6 +13,10 @@ name: papyr-app
 #               AOF/noeviction persistence contract; internal-only; profile
 #               "queue".
 #   * workers - bounded worker (2G / 1.5 cpus, one instance per DEC-189);
+#   * cleanup - scheduled expired-task cleanup pass (U-OPS); bounded posture;
+#               queue profile; no public ports; image = PAPYR_API_IMAGE.
+#   * monitor - production health observer (U-OPS); api/redis/clamd/queue/
+#               cleanup-marker/R2 checks; queue profile; no public ports.
 #               depends on healthy redis + clamd; mirrors the api hardened
 #               posture; declares its own /health probe (worker entrypoint).
 #   * clamd   - official ClamAV daemon; required digest-form image variable;
@@ -214,6 +218,74 @@ services:
       timeout: 10s
       start_period: 120s
       retries: 5
+
+
+  cleanup:
+    image: "${PAPYR_API_IMAGE:?PAPYR_API_IMAGE required: immutable digest-form reference (registry/path@sha256:...)}"
+    profiles: ["queue"]
+    command: ["python", "-m", "app.ops.cleanup_loop"]
+    env_file:
+      - "${PAPYR_ENV_FILE:?PAPYR_ENV_FILE required: provisioned .env.production path}"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CLEANUP_INTERVAL_SECONDS=300
+    networks:
+      - papyr
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:exec,mode=1777,size=64M
+    cpus: "0.25"
+    mem_limit: 256M
+    pids_limit: 64
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "com.papyr.service=cleanup"
+
+  monitor:
+    image: "${PAPYR_API_IMAGE:?PAPYR_API_IMAGE required: immutable digest-form reference (registry/path@sha256:...)}"
+    profiles: ["queue"]
+    command: ["python", "-m", "app.ops.monitor", "--watch", "60"]
+    env_file:
+      - "${PAPYR_ENV_FILE:?PAPYR_ENV_FILE required: provisioned .env.production path}"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CLAMD_HOST=clamd
+      - MONITOR_API_URL=http://api:3000/health/ready
+    networks:
+      - papyr
+    depends_on:
+      redis:
+        condition: service_healthy
+      clamd:
+        condition: service_healthy
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:exec,mode=1777,size=64M
+    cpus: "0.25"
+    mem_limit: 256M
+    pids_limit: 64
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "com.papyr.service=monitor"
 
   redis:
     image: redis:7.4.10-alpine@sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2

@@ -4,7 +4,9 @@
 # The guard verifies service structure, healthchecks, unpublished internal
 # ports, dependency conditions, standalone API activation, hardened container
 # posture, profile separation, the PAPYR_ENV_FILE source gate, immutable API
-# image selection, and the absence of placeholder host ports.
+# image selection, the absence of placeholder host ports, and the additive
+# U-R2/U-OPS cleanup/monitor services (bounded ops slots on the queue profile
+# sharing the immutable PAPYR_API_IMAGE, internal-only).
 #
 # Runnable without Docker; runtime `docker compose config` validation belongs
 # on a Docker-capable deployment host. Also runs yamllint on
@@ -43,7 +45,7 @@ if not isinstance(doc, dict) or "services" not in doc:
     print("compose file has no top-level services map", file=sys.stderr)
     sys.exit(1)
 
-expected = {"api", "nginx", "redis", "workers", "clamd"}
+expected = {"api", "nginx", "redis", "workers", "clamd", "cleanup", "monitor"}
 actual = set(doc["services"].keys())
 if actual != expected:
     print("services = %s, expected %s" % (sorted(actual), sorted(expected)), file=sys.stderr)
@@ -63,6 +65,12 @@ required = {
     "workers": ["image", "profiles", "env_file", "depends_on", "restart", "logging",
               "healthcheck"],
     "clamd": ["image", "profiles", "restart", "logging", "healthcheck"],
+    "cleanup": ["image", "profiles", "command", "env_file", "depends_on", "restart",
+                "read_only", "security_opt", "cap_drop", "tmpfs", "cpus",
+                "mem_limit", "pids_limit", "logging"],
+    "monitor": ["image", "profiles", "command", "env_file", "depends_on", "restart",
+                "read_only", "security_opt", "cap_drop", "tmpfs", "cpus",
+                "mem_limit", "pids_limit", "logging"],
 }
 for svc, keys in required.items():
     missing = [k for k in keys if k not in svcs[svc]]
@@ -77,7 +85,7 @@ for name, svc in svcs.items():
         sys.exit(1)
 
 # --- published ports: only nginx publishes --------------------------------
-for name in ("api", "redis", "workers"):
+for name in ("api", "redis", "workers", "cleanup", "monitor"):
     if "ports" in svcs[name]:
         print("%s must not publish ports" % name, file=sys.stderr)
         sys.exit(1)
@@ -99,6 +107,20 @@ if workers_dep.get("redis", {}).get("condition") != "service_healthy":
     sys.exit(1)
 if workers_dep.get("clamd", {}).get("condition") != "service_healthy":
     print("workers -> clamd must use condition: service_healthy", file=sys.stderr)
+    sys.exit(1)
+
+# --- U-OPS ops slots: cleanup depends on healthy redis; monitor observes ---
+# redis + clamd (monitor never deletes; read-only probes only).
+cleanup_dep = svcs["cleanup"].get("depends_on", {})
+if cleanup_dep.get("redis", {}).get("condition") != "service_healthy":
+    print("cleanup -> redis must use condition: service_healthy", file=sys.stderr)
+    sys.exit(1)
+monitor_dep = svcs["monitor"].get("depends_on", {})
+if monitor_dep.get("redis", {}).get("condition") != "service_healthy":
+    print("monitor -> redis must use condition: service_healthy", file=sys.stderr)
+    sys.exit(1)
+if monitor_dep.get("clamd", {}).get("condition") != "service_healthy":
+    print("monitor -> clamd must use condition: service_healthy", file=sys.stderr)
     sys.exit(1)
 
 # --- API dependency: requires healthy redis + clamd (BLKR-11) ---------------
@@ -293,7 +315,7 @@ if "3310" not in clamd_hc or "PONG" not in clamd_hc:
 # The Settings default redis://localhost:6379/0 does not resolve across
 # containers; api/workers must pin REDIS_URL to the in-project redis service
 # DNS. Compose `environment:` overrides env_file, so this always wins.
-for name in ("api", "workers"):
+for name in ("api", "workers", "cleanup", "monitor"):
     envs = [str(e) for e in svcs[name].get("environment", [])]
     if "REDIS_URL=redis://redis:6379/0" not in envs:
         print(
@@ -321,7 +343,7 @@ if svcs["nginx"].get("profiles") != ["edge"]:
         file=sys.stderr,
     )
     sys.exit(1)
-for name in ("api", "redis", "workers", "clamd"):
+for name in ("api", "redis", "workers", "clamd", "cleanup", "monitor"):
     if "__SET_ME__" in str(svcs[name]):
         print(
             "%s is activated by --profile app --profile queue and must not "
@@ -358,6 +380,52 @@ if workers.get("security_opt") != ["no-new-privileges:true"]:
 if workers.get("cap_drop") != ["ALL"]:
     print("workers cap_drop must be [ALL]", file=sys.stderr)
     sys.exit(1)
+
+
+# --- U-OPS ops slots: cleanup + monitor (additive U-R2/U-OPS integration) ---
+# Both run from the SAME immutable PAPYR_API_IMAGE (the API image carries the
+# app.ops entrypoints), live on the queue profile, publish nothing, and mirror
+# the hardened posture with small resource budgets. cleanup runs one bounded
+# pass per interval (default 300 s); monitor observes in --watch mode. Their
+# command contract is asserted exactly so a drifted entrypoint fails the gate.
+_API_IMAGE_PATTERN = r"\$\{PAPYR_API_IMAGE:\?[^}]+\}"
+for name, expected_cmd in (
+    ("cleanup", ["python", "-m", "app.ops.cleanup_loop"]),
+    ("monitor", ["python", "-m", "app.ops.monitor", "--watch", "60"]),
+):
+    slot = svcs[name]
+    slot_image = str(slot.get("image", ""))
+    if re.fullmatch(_API_IMAGE_PATTERN, slot_image) is None:
+        print(
+            "%s image must require the exact immutable PAPYR_API_IMAGE variable; got %r"
+            % (name, slot_image),
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if slot.get("command") != expected_cmd:
+        print(
+            "%s command must be exactly %s" % (name, expected_cmd),
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if slot.get("read_only") is not True:
+        print("%s read_only must be true" % name, file=sys.stderr)
+        sys.exit(1)
+    if slot.get("security_opt") != ["no-new-privileges:true"]:
+        print("%s security_opt must be [no-new-privileges:true]" % name, file=sys.stderr)
+        sys.exit(1)
+    if slot.get("cap_drop") != ["ALL"]:
+        print("%s cap_drop must be [ALL]" % name, file=sys.stderr)
+        sys.exit(1)
+    if slot.get("cap_add"):
+        print("%s must not add Linux capabilities after cap_drop: [ALL]" % name, file=sys.stderr)
+        sys.exit(1)
+    if not any(str(m).startswith("/tmp:") for m in slot.get("tmpfs", [])):
+        print("%s must mount a /tmp tmpfs (read-only rootfs)" % name, file=sys.stderr)
+        sys.exit(1)
+    if "cpus" not in slot or "mem_limit" not in slot or slot.get("pids_limit", 0) <= 0:
+        print("%s must bound cpus, mem_limit, and pids_limit" % name, file=sys.stderr)
+        sys.exit(1)
 
 # --- R2 lifecycle declaration (approved contract) ---------------------------
 # deploy/r2-lifecycle.json is the machine-readable, deploy-owned lifecycle
@@ -428,7 +496,7 @@ for name, svc in svcs.items():
 # --- activation safety -----------------------------------------------------
 # Profile separation: `--profile app` must select only the API. Deferred
 # slots live behind their own profiles.
-profile_contract = {"api": ["app"], "nginx": ["edge"], "redis": ["queue"], "workers": ["queue"], "clamd": ["queue"]}
+profile_contract = {"api": ["app"], "nginx": ["edge"], "redis": ["queue"], "workers": ["queue"], "clamd": ["queue"], "cleanup": ["queue"], "monitor": ["queue"]}
 for name, want in profile_contract.items():
     if svcs[name].get("profiles") != want:
         print("%s profiles = %s, expected %s" % (name, svcs[name].get("profiles"), want), file=sys.stderr)
@@ -436,13 +504,13 @@ for name, want in profile_contract.items():
 
 # The container environment must come from `${PAPYR_ENV_FILE:?...}`—never from the
 # committed template, which carries intentionally empty required values.
-for name in ("api", "workers"):
+for name in ("api", "workers", "cleanup", "monitor"):
     envs = svcs[name].get("env_file", [])
     if any("env.production.example" in str(e) for e in envs):
         print("%s env_file must not reference the committed template" % name, file=sys.stderr)
         sys.exit(1)
-    if name == "api" and not any("PAPYR_ENV_FILE" in str(e) for e in envs):
-        print("api env_file must gate on ${PAPYR_ENV_FILE:?...}", file=sys.stderr)
+    if not any("PAPYR_ENV_FILE" in str(e) for e in envs):
+        print("%s env_file must gate on ${PAPYR_ENV_FILE:?...}" % name, file=sys.stderr)
         sys.exit(1)
 
 # No placeholder host port may exist in `ports`; the deployment skeleton
