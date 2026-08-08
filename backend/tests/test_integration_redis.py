@@ -84,6 +84,7 @@ from app.queue.store import (
     TransitionPayload,
 )
 from app.schemas.job import ErrorSummary, ResultSummary
+from app.security.classification import ScannerStatus, ScannerVerdict
 from app.security.fair_use import (
     CONCURRENCY_KEY_PREFIX,
     FREQUENCY_KEY_PREFIX,
@@ -238,6 +239,19 @@ class RecordingDeleter:
     def delete_object(self, key: str) -> bool:
         self.deleted.append(key)
         return True
+
+
+class _CleanScanner:
+    """Typed CLEAN scanner double for the readiness probe (U-SEC seam).
+
+    The readiness contract probes the scanner alongside foundation and redis;
+    this focused Redis test injects a deterministic CLEAN verdict so it asserts
+    the three-check contract without requiring a live clamd daemon.
+    """
+
+    def scan(self, data: bytes) -> ScannerVerdict:
+        del data
+        return ScannerVerdict(status=ScannerStatus.CLEAN)
 
 
 class PendingIdleAdapter:
@@ -1377,14 +1391,22 @@ def test_factory_wires_store_and_readiness_against_real_redis(
     """The production reproduction: ``create_app`` with production-style
     settings (compose Redis binding) wires the task store, readiness probes
     it accurately, and unknown tasks return the BE-06 404 contract instead
-    of an internal_error."""
+    of an internal_error.
+
+    The readiness contract requires three checks: foundation / redis / scanner.
+    This focused integration test injects a typed CLEAN scanner via ``app.state.scanner``
+    so the scanner check passes deterministically; without the injector, no running clamd
+    would cause the scanner check to fail (unavailable → 503).
+    """
     app = create_app(settings=_make_settings())
+    # Inject the scanner seam so the three-check readiness returns 200 without clamd.
+    app.state.scanner = _CleanScanner()
     client = TestClient(app)
 
     ready = client.get("/health/ready")
     assert ready.status_code == 200
     assert ready.json()["status"] == "ready"
-    assert ready.json()["checks"] == {"foundation": "ok", "redis": "ok"}
+    assert ready.json()["checks"] == {"foundation": "ok", "redis": "ok", "scanner": "ok"}
     assert ready.json()["deferred"] == ["worker"]
 
     response = client.get("/api/v1/tools/compress-pdf/tasks/does-not-exist/status")
