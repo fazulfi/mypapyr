@@ -59,7 +59,7 @@ from pydantic import ValidationError
 from redis.exceptions import RedisError, WatchError
 
 from app.config import Settings
-from app.schemas.job import ErrorSummary, Progress, ResultSummary
+from app.schemas.job import ErrorSummary, Progress, ResultSummary, SplitOptions
 from app.tasks.state_machine import JobEvent, JobState, transition
 
 logger = logging.getLogger(__name__)
@@ -177,7 +177,9 @@ class TaskRecord:
     non-sensitive temporary object references (opaque R2 keys); every other
     field is metadata. ``progress``/``result``/``error`` reuse the schemas'
     extra-``forbid`` models, so nested prohibited fields are structurally
-    impossible.
+    impossible. The optional ``options`` carries tool-specific execution
+    parameters; it is typed by schema (e.g., :class:`SplitOptions`) with
+    extra-``forbid``, so only documented fields can persist.
     """
 
     task_id: str
@@ -194,6 +196,7 @@ class TaskRecord:
     result: ResultSummary | None = None
     error: ErrorSummary | None = None
     objects: tuple[str, ...] = ()
+    options: SplitOptions | None = None
 
 
 @dataclass(frozen=True)
@@ -392,6 +395,19 @@ def _optional_objects(fields: Mapping[str, str]) -> tuple[str, ...]:
     return tuple(payload)
 
 
+def _optional_options(fields: Mapping[str, str]) -> SplitOptions | None:
+    raw = fields.get("options")
+    if raw is None:
+        return None
+    payload = json.loads(raw)
+    if not isinstance(payload, dict):
+        raise ValueError("options must be a JSON object")
+    try:
+        return SplitOptions.model_validate(payload)
+    except ValidationError as exc:
+        raise ValueError(f"options schema validation failed: {exc}") from exc
+
+
 def _ttl_seconds(now: datetime, expires_at: datetime, max_ttl: int) -> int:
     remaining = math.floor((expires_at - now).total_seconds())
     if remaining <= 0:
@@ -432,6 +448,10 @@ def _serialize(record: TaskRecord) -> dict[str, str]:
             )
         if record.objects:
             fields["objects"] = json.dumps(list(record.objects), separators=(",", ":"))
+        if record.options is not None:
+            fields["options"] = json.dumps(
+                record.options.model_dump(), sort_keys=True, separators=(",", ":")
+            )
         _scan_prohibited_fields(fields)
         return fields
     except (TypeError, ValueError) as exc:
@@ -471,6 +491,7 @@ def _deserialize(task_id: str, raw: Mapping[bytes, bytes]) -> TaskRecord:
             result=_optional_result(fields),
             error=_optional_error(fields),
             objects=_optional_objects(fields),
+            options=_optional_options(fields),
         )
     except (ValueError, TypeError, ValidationError, json.JSONDecodeError) as exc:
         raise CorruptRecordError("stored record payload is corrupt") from exc
@@ -520,6 +541,7 @@ def _validate_new_record(record: TaskRecord, now: datetime, max_ttl: int) -> Tas
         result=record.result,
         error=record.error,
         objects=record.objects,
+        options=record.options,
     )
 
 
@@ -649,6 +671,7 @@ class CasCancelMechanism:
                     result=record.result,
                     error=record.error,
                     objects=record.objects,
+                    options=record.options,
                 )
                 pipe.multi()
                 pipe.hset(key, mapping=_serialize(updated))
@@ -886,6 +909,7 @@ class TaskStore:
                     and payload.objects is not None
                     else record.objects
                 ),
+                options=record.options,
             )
 
         return self._mutate(task_id, expected_state, None, build)
@@ -921,6 +945,7 @@ class TaskStore:
                 result=record.result,
                 error=record.error,
                 objects=record.objects,
+                options=record.options,
             )
 
         return self._mutate(task_id, expected_state, expected_updated_at, build)
