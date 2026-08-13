@@ -49,7 +49,7 @@ Bounded production monitor — one-shot or a fixed-interval watch loop
 **Exit codes:**
 
 | code | meaning |
-|------|---------|
+| ---- | ---- |
 | 0 | run completed; report status is `healthy` or `degraded` |
 | 1 | run completed; report status is `failed` (at least one probe `fail`) |
 | 2 | configuration/build error (see `monitor.py:515-522`) — the monitor could not run |
@@ -134,7 +134,7 @@ overridable via `MONITOR_API_URL`, `MONITOR_QUEUE_WARN`, `MONITOR_QUEUE_FAIL`,
 (`monitor.py:451-479`).
 
 | # | Check | What it verifies | Fails when | First response when unhealthy |
-|---|-------|------------------|------------|-------------------------------|
+| --- | --- | --- | --- | --- |
 | 1 | `api_ready` | `GET /health/ready` returns 200 and body `status == "ready"` (`:130-145`) | non-200, unparseable body, or non-`ready` status | Is the api container up (`compose ps`)? Are `redis` and `clamd` healthy (`compose ps`)? Check api logs for readiness detail. |
 | 2 | `redis` | `redis.ping()` succeeds (`:148-155`) | ping raises or client not configured | `compose up -d redis`; check Redis logs for crash/eviction; AOF recovery if it lost data. |
 | 3 | `clamd` | TCP connect + `zPING` → reply starts `PONG` (`:158-175`) | connect fails, timeout, or non-PONG reply | `compose up -d clamd`; check clamd logs and the clamd-db volume; the daemon must answer PING→PONG on 3310. |

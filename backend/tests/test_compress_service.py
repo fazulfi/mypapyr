@@ -246,7 +246,6 @@ def test_executor_input_delete_failure_still_returns_success(
     assert len(r2.uploaded) == 1
 
 
-
 def test_executor_uploads_compressed_output_not_original_input(
     sample_task_record: TaskRecord,
 ) -> None:
@@ -268,6 +267,7 @@ def test_executor_uploads_compressed_output_not_original_input(
     _uploaded_key, uploaded_body = r2.uploaded[0]
     assert uploaded_body == compressed_bytes, "uploaded body must be the compressed output"
     assert uploaded_body != input_bytes, "the original input must never be uploaded as output"
+
 
 def test_executor_record_not_processing_refusal() -> None:
     now = datetime.now(UTC)

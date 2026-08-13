@@ -30,7 +30,7 @@ rewrite (`frontend/next.config.ts`) forwards them unchanged to
 traverses Cloudflare DNS/TLS → nginx → FastAPI on the internal service DNS
 `api:3000` (`deploy/runbook-vps.md`; `deploy/docker-compose.yml`).
 
-```
+```text
 Browser ── /api/v1/* (same-origin) ──> Next.js rewrite (next.config.ts)
         ── https://api.mypapyr.com/api/v1/* ──> Cloudflare (DNS, TLS)
         ── nginx (default_server → 444; valid vhost → proxy) ──> FastAPI (:3000)
@@ -85,7 +85,7 @@ The deterministic status→code table (`errors.py:69-140`) used by the
 auth/validation/threat handlers:
 
 | HTTP | code | category | messageKey | retryable |
-|------|------|----------|------------|-----------|
+| ---- | ---- | ---- | ---- | ---- |
 | 400 | `bad_request` | validation | `error.badRequest` | false |
 | 401 | `unauthorized` | auth | `error.unauthorized` | false |
 | 403 | `forbidden` | auth | `error.forbidden` | false |
@@ -117,7 +117,7 @@ and localization are resolved from the single metadata table. Four codes are
 **retryable** (marked ●) — all map to `error.rateLimited`:
 
 | # | code | messageKey | retryable |
-|---|------|------------|-----------|
+| --- | ---- | ---- | ---- |
 | 1 | `empty` | `error.badRequest` | no |
 | 2 | `type_mismatch` | `error.unsupportedMediaType` | no |
 | 3 | `size_exceeded` | `error.payloadTooLarge` | no |
@@ -149,7 +149,7 @@ misclassify. `not_found`/`expired` both resolve to the non-revealing 404
 `backend/app/tasks/state_machine.py` defines the closed active vocabulary and
 deterministic transition table:
 
-```
+```text
 JobState = {queued, processing, done, failed, cancelled}
 
 Events:   worker_claimed | result_uploaded | engine_error | timeout

@@ -76,7 +76,6 @@ def _resolve_queue(request: Request, settings: Settings, store: TaskStore) -> Jo
     return JobQueue(settings, store)
 
 
-
 def _delete_orphan_input(r2: R2Client, input_key: str) -> None:
     """Best-effort cleanup of an uploaded input when enqueue fails (I4)."""
     try:
@@ -86,6 +85,7 @@ def _delete_orphan_input(r2: R2Client, input_key: str) -> None:
             "split orphan input delete failed",
             extra={"fields": {"error": type(exc).__name__}},
         )
+
 
 def _reject_ranges(reason: str) -> NoReturn:
     logger.error("split ranges rejected", extra={"fields": {"error": reason}})

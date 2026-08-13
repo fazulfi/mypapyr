@@ -589,9 +589,7 @@ class JobWorker:
             else DaemonThreadJobRunner(executor)
         )
         self._policy = (
-            knobs.timeout_policy
-            if knobs.timeout_policy is not None
-            else ToolTimeoutPolicy()
+            knobs.timeout_policy if knobs.timeout_policy is not None else ToolTimeoutPolicy()
         )
         self._terminal_retry = (
             knobs.terminal_retry

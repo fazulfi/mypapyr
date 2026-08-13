@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.queue.queue import JobQueue, QueueOptions, StreamsRedisLike
-from app.queue.store import RedisLike, StoreUnavailableError, TaskStore
+from app.queue.store import RedisLike, StoreUnavailableError, TaskRecord, TaskStore
 from app.routers import compress as compress_module
 from app.security.classification import ScannerStatus, ScannerVerdict
 from app.security.sanitize import PdfSanitizer
@@ -123,8 +123,6 @@ def r2() -> FakeR2:
     return FakeR2()
 
 
-
-
 @pytest.fixture
 def factory_app(
     request: Any,
@@ -213,16 +211,23 @@ def test_compress_router_uploads_sanitized_bytes_not_raw() -> None:
     assert r2.uploaded[0][1] == expected
 
 
+class _FailingEnqueueQueue(JobQueue):
+    """JobQueue subclass whose enqueue always raises a store-unavailable error.
 
-class _FailingEnqueueQueue:
-    """Queue stub whose enqueue always raises a store-unavailable error."""
+    Subclassing JobQueue (not duck-typing) is required so the router's
+    ``_resolve_queue`` isinstance gate admits this stub; a plain object is
+    silently replaced by a real JobQueue, which makes the test pass by
+    accident locally (fakeredis also fails) but fail in CI (real Redis
+    enqueues successfully).
+    """
 
-    def __init__(self, error: Exception) -> None:
+    def __init__(self, settings: Settings, store: TaskStore, error: Exception) -> None:
+        super().__init__(settings, store)
         self._error = error
 
     def enqueue(
-        self, record: object, *, origin: object | None = None, route: object | None = None
-    ) -> object:
+        self, record: TaskRecord, *, origin: str | None = None, route: str | None = None
+    ) -> TaskRecord:
         del record, origin, route
         raise self._error
 
@@ -231,7 +236,7 @@ def test_compress_router_deletes_uploaded_object_when_enqueue_fails() -> None:
     """An enqueue failure must not orphan the uploaded R2 object (I4)."""
     store = TaskStore(_settings(), client=cast(RedisLike, fakeredis.FakeRedis()))
     r2 = FakeR2()
-    queue = _FailingEnqueueQueue(StoreUnavailableError("down"))
+    queue = _FailingEnqueueQueue(_settings(), store, StoreUnavailableError("down"))
     client = TestClient(_app_with(store, r2, queue=queue))  # type: ignore[arg-type]
     response = _upload(client, _valid_pdf_bytes())
 
@@ -239,6 +244,7 @@ def test_compress_router_deletes_uploaded_object_when_enqueue_fails() -> None:
     assert len(r2.uploaded) == 1, "input was uploaded before enqueue"
     uploaded_key = r2.uploaded[0][0]
     assert uploaded_key in r2.deleted, "uploaded key must be deleted on enqueue failure"
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

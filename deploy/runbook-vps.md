@@ -85,7 +85,6 @@ docker compose -p papyr-app --env-file "$PAPYR_ENV_FILE" \
 docker compose -p papyr-app --env-file "$PAPYR_ENV_FILE" -f deploy/docker-compose.yml ps
 ```
 
-
 The deploy-time image reference must be immutable: `PAPYR_API_IMAGE` must be the pushed image digest (e.g. `registry/papyr-api@sha256:…`) before `up`. Rolling back to the previous healthy image means re-running the activation command with the previous digest (and, in the full stack, the previous `PAPYR_WORKERS_IMAGE`). The app image digest gate (registry push) is completed by the release procedure, not by this template.
 
 Full-topology activation (Phase 5 branch): the unified topology includes `redis`, `workers`, `clamd`, `cleanup`, `monitor` in profile `queue` plus `nginx` in profile `edge`. After release gates publish `PAPYR_WORKERS_IMAGE` and `PAPYR_CLAMD_IMAGE` digests, a separately authorized deployment runs the stack under the single project name `papyr-app` with all required profiles. Until then, `workers`, `cleanup`, and `monitor` remain off the critical path for foundation-stage API verification.
@@ -139,7 +138,7 @@ These steps remain unexecuted here until authorization. Production operations sh
 
 The web application (Vercel or self-hosted Next.js) issues **same-origin** `/api/v1/*` requests. A build-time rewrite forwards them to the backend origin. The path is:
 
-```
+```text
 Browser ── /api/v1/* (same-origin) ──> Next.js rewrite (next.config.ts)
         ── https://api.mypapyr.com/api/v1/* ──> Cloudflare (DNS, TLS)
         ── nginx (api.mypapyr.com vhost) ──> FastAPI (:3000, internal)

@@ -63,31 +63,31 @@ Pushing a branch runs the same CI pipeline that gates merges to `main` (`.github
 
 The pipeline runs **19 checks**, grouped as follows.
 
-**Frontend**
+### Frontend
 
 - Frontend (Lint + Format)
 - Frontend (Vitest + Coverage), gated at the project's coverage thresholds (\`npm run test:coverage\`)
 - Frontend (Next.js production build)
 - Frontend (Playwright E2E)
 
-**Backend**
+### Backend
 
 - Backend (Ruff lint + format)
 - Backend (Strict mypy)
 - Backend (Pytest + coverage threshold, gated at ≥80% measured coverage)
 
-**Security**
+### Security
 
 - Security (Trivy filesystem/config scan, critical and high severity)
 - Security (gitleaks secret scan, full repository history)
 
-**Supply chain**
+### Supply chain
 
 - Supply chain (dependency review on PRs — **PR-only**, not run on pushes)
 - Supply chain (npm audit)
 - Supply chain (pip-audit)
 
-**Repository QA**
+### Repository QA
 
 - QA (action pin truth)
 - QA (hadolint)

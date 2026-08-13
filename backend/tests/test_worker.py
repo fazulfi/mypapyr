@@ -1337,8 +1337,7 @@ def test_injected_claim_min_idle_must_exceed_policy_max(
         )
 
 
-def test_tool_timeout_policy_uses_per_tool_caps_and_max_timeout_is_ceiling(
-) -> None:
+def test_tool_timeout_policy_uses_per_tool_caps_and_max_timeout_is_ceiling() -> None:
     """The worker enforces the approved per-tool execution cap (I2)."""
     policy = ToolTimeoutPolicy()
     assert policy.timeout_for("compress-pdf") == timedelta(seconds=180)
