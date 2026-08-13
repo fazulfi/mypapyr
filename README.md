@@ -147,6 +147,8 @@ uvicorn app.main:app --reload   # http://localhost:8000/health and /health/ready
 pytest tests/ --cov=app --cov-fail-under=80
 ```
 
+The API service **fails fast at boot** if the five required environment variables are missing or empty (`backend/app/config.py`): `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, and `ALLOWED_ORIGINS`. The committed template sets these intentionally empty so an accidental load fails closed. Set real values out of band before running uvicorn or `pytest tests/` to avoid `MissingEnvVarError`; see [docs/environment-variables.md](docs/environment-variables.md) for the authoritative list and defaults.
+
 ### Repository guard
 
 ```bash
@@ -170,6 +172,16 @@ bash scripts/check-r2-lifecycle.sh            # repository gate for the lifecycl
 Exit codes are stable: `0` healthy/success, `1` failed check or pass, `2` configuration error.
 
 The unified Compose topology (`deploy/docker-compose.yml`) declares `api` (profile `app`), `nginx` (profile `edge`), and `redis`, `workers`, `clamd`, `cleanup`, `monitor` (profile `queue`). Images are supplied at deploy time as immutable digest-form references (`PAPYR_API_IMAGE`, `PAPYR_WORKERS_IMAGE`, `PAPYR_CLAMD_IMAGE`); no digest is stored in source. Applying the R2 lifecycle policy to a live bucket remains a separately authorized deploy-time operator action (see `deploy/runbook-vps.md`).
+
+## Deployment
+
+Papyr deploys in two parts, and CI is never the deployment mechanism.
+
+- **Frontend — Vercel.** The Next.js application is built and served from Vercel. The client always issues **same-origin** `/api/v1/*` requests; `frontend/next.config.ts` rewrites them to the backend origin from the build-time `NEXT_PUBLIC_API_BASE_URL` variable (default `https://api.mypapyr.com`). No CORS is needed in production because requests never leave the frontend origin.
+- **Backend — a VPS behind Nginx.** The FastAPI service runs on a VPS via Docker Compose with immutable digest images. The Compose topology (`deploy/docker-compose.yml`) declares `api` (profile `app`), `nginx` (profile `edge`), and `redis`, `workers`, `clamd`, `cleanup`, `monitor` (profile `queue`). Nginx terminates the public `api.mypapyr.com` origin and proxies to FastAPI on port 3000. Images are supplied at deploy time as immutable digest-form references (`PAPYR_API_IMAGE`, `PAPYR_WORKERS_IMAGE`, `PAPYR_CLAMD_IMAGE`); no digest is stored in source.
+- **Rollback.** A rollout is a pointer move: redeploy the previous digest for the affected service. No database migration is involved in the current topology.
+
+Operators start at [deploy/runbook-vps.md](deploy/runbook-vps.md) (authoritative VPS deployment, environment provisioning, and rollout/rollback), with [docs/environment-variables.md](docs/environment-variables.md) for the required/optional variable contract, [docs/upgrade.md](docs/upgrade.md) for version upgrades, and [docs/ops-runbook.md](docs/ops-runbook.md) for day-to-day operations.
 
 ## Roadmap
 
@@ -203,7 +215,7 @@ The [roadmap](docs/roadmap.md) tracks the path from this foundation, through the
 
 ## License and terms
 
-This repository has no declared license. No `LICENSE` file is present, and the owner has not issued a written open-source license decision; until one is published, the source is provided for evaluation only and no reuse, modification, or redistribution rights are granted. Contributions are welcome under the [contribution guide](CONTRIBUTING.md); accepted contributions will be covered by the license the owner selects.
+This repository has no declared license. No `LICENSE` file is present, and the owner has not issued a written open-source license decision; until one is published, the source is provided for evaluation only and no reuse, modification, or redistribution rights are granted. Contributions are welcome under the [contribution guide](CONTRIBUTING.md); accepted contributions will be covered by the license the owner selects. See [docs/licensing.md](docs/licensing.md) for the dated decision record.
 
 ## Limitations
 

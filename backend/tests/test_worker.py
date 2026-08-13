@@ -58,6 +58,7 @@ from app.worker.worker import (
     JobExecutor,
     JobWorker,
     SubprocessJobRunner,
+    ToolTimeoutPolicy,
     WorkerError,
     WorkerOptions,
     WorkerUnavailableError,
@@ -1141,6 +1142,10 @@ def test_malformed_entries_are_deleted_without_execution(
         raw_client.xrange(STREAM_KEY, "-", "+", count=10),
     )
     assert remaining == []
+    # M5: the malformed entry must be XACKed too, so the PEL does not
+    # accumulate phantom pending entries (stream removal alone is not enough).
+    pending = raw_client.xpending(STREAM_KEY, GROUP_NAME)
+    assert pending["pending"] == 0
 
 
 def test_non_utf8_entry_is_dropped_without_execution(
@@ -1330,6 +1335,24 @@ def test_injected_claim_min_idle_must_exceed_policy_max(
                 claim_min_idle=timedelta(seconds=180),
             ),
         )
+
+
+def test_tool_timeout_policy_uses_per_tool_caps_and_max_timeout_is_ceiling() -> None:
+    """The worker enforces the approved per-tool execution cap (I2)."""
+    policy = ToolTimeoutPolicy()
+    assert policy.timeout_for("compress-pdf") == timedelta(seconds=180)
+    assert policy.timeout_for("merge-pdf") == timedelta(seconds=180)
+    assert policy.timeout_for("pdf-to-jpg") == timedelta(seconds=300)
+    assert policy.max_timeout() == timedelta(seconds=300)
+
+
+def test_worker_defaults_to_tool_timeout_policy(
+    store: TaskStore, stream_client: StreamsRedisLike, clock: FakeClock
+) -> None:
+    """A production worker without an injected policy uses per-tool caps, so
+    claim_min_idle clears the 300 s pdf-to-jpg ceiling (I2)."""
+    worker = make_worker(store, stream_client, SuccessExecutor(), clock)
+    assert worker.claim_min_idle > timedelta(seconds=300)
 
 
 def test_worker_rejects_work_after_close(

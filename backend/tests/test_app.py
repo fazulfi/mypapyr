@@ -128,3 +128,14 @@ def test_testclient_context_manager_works() -> None:
         response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+# --- SEC-02: auto-docs disabled on the API surface ---------------------------
+
+
+def test_factory_disables_interactive_docs() -> None:
+    """The hardened API surface serves no /docs, /redoc, or /openapi.json."""
+    client = TestClient(create_app())
+    for path in ("/docs", "/redoc", "/openapi.json"):
+        response = client.get(path)
+        assert response.status_code == 404, f"{path} should not be served"

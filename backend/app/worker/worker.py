@@ -80,6 +80,7 @@ from app.queue.store import (
     TaskStore,
     TransitionPayload,
 )
+from app.routers.capabilities import TOOL_LIMITS, ToolId
 from app.schemas.job import ErrorSummary, Progress, ResultSummary
 from app.security.fair_use import FairUsePolicy
 from app.tasks.state_machine import JobEvent, JobState
@@ -428,6 +429,34 @@ class DefaultTimeoutPolicy:
         return self._default
 
 
+class ToolTimeoutPolicy:
+    """Approved per-tool execution timeout (R-07, I2).
+
+    Reads the closed :data:`TOOL_LIMITS` registry so the worker's outer
+    wall-clock timeout matches the per-tool cap the capabilities endpoint
+    advertises (e.g. PDF-to-JPG 300 s) instead of a flat default. The
+    stale-claim idle threshold uses ``max_timeout()`` — the ceiling across
+    tools — so a still-running job is never reconciled as stale and
+    re-executed (double-execution hazard).
+    """
+
+    def timeout_for(self, tool: str) -> timedelta:
+        try:
+            limit = TOOL_LIMITS[ToolId(tool)]
+        except (KeyError, ValueError):
+            # Unknown routes fail closed on the conservative default rather
+            # than granting an unbounded or flat 180 s window.
+            return timedelta(seconds=180)
+        return timedelta(seconds=limit.max_execution_seconds)
+
+    def max_timeout(self) -> timedelta:
+        ceiling = max(
+            (limit.max_execution_seconds for limit in TOOL_LIMITS.values()),
+            default=180,
+        )
+        return timedelta(seconds=ceiling)
+
+
 class TerminalRetryPolicy(Protocol):
     """Bounded retry/backoff seam for terminal store writes (F-3).
 
@@ -560,9 +589,7 @@ class JobWorker:
             else DaemonThreadJobRunner(executor)
         )
         self._policy = (
-            knobs.timeout_policy
-            if knobs.timeout_policy is not None
-            else DefaultTimeoutPolicy(timedelta(seconds=settings.default_timeout_seconds))
+            knobs.timeout_policy if knobs.timeout_policy is not None else ToolTimeoutPolicy()
         )
         self._terminal_retry = (
             knobs.terminal_retry
@@ -703,6 +730,7 @@ class JobWorker:
         if decoded is None:
             logger.error("worker malformed queue entry")
             self._xdel(entry_id)
+            self._xack(entry_id)
             return
         task_id, tool, route, origin_fingerprint = decoded
         try:
@@ -711,6 +739,7 @@ class JobWorker:
             )
         except TaskNotFoundError:
             self._xdel(entry_id)
+            self._xack(entry_id)
             self._release_fingerprint(origin_fingerprint, task_id)
             return
         except TaskConflictError:
@@ -738,6 +767,7 @@ class JobWorker:
             record = self._store.get(task_id)
         except TaskNotFoundError:
             self._xdel(entry_id)
+            self._xack(entry_id)
             self._release_fingerprint(origin_fingerprint, task_id)
             return
         if record.state in _TERMINAL_STATES:
@@ -755,6 +785,7 @@ class JobWorker:
                 )
             except TaskNotFoundError:
                 self._xdel(entry_id)
+                self._xack(entry_id)
                 self._release_fingerprint(origin_fingerprint, task_id)
                 return
             except TaskConflictError:

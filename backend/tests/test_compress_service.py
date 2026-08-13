@@ -246,6 +246,29 @@ def test_executor_input_delete_failure_still_returns_success(
     assert len(r2.uploaded) == 1
 
 
+def test_executor_uploads_compressed_output_not_original_input(
+    sample_task_record: TaskRecord,
+) -> None:
+    """The compressed (engine-produced) bytes are uploaded — never the input."""
+    input_bytes = b"%PDF-1.7 sample pdf content"
+    compressed_bytes = b"%PDF-1.7 compressed-output"
+    executor, r2, _ = _executor(
+        record=sample_task_record,
+        engine=GhostscriptEngine(gs_path="fake-gs", runner=FakeRunner(output=compressed_bytes)),
+    )
+    r2._objects.update({"input-key-123": input_bytes})  # ensure the input differs from output
+    job = ClaimedJob(
+        task_id="task-abc123", tool="compress-pdf", route="compress-pdf", entry_id=b"entry-0"
+    )
+    outcome = executor.execute(job, lambda p: None)
+
+    assert outcome.kind == ExecutionKind.SUCCESS
+    assert len(r2.uploaded) == 1
+    _uploaded_key, uploaded_body = r2.uploaded[0]
+    assert uploaded_body == compressed_bytes, "uploaded body must be the compressed output"
+    assert uploaded_body != input_bytes, "the original input must never be uploaded as output"
+
+
 def test_executor_record_not_processing_refusal() -> None:
     now = datetime.now(UTC)
     record = TaskRecord(

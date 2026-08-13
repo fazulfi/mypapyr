@@ -102,9 +102,17 @@ class GhostscriptTimeoutError(RuntimeError):
 
 @dataclass(frozen=True)
 class CompressResult:
+    """Ghostscript compression outcome, including the produced bytes.
+
+    The executor uploads ``result_bytes`` (the actual compressed output), never
+    the original input. Keeping the bytes here lets the caller persist the real
+    result and report truthful ``result_size``/``saved_percent``.
+    """
+
     original_size: int
     result_size: int
     saved_percent: float
+    result_bytes: bytes
 
 
 class S3ReadClient(Protocol):
@@ -178,7 +186,8 @@ class GhostscriptEngine:
                     extra={"fields": {"error": "GhostscriptError"}},
                 )
                 raise GhostscriptError()
-            result_size = result_path.stat().st_size
+            result_bytes = result_path.read_bytes()
+            result_size = len(result_bytes)
         saved_percent = (
             0.0
             if result_size >= original_size
@@ -188,6 +197,7 @@ class GhostscriptEngine:
             original_size=original_size,
             result_size=result_size,
             saved_percent=saved_percent,
+            result_bytes=result_bytes,
         )
 
 
@@ -258,7 +268,7 @@ class CompressExecutor:
         output_key = self._get_r2.build_object_key(extension="pdf")
         self._get_r2.upload_object(
             output_key,
-            data,
+            result.result_bytes,
             content_type="application/pdf",
             expires_at=record.expires_at,
         )

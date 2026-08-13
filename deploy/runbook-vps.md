@@ -43,9 +43,16 @@ Fail-closed behavior (designed, not a regression):
 - `--profile app` selects only the API service. `redis`, `workers`, `clamd`, `cleanup`, and `monitor` live on the `queue` profile and `nginx` on `edge`. Redis 7.4.10 is digest-pinned (`redis:7.4.10-alpine@sha256:…`) and R-09-configured; only `nginx` keeps a `__SET_ME__` image placeholder. None of the queue/edge services can be activated by the API-only commands below.
 - The R2 lifecycle policy (`deploy/r2-lifecycle.json`) is verified by `bash scripts/check-r2-lifecycle.sh` but applied to the live bucket only as a separately authorized deploy-time operator action; application cleanup remains the hard 3,600-second enforcement.
 
-## Isolated API deployment (foundation stage)
+## API deployment (foundation stage)
 
-This procedure activates **only the `api` service** from the unified topology skeleton. In production, deploy only after separately authorizing the full topology with worker/ClamAV images (`PAPYR_WORKERS_IMAGE`, `PAPYR_CLAMD_IMAGE`). The queue profile remains unactivated during this foundation-stage API-only deployment until release gates pass.
+The `api` service declares `depends_on: redis + clamd` (both
+`condition: service_healthy`), so **Compose refuses to start `api` without
+them** — activating `api` alone is impossible and would fail with "service
+redis/clamd is required by api but is disabled". The foundation stage therefore
+activates `api` together with its two healthy dependencies (`redis`,
+`clamd`) from the `queue` profile. `workers`, `cleanup`, and `monitor` remain
+quiet until release gates publish `PAPYR_WORKERS_IMAGE` (see "Full-stack
+activation" below).
 
 ```bash
 # 1. Build the foundation image locally (immutable base digest is pinned in
@@ -59,15 +66,16 @@ bash scripts/check-compose.sh
 docker compose -p papyr-app --env-file "$PAPYR_ENV_FILE" \
   -f deploy/docker-compose.yml config --quiet
 
-# 4. Pull only the api image (never the deferred slots).
+# 4. Pull the needed images (never the deferred worker slot).
 docker compose -p papyr-app --env-file "$PAPYR_ENV_FILE" \
-  -f deploy/docker-compose.yml pull api
+  -f deploy/docker-compose.yml pull api redis
 
-# 5. Activate in an ISOLATED compose project so no legacy project is touched.
-#    --profile app selects ONLY api (redis/workers are on the "queue"
-#    profile); the explicit service name is the second guard.
+# 5. Activate api with its required healthy dependencies (redis + clamd).
+#    `--profile app` selects api; `--profile queue` supplies the redis and
+#    clamd it depends on. The explicit service names are the second guard.
 docker compose -p papyr-app --env-file "$PAPYR_ENV_FILE" \
-  -f deploy/docker-compose.yml --profile app up -d api
+  -f deploy/docker-compose.yml --profile app --profile queue \
+  up -d api redis clamd
 
 # 6. Smoke: api publishes no host port (internal only); probe inside the
 #    container, then confirm the compose health state.
@@ -77,9 +85,9 @@ docker compose -p papyr-app --env-file "$PAPYR_ENV_FILE" \
 docker compose -p papyr-app --env-file "$PAPYR_ENV_FILE" -f deploy/docker-compose.yml ps
 ```
 
-The deploy-time image reference must be immutable: `PAPYR_API_IMAGE` must be the pushed image digest (e.g. `registry/papyr-api@sha256:…`) before `up`. Rolling back to the previous healthy image means re-running step 5 with the previous digest. The app image digest gate (registry push) is completed by the release procedure, not by this template.
+The deploy-time image reference must be immutable: `PAPYR_API_IMAGE` must be the pushed image digest (e.g. `registry/papyr-api@sha256:…`) before `up`. Rolling back to the previous healthy image means re-running the activation command with the previous digest (and, in the full stack, the previous `PAPYR_WORKERS_IMAGE`). The app image digest gate (registry push) is completed by the release procedure, not by this template.
 
-Full-topology activation (Phase 5 branch): the unified topology includes `redis`, `workers`, `clamd`, `cleanup`, `monitor` in profile `queue` plus `nginx` in profile `edge`. After release gates publish `PAPYR_WORKERS_IMAGE` and `PAPYR_CLAMD_IMAGE` digests, a separately authorized deployment runs the stack under the single project name `papyr-app` with all required profiles. Until then, these services remain off the critical path for foundation-stage API verification.
+Full-topology activation (Phase 5 branch): the unified topology includes `redis`, `workers`, `clamd`, `cleanup`, `monitor` in profile `queue` plus `nginx` in profile `edge`. After release gates publish `PAPYR_WORKERS_IMAGE` and `PAPYR_CLAMD_IMAGE` digests, a separately authorized deployment runs the stack under the single project name `papyr-app` with all required profiles. Until then, `workers`, `cleanup`, and `monitor` remain off the critical path for foundation-stage API verification.
 
 ## Operations
 
@@ -98,7 +106,8 @@ export PAPYR_API_IMAGE=registry/papyr-api@sha256:<previous-digest>
 docker compose -p papyr-app --env-file "$PAPYR_ENV_FILE" \
   -f deploy/docker-compose.yml config --quiet
 docker compose -p papyr-app --env-file "$PAPYR_ENV_FILE" \
-  -f deploy/docker-compose.yml --profile app up -d api
+  -f deploy/docker-compose.yml --profile app --profile queue \
+  up -d api redis clamd
 ```
 
 Database or object-format changes require an explicit compatibility and recovery plan.
@@ -113,7 +122,7 @@ The feature branch introduces `workers`, `clamd`, `cleanup`, and `monitor` servi
 
 1. **Topology consolidation**: bring up a single compose project with all required profiles (`--profile app --profile queue`) under the established name `papyr-app` per D-1 of the deployment plan; verify Redis resolves from the API container.
 
-2. **Image parameterization**: export `PAPYR_API_IMAGE`, `PAPYR_WORKERS_IMAGE`, and `PAPYR_CLAMD_IMAGE` digests for the session only (never stored in source); build/push worker images from the merged SHA.
+2. **Image parameterization**: export `PAPYR_API_IMAGE`, `PAPYR_WORKERS_IMAGE`, and `PAPYR_CLAMD_IMAGE` digests for the session only (never stored in source). The worker image is built from `backend/Dockerfile.worker` by the release procedure (the repository has no CI build producer for `PAPYR_WORKERS_IMAGE`); its digest is captured at release and pinned here.
 
 3. **Activation**: `docker compose -p papyr-app --env-file "$PAPYR_ENV_FILE" --profile app --profile queue pull` and `up -d`; confirm `/health` and `/health/ready` return 200 from the API container; verify worker health probe responds on the configured port.
 
@@ -124,3 +133,41 @@ The feature branch introduces `workers`, `clamd`, `cleanup`, and `monitor` servi
 6. **Drills**: perform rollback to the previous healthy digest; measure recovery time; then restore forward state; optionally drill Redis persistence restoration if applicable.
 
 These steps remain unexecuted here until authorization. Production operations should follow the owner's approved deployment checklist and use non-root routine commands (`mypapyr` service account) as permitted by policy.
+
+## Frontend connectivity: `/api/v1` origin and nginx
+
+The web application (Vercel or self-hosted Next.js) issues **same-origin** `/api/v1/*` requests. A build-time rewrite forwards them to the backend origin. The path is:
+
+```text
+Browser ── /api/v1/* (same-origin) ──> Next.js rewrite (next.config.ts)
+        ── https://api.mypapyr.com/api/v1/* ──> Cloudflare (DNS, TLS)
+        ── nginx (api.mypapyr.com vhost) ──> FastAPI (:3000, internal)
+```
+
+### Backend origin
+
+- The rewrite destination is `NEXT_PUBLIC_API_BASE_URL` (build-time, default `https://api.mypapyr.com`); see `frontend/next.config.ts`. Set it at build for any non-default origin.
+- The API service publishes **no host port** (internal `expose: "3000"` only). It must be reachable by nginx on the compose network at `api:3000`, and by a public origin through an nginx/Cloudflare vhost that terminates TLS.
+
+### nginx `api.mypapyr.com` vhost (release-time, not in this template)
+
+`deploy/nginx/conf.d/production.conf` is a skeleton (`__SET_ME__` vhost, no TLS). For production the release procedure provisions a real vhost:
+
+- `server_name api.mypapyr.com;` with TLS (e.g. Cloudflare origin certificate or Let's Encrypt), terminating TLS in front of the API service.
+- `location / { proxy_pass http://papyr_api_upstream; }` forwarding `/api/v1/*` and `/health` to the API container, preserving the X-Forwarded-* headers the app expects.
+- Retain the fail-closed `default_server → 444` block so an unknown Host is dropped.
+- Keep the VPS firewall (e.g. `ufw`/Cloudflare) open only on `:443` (TLS) for the origin.
+
+### Verification
+
+After both sides are deployed:
+
+```bash
+# From the frontend host / a client:
+curl -s -o /dev/null -w "%{http_code}\n" https://api.mypapyr.com/health     # expect 200
+curl -s -o /dev/null -w "%{http_code}\n" https://api.mypapyr.com/api/v1/capabilities  # expect 200
+# Then confirm the deployed frontend serves a tool page and its /api/v1 calls return 200,
+# not 404 (the historical gate-exit blocker).
+```
+
+The git history records that the frontend reaching the backend over `/api/v1` was the sole blocker to a prior gate-exit; keep this connectivity check in the release checklist until the full request path is proven green in production.
