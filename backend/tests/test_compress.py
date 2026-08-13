@@ -237,7 +237,7 @@ def test_compress_router_deletes_uploaded_object_when_enqueue_fails() -> None:
     store = TaskStore(_settings(), client=cast(RedisLike, fakeredis.FakeRedis()))
     r2 = FakeR2()
     queue = _FailingEnqueueQueue(_settings(), store, StoreUnavailableError("down"))
-    client = TestClient(_app_with(store, r2, queue=queue))  # type: ignore[arg-type]
+    client = TestClient(_app_with(store, r2, queue=queue))
     response = _upload(client, _valid_pdf_bytes())
 
     assert response.status_code == 503
