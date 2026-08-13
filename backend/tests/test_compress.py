@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.queue.queue import JobQueue, QueueOptions, StreamsRedisLike
-from app.queue.store import RedisLike, TaskStore
+from app.queue.store import RedisLike, StoreUnavailableError, TaskStore
 from app.routers import compress as compress_module
 from app.security.classification import ScannerStatus, ScannerVerdict
 from app.security.sanitize import PdfSanitizer
@@ -88,6 +88,7 @@ class FakeR2(R2Client):
     def __init__(self) -> None:
         self._objects: dict[str, bytes] = {}
         self.uploaded: list[tuple[str, bytes]] = []
+        self.deleted: list[str] = []
         # Skip parent __init__ to avoid real AWS connection
 
     def build_object_key(self, *, extension: str | None = None, now: datetime | None = None) -> str:
@@ -112,6 +113,7 @@ class FakeR2(R2Client):
         )
 
     def delete_object(self, key: str) -> bool:
+        self.deleted.append(key)
         self._objects.pop(key, None)
         return True
 
@@ -119,6 +121,8 @@ class FakeR2(R2Client):
 @pytest.fixture
 def r2() -> FakeR2:
     return FakeR2()
+
+
 
 
 @pytest.fixture
@@ -208,6 +212,33 @@ def test_compress_router_uploads_sanitized_bytes_not_raw() -> None:
     assert len(r2.uploaded) == 1
     assert r2.uploaded[0][1] == expected
 
+
+
+class _FailingEnqueueQueue:
+    """Queue stub whose enqueue always raises a store-unavailable error."""
+
+    def __init__(self, error: Exception) -> None:
+        self._error = error
+
+    def enqueue(
+        self, record: object, *, origin: object | None = None, route: object | None = None
+    ) -> object:
+        del record, origin, route
+        raise self._error
+
+
+def test_compress_router_deletes_uploaded_object_when_enqueue_fails() -> None:
+    """An enqueue failure must not orphan the uploaded R2 object (I4)."""
+    store = TaskStore(_settings(), client=cast(RedisLike, fakeredis.FakeRedis()))
+    r2 = FakeR2()
+    queue = _FailingEnqueueQueue(StoreUnavailableError("down"))
+    client = TestClient(_app_with(store, r2, queue=queue))  # type: ignore[arg-type]
+    response = _upload(client, _valid_pdf_bytes())
+
+    assert response.status_code == 503
+    assert len(r2.uploaded) == 1, "input was uploaded before enqueue"
+    uploaded_key = r2.uploaded[0][0]
+    assert uploaded_key in r2.deleted, "uploaded key must be deleted on enqueue failure"
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

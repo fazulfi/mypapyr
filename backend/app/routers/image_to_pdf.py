@@ -74,6 +74,18 @@ def _resolve_queue(request: Request, settings: Settings, store: TaskStore) -> Jo
     return JobQueue(settings, store)
 
 
+def _delete_orphan_inputs(r2: R2Client, input_keys: list[str]) -> None:
+    """Best-effort cleanup of uploaded inputs when enqueue fails (I4)."""
+    for input_key in input_keys:
+        try:
+            r2.delete_object(input_key)
+        except Exception as exc:
+            logger.error(
+                "jpg-to-pdf orphan input delete failed",
+                extra={"fields": {"error": type(exc).__name__}},
+            )
+
+
 @router.post("/tasks", response_model=TaskAdmission, status_code=status.HTTP_202_ACCEPTED)
 async def jpg_to_pdf_admit(
     request: Request,
@@ -143,18 +155,21 @@ async def jpg_to_pdf_admit(
             "jpg-to-pdf enqueue store unavailable",
             extra={"fields": {"error": type(exc).__name__}},
         )
+        _delete_orphan_inputs(r2, input_keys)
         raise HTTPException(status_code=503, detail={"messageKey": "error.internalError"}) from exc
     except TaskConflictError as exc:
         logger.error(
             "jpg-to-pdf enqueue conflict",
             extra={"fields": {"error": type(exc).__name__}},
         )
+        _delete_orphan_inputs(r2, input_keys)
         raise HTTPException(status_code=409, detail={"messageKey": "error.internalError"}) from exc
     except Exception as exc:
         logger.error(
             "jpg-to-pdf enqueue failed",
             extra={"fields": {"error": type(exc).__name__}},
         )
+        _delete_orphan_inputs(r2, input_keys)
         raise HTTPException(status_code=503, detail={"messageKey": "error.internalError"}) from exc
 
     return TaskAdmission(task_id=enqueued.task_id, expires_at=enqueued.expires_at)

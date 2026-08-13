@@ -76,6 +76,17 @@ def _resolve_queue(request: Request, settings: Settings, store: TaskStore) -> Jo
     return JobQueue(settings, store)
 
 
+
+def _delete_orphan_input(r2: R2Client, input_key: str) -> None:
+    """Best-effort cleanup of an uploaded input when enqueue fails (I4)."""
+    try:
+        r2.delete_object(input_key)
+    except Exception as exc:
+        logger.error(
+            "split orphan input delete failed",
+            extra={"fields": {"error": type(exc).__name__}},
+        )
+
 def _reject_ranges(reason: str) -> NoReturn:
     logger.error("split ranges rejected", extra={"fields": {"error": reason}})
     raise HTTPException(status_code=400, detail={"messageKey": "error.badRequest"})
@@ -181,18 +192,21 @@ async def split_pdf_admit(
             "split enqueue store unavailable",
             extra={"fields": {"error": type(exc).__name__}},
         )
+        _delete_orphan_input(r2, input_key)
         raise HTTPException(status_code=503, detail={"messageKey": "error.internalError"}) from exc
     except TaskConflictError as exc:
         logger.error(
             "split enqueue conflict",
             extra={"fields": {"error": type(exc).__name__}},
         )
+        _delete_orphan_input(r2, input_key)
         raise HTTPException(status_code=409, detail={"messageKey": "error.internalError"}) from exc
     except Exception as exc:
         logger.error(
             "split enqueue failed",
             extra={"fields": {"error": type(exc).__name__}},
         )
+        _delete_orphan_input(r2, input_key)
         raise HTTPException(status_code=503, detail={"messageKey": "error.internalError"}) from exc
 
     return TaskAdmission(task_id=enqueued.task_id, expires_at=enqueued.expires_at)

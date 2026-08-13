@@ -67,3 +67,5 @@ export function proxy(request: NextRequest): NextResponse {
   });
   return response;
 }
+
+export default proxy;

@@ -81,6 +81,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         title="papyr-backend",
         version="0.1.0",
         lifespan=_lifespan,
+        # Hardening (SEC-02): the API surface is admission/status/download only.
+        # Auto-generated interactive docs and the raw OpenAPI schema are
+        # disabled so no schema reference is served from production.
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
     )
 
     @application.get("/health")
