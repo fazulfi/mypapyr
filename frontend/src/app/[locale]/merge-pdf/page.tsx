@@ -8,6 +8,7 @@ import { defaultLocale, isLocale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
 import { ToolPageHeader } from "@/components/ToolPageHeader";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
+import OtherTools from "@/components/OtherTools";
 import { Dropzone } from "@/components/uploader/Dropzone";
 import { PreparingCard } from "@/components/states/PreparingCard";
 import { QueuedCard } from "@/components/states/QueuedCard";
@@ -174,6 +175,7 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
         <ToolPageHeader locale={locale} toolId="merge-pdf" />
         <PrivacyNotice locale={locale} model="client" />
         {card}
+        <OtherTools currentTool="merge-pdf" locale={locale} />
       </div>
     </main>
   );

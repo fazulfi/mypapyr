@@ -5,12 +5,14 @@ import { usePathname } from "next/navigation";
 
 import type { Locale } from "../lib/i18n";
 import { locales } from "../lib/i18n";
-import { getAllTools, type CatalogTool } from "../lib/catalog";
+import { getAllTools, getLegacyTools, type CatalogTool } from "../lib/catalog";
 import { getMessages } from "../lib/messages";
 import { LogoLockup } from "./LogoLockup";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
 const basicToolIds = ["compress-pdf", "merge-pdf", "split-pdf"] as const;
+const securityToolIds = ["protect", "unlock"] as const;
+const enhancementToolIds = ["watermark", "sign"] as const;
 const convertToolIds = ["jpg-to-pdf", "pdf-to-jpg"] as const;
 
 export interface NavCategory {
@@ -19,19 +21,27 @@ export interface NavCategory {
 }
 
 export function getNavCategories(locale: Locale): NavCategory[] {
-  const allTools = getAllTools();
+  const allTools = [...getAllTools(), ...getLegacyTools()];
   const copy = getMessages(locale);
   const basicTools: CatalogTool[] = [];
+  const securityTools: CatalogTool[] = [];
+  const enhancementTools: CatalogTool[] = [];
   const convertTools: CatalogTool[] = [];
   for (const tool of allTools) {
     if ((basicToolIds as readonly string[]).includes(tool.id)) {
       basicTools.push(tool);
+    } else if ((securityToolIds as readonly string[]).includes(tool.id)) {
+      securityTools.push(tool);
+    } else if ((enhancementToolIds as readonly string[]).includes(tool.id)) {
+      enhancementTools.push(tool);
     } else if ((convertToolIds as readonly string[]).includes(tool.id)) {
       convertTools.push(tool);
     }
   }
   return [
     { label: copy.nav.basic, tools: basicTools },
+    { label: copy.nav.security, tools: securityTools },
+    { label: copy.nav.enhancement, tools: enhancementTools },
     { label: copy.nav.conversion, tools: convertTools },
   ];
 }

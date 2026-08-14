@@ -274,6 +274,9 @@ export const messages = {
           "Small files are processed in your browser. Large files are sent to the server and deleted within 1 hour.",
       },
     },
+    otherTools: {
+      title: "Other tools",
+    },
   },
   es: {
     siteName: "Papyr",
@@ -553,6 +556,9 @@ export const messages = {
         hybrid:
           "Los archivos pequeños se procesan en tu navegador. Los archivos grandes se envían al servidor y se eliminan en 1 hora.",
       },
+    },
+    otherTools: {
+      title: "Otras herramientas",
     },
   },
   id: {
@@ -834,6 +840,9 @@ export const messages = {
         hybrid:
           "File kecil diproses di browser. File besar dikirim ke server dan otomatis dihapus dalam 1 jam.",
       },
+    },
+    otherTools: {
+      title: "Alat lainnya",
     },
   },
 } as const;

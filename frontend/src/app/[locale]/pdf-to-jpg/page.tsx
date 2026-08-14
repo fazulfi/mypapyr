@@ -8,6 +8,7 @@ import { defaultLocale, isLocale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
 import { ToolPageHeader } from "@/components/ToolPageHeader";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
+import OtherTools from "@/components/OtherTools";
 import { Dropzone } from "@/components/uploader/Dropzone";
 import { PreparingCard } from "@/components/states/PreparingCard";
 import { QueuedCard } from "@/components/states/QueuedCard";
@@ -165,6 +166,7 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
         <ToolPageHeader locale={locale} toolId="pdf-to-jpg" />
         <PrivacyNotice locale={locale} model="server" />
         {card}
+        <OtherTools currentTool="pdf-to-jpg" locale={locale} />
       </div>
     </main>
   );
