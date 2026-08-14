@@ -40,6 +40,16 @@ export const messages = {
     reset: {
       processAnother: "Process another file",
     },
+    password: {
+      label: "Password",
+      placeholder: "Enter password",
+      forFile: "Password for {name}",
+      errors: {
+        wrongPassword: "Wrong password",
+        corrupt: "Corrupt file",
+        unsupported: "Unsupported file",
+      },
+    },
     languages: { en: "English", es: "Español", id: "Bahasa Indonesia" },
     home: {
       description: "Papyr PDF tools.",
@@ -384,6 +394,16 @@ export const messages = {
     },
     reset: {
       processAnother: "Procesar otro archivo",
+    },
+    password: {
+      label: "Contrase\u00f1a",
+      placeholder: "Ingresa la contrase\u00f1a",
+      forFile: "Contrase\u00f1a para {name}",
+      errors: {
+        wrongPassword: "Contrase\u00f1a incorrecta",
+        corrupt: "Archivo corrupto",
+        unsupported: "Archivo no compatible",
+      },
     },
     languages: { en: "English", es: "Español", id: "Bahasa Indonesia" },
     home: {
@@ -732,6 +752,16 @@ export const messages = {
     },
     reset: {
       processAnother: "Proses file lain",
+    },
+    password: {
+      label: "Kata sandi",
+      placeholder: "Masukkan kata sandi",
+      forFile: "Kata sandi untuk {name}",
+      errors: {
+        wrongPassword: "Kata sandi salah",
+        corrupt: "File rusak",
+        unsupported: "File tidak didukung",
+      },
     },
     languages: { en: "English", es: "Español", id: "Bahasa Indonesia" },
     home: {
