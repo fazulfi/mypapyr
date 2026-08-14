@@ -33,6 +33,7 @@ from app.queue.store import (
     TaskRecord,
     TaskStore,
 )
+from app.routers import _resolve_origin
 from app.routers.capabilities import TOOL_LIMITS, ToolId
 from app.schemas.job import TaskAdmission
 from app.security.sanitize import PdfSanitizer
@@ -109,51 +110,60 @@ async def merge_pdf_admit(request: Request, files: list[UploadFile]) -> TaskAdmi
         )
         raise HTTPException(status_code=400, detail={"messageKey": "error.badRequest"})
 
-    # Process each file independently
+    # Process each file independently. Any per-file failure (validation,
+    # scanner gate, sanitization, upload) deletes the inputs uploaded so
+    # far so a mid-loop rejection never orphans objects (I4).
     sanitized_objects = []
+    r2 = _resolve_r2(request, settings)
     now = datetime.now(UTC)
 
     for i, file in enumerate(files):
-        data = await file.read()
-
-        # Validate
-        max_pages = limit.max_pages if limit.max_pages is not None else 1000
         try:
-            validate_pdf(
-                data,
-                declared_mime=file.content_type,
-                declared_extension=".pdf",
-                max_size_bytes=limit.max_file_bytes,
-                max_pages=max_pages,
-            )
-        except ValidationRejection as exc:
-            logger.error(
-                "merge file %d validation rejected",
-                i,
-                extra={"fields": {"error": type(exc).__name__}},
-            )
-            raise HTTPException(status_code=400, detail={"messageKey": "error.badRequest"}) from exc
+            data = await file.read()
 
-        # SEC-01 scanner gate (U-SEC): fail-closed admission per-file
-        enforce_scan_gate(request, data)
+            # Validate
+            max_pages = limit.max_pages if limit.max_pages is not None else 1000
+            try:
+                validate_pdf(
+                    data,
+                    declared_mime=file.content_type,
+                    declared_extension=".pdf",
+                    max_size_bytes=limit.max_file_bytes,
+                    max_pages=max_pages,
+                )
+            except ValidationRejection as exc:
+                logger.error(
+                    "merge file %d validation rejected",
+                    i,
+                    extra={"fields": {"error": type(exc).__name__}},
+                )
+                raise HTTPException(
+                    status_code=400, detail={"messageKey": "error.badRequest"}
+                ) from exc
 
-        # Sanitize (NEVER trust client!)
-        sanitizer = PdfSanitizer()
-        sanitizer.sanitize(data)
-        sanitized = sanitizer.output_bytes
-        if sanitized is None:
-            logger.error(
-                "merge file %d sanitization refused",
-                i,
-                extra={"fields": {"error": "PdfSanitizer"}},
-            )
-            raise HTTPException(status_code=400, detail={"messageKey": "error.badRequest"})
+            # SEC-01 scanner gate (U-SEC): fail-closed admission per-file
+            enforce_scan_gate(request, data)
 
-        # Upload sanitized bytes only
-        r2 = _resolve_r2(request, settings)
-        input_key = r2.build_object_key(extension="pdf")
-        r2.upload_object(input_key, sanitized, content_type="application/pdf")
-        sanitized_objects.append(input_key)
+            # Sanitize (NEVER trust client!)
+            sanitizer = PdfSanitizer()
+            sanitizer.sanitize(data)
+            sanitized = sanitizer.output_bytes
+            if sanitized is None:
+                logger.error(
+                    "merge file %d sanitization refused",
+                    i,
+                    extra={"fields": {"error": "PdfSanitizer"}},
+                )
+                raise HTTPException(status_code=400, detail={"messageKey": "error.badRequest"})
+
+            # Upload sanitized bytes only; register the key before the
+            # upload so a partial upload failure is cleaned up too.
+            input_key = r2.build_object_key(extension="pdf")
+            sanitized_objects.append(input_key)
+            r2.upload_object(input_key, sanitized, content_type="application/pdf")
+        except Exception:
+            _delete_orphan_inputs(r2, sanitized_objects)
+            raise
 
     # Build record with ALL input keys
     store = _resolve_task_store(request, settings)
@@ -173,7 +183,7 @@ async def merge_pdf_admit(request: Request, files: list[UploadFile]) -> TaskAdmi
     queue = _resolve_queue(request, settings, store)
 
     try:
-        enqueued = queue.enqueue(record, origin=None, route="merge-pdf")
+        enqueued = queue.enqueue(record, origin=_resolve_origin(request), route="merge-pdf")
     except (StoreUnavailableError, TaskNotFoundError) as exc:
         logger.error(
             "merge enqueue store unavailable",

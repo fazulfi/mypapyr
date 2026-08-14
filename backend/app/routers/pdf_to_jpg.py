@@ -28,6 +28,7 @@ from app.queue.store import (
     TaskRecord,
     TaskStore,
 )
+from app.routers import _resolve_origin
 from app.routers.capabilities import TOOL_LIMITS, ToolId
 from app.schemas.job import TaskAdmission
 from app.security.sanitize import PdfSanitizer
@@ -134,9 +135,8 @@ async def pdf_to_jpg_admit(request: Request, file: UploadFile) -> TaskAdmission:
         queued_at=now,
         objects=(input_key,),
     )
-
     try:
-        enqueued = queue.enqueue(record, origin=None, route="pdf-to-jpg")
+        enqueued = queue.enqueue(record, origin=_resolve_origin(request), route="pdf-to-jpg")
     except (StoreUnavailableError, TaskNotFoundError) as exc:
         logger.error(
             "pdf-to-jpg enqueue store unavailable",

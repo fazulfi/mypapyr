@@ -30,6 +30,7 @@ from app.queue.store import (
     TaskRecord,
     TaskStore,
 )
+from app.routers import _resolve_origin
 from app.routers.capabilities import TOOL_LIMITS, ToolId
 from app.schemas.job import TaskAdmission
 from app.security.validation import ValidationRejection, validate_image
@@ -105,35 +106,45 @@ async def jpg_to_pdf_admit(
     # because admission does not branch on it.
     _ = select_paper(cf_ipcountry or vercel_country)
 
-    # Validate each file independently
+    # Validate each file independently. Any per-file failure (validation,
+    # scanner gate, upload) deletes the inputs uploaded so far so a
+    # mid-loop rejection never orphans objects (I4).
     limit = TOOL_LIMITS[ToolId.JPG_TO_PDF]
     input_keys = []
     for file in files:
-        data = await file.read()
         try:
-            validate_image(
-                data,
-                declared_mime=file.content_type,
-                declared_extension=".jpg",
-                max_size_bytes=limit.max_file_bytes,
-                max_pixels=limit.max_pixels_per_image or 20_000_000,
-            )
-        except ValidationRejection as exc:
-            logger.error(
-                "jpg-to-pdf validation rejected",
-                extra={"fields": {"error": type(exc).__name__}},
-            )
-            raise HTTPException(status_code=400, detail={"messageKey": "error.badRequest"}) from exc
+            data = await file.read()
+            try:
+                validate_image(
+                    data,
+                    declared_mime=file.content_type,
+                    declared_extension=".jpg",
+                    max_size_bytes=limit.max_file_bytes,
+                    max_pixels=limit.max_pixels_per_image or 20_000_000,
+                )
+            except ValidationRejection as exc:
+                logger.error(
+                    "jpg-to-pdf validation rejected",
+                    extra={"fields": {"error": type(exc).__name__}},
+                )
+                raise HTTPException(
+                    status_code=400, detail={"messageKey": "error.badRequest"}
+                ) from exc
 
-        # SEC-01 scanner gate (U-SEC): fail-closed admission per-file
-        enforce_scan_gate(request, data)
+            # SEC-01 scanner gate (U-SEC): fail-closed admission per-file
+            enforce_scan_gate(request, data)
 
-        # Images are not executable; skip sanitization
-        sanitized = data
+            # Images are not executable; skip sanitization
+            sanitized = data
 
-        input_key = r2.build_object_key(extension="jpg")
-        r2.upload_object(input_key, sanitized, content_type="image/jpeg")
-        input_keys.append(input_key)
+            # Register the key before the upload so a partial upload
+            # failure is cleaned up too.
+            input_key = r2.build_object_key(extension="jpg")
+            input_keys.append(input_key)
+            r2.upload_object(input_key, sanitized, content_type="image/jpeg")
+        except Exception:
+            _delete_orphan_inputs(r2, input_keys)
+            raise
 
     now = datetime.now(UTC)
     record = TaskRecord(
@@ -149,7 +160,7 @@ async def jpg_to_pdf_admit(
     )
 
     try:
-        enqueued = queue.enqueue(record, origin=None, route="jpg-to-pdf")
+        enqueued = queue.enqueue(record, origin=_resolve_origin(request), route="jpg-to-pdf")
     except (StoreUnavailableError, TaskNotFoundError) as exc:
         logger.error(
             "jpg-to-pdf enqueue store unavailable",

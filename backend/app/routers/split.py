@@ -31,6 +31,7 @@ from app.queue.store import (
     TaskRecord,
     TaskStore,
 )
+from app.routers import _resolve_origin
 from app.routers.capabilities import TOOL_LIMITS, ToolId, ToolLimits
 from app.schemas.job import SplitOptions, TaskAdmission
 from app.security.sanitize import PdfSanitizer
@@ -184,9 +185,8 @@ async def split_pdf_admit(
         objects=(input_key,),
         options=options,
     )
-
     try:
-        enqueued = queue.enqueue(record, origin=None, route="split-pdf")
+        enqueued = queue.enqueue(record, origin=_resolve_origin(request), route="split-pdf")
     except (StoreUnavailableError, TaskNotFoundError) as exc:
         logger.error(
             "split enqueue store unavailable",

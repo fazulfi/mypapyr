@@ -43,6 +43,7 @@ from typing import cast
 import fakeredis
 import pytest
 from redis.exceptions import ConnectionError, ResponseError
+from starlette.requests import Request
 
 from app.config import DEFAULT_MAX_CONCURRENT_PER_ORIGIN, Settings
 from app.queue.queue import (
@@ -68,6 +69,7 @@ from app.routers.capabilities import (
     FailureCode,
     failure_code_meta,
 )
+from app.routers.compress import _resolve_origin
 from app.security.fair_use import (
     ADMISSION_LUA,
     CONCURRENCY_KEY_PREFIX,
@@ -1062,3 +1064,45 @@ def test_queue_error_taxonomy_retryability_is_typed() -> None:
     assert issubclass(QueueRejectedError, QueueError)
     assert QueueDelayedError().retryable
     assert not QueueRejectedError().retryable
+
+
+def test_router_origin_fingerprint_matches_policy_keyspace() -> None:
+    """I3: the router-derived origin lands in the policy's per-origin keyspace.
+
+    The merge router fingerprints the request client and hands the digest to
+    the queue; ``fingerprint_origin`` then hashes it again into the counter
+    key suffix. Two different clients admitted through the router must land
+    in two distinct counter buckets, exactly as if the digested value were
+    passed as a raw origin — the queue key derivation stays one stable hop
+    long. The digest is deterministic hex (24 chars minimum), so the suffix
+    can never collide with the anonymous ``sha256(b"")`` bucket.
+    """
+
+    def _request(ip: str) -> Request:
+        scope = {
+            "type": "http",
+            "app": None,
+            "method": "POST",
+            "path": "/api/v1/tools/compress-pdf/tasks",
+            "headers": [(b"cf-connecting-ip", ip.encode("utf-8"))],
+            "query_string": b"",
+            "client": ("127.0.0.1", 54321),
+        }
+        return Request(scope)
+
+    origin_a = _resolve_origin(_request("203.0.113.7"))
+    origin_b = _resolve_origin(_request("198.51.100.9"))
+    policy, _ = make_policy(options=FairUseOptions(delay_threshold=1))
+
+    first = policy.evaluate(origin=origin_a, tool="compress-pdf", queued=0)
+    policy.release(origin=origin_a)
+    second = policy.evaluate(origin=origin_b, tool="compress-pdf", queued=0)
+    policy.release(origin=origin_b)
+
+    assert second.decision is FairUseDecision.ALLOW
+    assert first.decision is FairUseDecision.ALLOW
+    assert origin_a != origin_b
+    assert origin_a != fingerprint_origin("")
+    assert len(origin_a) >= 24
+    int(origin_a, 16)  # hex only
+    int(origin_b, 16)

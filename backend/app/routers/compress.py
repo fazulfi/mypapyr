@@ -41,6 +41,7 @@ from app.queue.store import (
     TaskRecord,
     TaskStore,
 )
+from app.routers import _resolve_origin
 from app.routers.capabilities import TOOL_LIMITS, ToolId
 from app.schemas.job import TaskAdmission
 from app.security.sanitize import PdfSanitizer
@@ -155,7 +156,7 @@ async def compress_pdf_admit(request: Request, file: UploadFile) -> TaskAdmissio
     )
 
     try:
-        enqueued = queue.enqueue(record, origin=None, route="compress-pdf")
+        enqueued = queue.enqueue(record, origin=_resolve_origin(request), route="compress-pdf")
     except (StoreUnavailableError, TaskNotFoundError) as exc:
         logger.error(
             "compress enqueue store unavailable",
