@@ -10,7 +10,7 @@ import {
 import { resolveRouteAlias } from "./lib/route-aliases";
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\..*).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|opengraph-image|twitter-image|.*\\..*).*)"],
 };
 
 export function isSafeRedirectPath(path: string): boolean {
