@@ -5,7 +5,7 @@ Exercises the real HTTP routes (not unit seams) for:
   - merge-pdf
   - split-pdf
   - jpg-to-pdf
-  - pdf-to-jpg (stub — admission only, no store/queue wiring)
+  - pdf-to-jpg
 
 Each tool is tested for:
   1. Valid upload -> 202 + task_id + queued state
@@ -19,10 +19,10 @@ so no real Redis or R2 is needed.
 
 from __future__ import annotations
 
+import importlib
 import io
 import time
-import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any, cast
 from urllib.parse import parse_qs, urlsplit
 
@@ -45,9 +45,14 @@ from app.routers.merge import router as merge_router
 from app.routers.pdf_to_jpg import router as pdf_to_jpg_router
 from app.routers.split import router as split_router
 from app.routers.status import router as status_router
-from app.schemas.job import ErrorSummary, ResultSummary
+from app.schemas.job import ResultSummary
 from app.tasks.state_machine import JobEvent, JobState
 from app.utils.r2 import R2Client
+
+# Untyped third-party crossing (repo pattern, cf test_integration_r2.py).
+boto3: Any = cast(Any, importlib.import_module("boto3"))
+moto: Any = cast(Any, importlib.import_module("moto"))
+requests: Any = cast(Any, importlib.import_module("requests"))
 
 # ---------------------------------------------------------------------------
 # Tool metadata
@@ -61,11 +66,15 @@ TOOL_SLUGS = (
     "pdf-to-jpg",
 )
 
-# Tools wired to the full store/queue/r2 pipeline (pdf-to-jpg is a stub)
-_PIPELINE_TOOLS = frozenset({"compress-pdf", "merge-pdf", "split-pdf", "jpg-to-pdf"})
+# Tools wired to the full store/queue/r2 pipeline (all five are wired).
+_PIPELINE_TOOLS = frozenset(TOOL_SLUGS)
 
-# Tools accepting a single file (others accept multiple)
+# Tools accepting a single file (others accept multiple).
 _SINGLE_FILE_TOOLS = frozenset({"compress-pdf", "split-pdf", "pdf-to-jpg"})
+
+# Bound the store-drive helper's record-wait loop.
+_DRIVE_TIMEOUT_SECONDS = 5.0
+_DRIVE_POLL_SECONDS = 0.05
 
 # ---------------------------------------------------------------------------
 # Test data helpers
@@ -197,9 +206,6 @@ def queue(
 @pytest.fixture
 def moto_client(monkeypatch: pytest.MonkeyPatch) -> Any:
     """A moto S3 backend served at the R2-style endpoint."""
-    import boto3
-    import moto
-
     monkeypatch.setenv("MOTO_S3_CUSTOM_ENDPOINTS", _R2_ENDPOINT)
     with moto.mock_aws():
         client = boto3.client(
@@ -264,15 +270,17 @@ def _drive_to_done(
     task_id: str,
     *,
     tool: str,
-    timeout: float = 5.0,
-    poll_interval: float = 0.05,
 ) -> None:
     """Transition *task_id* through queued -> processing -> done in the store.
 
     Uploads a synthetic output object to R2/moto so the download URL is
-    fetchable.
+    fetchable. No worker runs in the HTTP E2E harness, so the worker's
+    store transitions are applied directly through the same TaskStore API
+    the worker consumes.
     """
-    deadline = time.monotonic() + timeout
+    deadline = time.monotonic() + _DRIVE_TIMEOUT_SECONDS
+    poll_interval = _DRIVE_POLL_SECONDS
+
 
     # Upload a synthetic output object to R2 so the download grant URL
     # maps to a real stored object.
@@ -370,7 +378,7 @@ class TestToolLifecycle:
 
         # ---- 4. Poll status until done ---------------------------------------
         deadline = time.monotonic() + 5.0
-        final_state = None
+        final_state: str | None = None
         while time.monotonic() < deadline:
             resp = client.get(_status_url(tool, task_id))
             if resp.status_code == 200:
@@ -409,9 +417,7 @@ class TestToolLifecycle:
 
         # The URL should be fetchable (moto allows unsigned fetches after
         # presigning, so this proves the URL maps to a stored object).
-        import requests as http_requests
-
-        object_response = http_requests.get(grant["url"], timeout=10)
+        object_response = requests.get(grant["url"], timeout=10)
         assert object_response.status_code == 200, (
             f"{tool}: download URL returned {object_response.status_code}"
         )
