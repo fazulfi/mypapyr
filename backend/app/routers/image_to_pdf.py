@@ -101,8 +101,7 @@ async def jpg_to_pdf_admit(
                 declared_mime=file.content_type,
                 declared_extension=".jpg",
                 max_size_bytes=limit.max_file_bytes,
-                max_pixels_per_image=limit.max_pixels_per_image,
-                max_total_pixels=limit.max_total_pixels,
+                max_pixels=limit.max_pixels_per_image or 20_000_000,
             )
         except ValidationRejection as exc:
             logger.error(
