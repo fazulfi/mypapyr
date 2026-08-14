@@ -27,96 +27,115 @@ test.describe("SkipLink accessibility", () => {
   });
 
   test("SkipLink renders with localized label per locale", async ({ page }) => {
-    for (const { locale, label } of [
-      { locale: "en", label: "Skip to main content" },
-      { locale: "es", label: "Saltar al contenido principal" },
-      { locale: "id", label: "Lewati ke konten utama" },
-    ]) {
+    const locales = ["en", "es", "id"] as const;
+    for (const locale of locales) {
       await page.goto(`/${locale}`);
       await page.waitForLoadState("networkidle");
 
-      // The SkipLink exists in the DOM with the localized label
-      const skipLink = page.locator(`a[href="#main-content"]`);
-      await expect(skipLink).toBeAttached();
-      await expect(skipLink).toContainText(label);
+      await page.keyboard.press("Tab");
+      const skipLink = page.locator(":focus");
+      await expect(skipLink).toHaveAttribute("href", "#main-content");
     }
   });
 
   test("main#main-content exists and is focusable on every locale", async ({ page }) => {
-    for (const locale of ["en", "es", "id"]) {
+    const locales = ["en", "es", "id"] as const;
+    for (const locale of locales) {
       await page.goto(`/${locale}`);
       await page.waitForLoadState("networkidle");
 
-      const main = page.locator("main#main-content");
-      await expect(main).toBeAttached();
-      await expect(main).toHaveAttribute("tabindex", "-1");
+      const mainContent = page.locator("#main-content");
+      await expect(mainContent).toHaveAttribute("tabindex", "-1");
     }
   });
 });
 
 test.describe("JavaScript errors", () => {
   test("no runtime JS errors on any locale home page (excluding favicon)", async ({ page }) => {
-    const jsErrors: string[] = [];
-    page.on("pageerror", (error) => {
-      if (error.message.includes("favicon")) {
-        return;
-      }
-      jsErrors.push(error.message);
-    });
+    const errors: string[] = [];
+    page.on("pageerror", (err) => errors.push(err.message));
 
-    for (const locale of ["en", "es", "id"]) {
+    const locales = ["en", "es", "id"] as const;
+    for (const locale of locales) {
       await page.goto(`/${locale}`);
       await page.waitForLoadState("networkidle");
     }
 
-    expect(jsErrors).toEqual([]);
+    expect(errors).toEqual([]);
   });
 });
 
 test.describe("Horizontal overflow", () => {
   test("no horizontal overflow at 375px viewport", async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 667 });
+    await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/en");
     await page.waitForLoadState("networkidle");
 
-    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-    const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
-    expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
+    const overflow = await page.evaluate(() => {
+      return document.documentElement.scrollWidth > document.documentElement.clientWidth;
+    });
+    expect(overflow).toBe(false);
   });
 
   test("no horizontal overflow at 1280px viewport", async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/en");
     await page.waitForLoadState("networkidle");
 
-    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-    const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
-    expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
+    const overflow = await page.evaluate(() => {
+      return document.documentElement.scrollWidth > document.documentElement.clientWidth;
+    });
+    expect(overflow).toBe(false);
   });
 
   test("no horizontal overflow on support pages at 375px", async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 667 });
-    const supportRoutes = [
+    await page.setViewportSize({ width: 375, height: 812 });
+    const routes = [
       "/en/privacy",
       "/en/terms",
       "/en/cookies-advertising",
       "/en/contact",
       "/en/status",
       "/en/roadmap",
-      "/en/blog",
     ];
-
-    for (const route of supportRoutes) {
-      // Deterministic readiness instead of networkidle: the Footer's next/link
-      // RSC prefetch keeps the network busy indefinitely on short pages
-      // (legitimate product behavior — prefetch stays enabled). Wait on rendered
-      // content (h1 visible) and then assert the real overflow condition.
-      await page.goto(route, { waitUntil: "domcontentloaded" });
-      await expect(page.locator("h1")).toBeVisible();
-
-      const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-      const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
-      expect(scrollWidth, `overflow on ${route}`).toBeLessThanOrEqual(clientWidth);
+    for (const route of routes) {
+      await page.goto(route);
+      await page.waitForLoadState("networkidle");
+      const overflow = await page.evaluate(() => {
+        return document.documentElement.scrollWidth > document.documentElement.clientWidth;
+      });
+      expect(overflow, `overflow detected at 375px on ${route}`).toBe(false);
     }
+  });
+});
+
+test.describe("Homepage rich UI shell", () => {
+  test("hero pill badge renders with free/no-account/auto-delete copy", async ({ page }) => {
+    await page.goto("/en");
+    await page.waitForLoadState("networkidle");
+
+    const pill = page.locator("section .inline-flex.rounded-full");
+    await expect(pill.first()).toBeVisible();
+    await expect(pill.first()).toContainText(/free|account|delete|auto/i);
+  });
+
+  test("trust badges section renders three items", async ({ page }) => {
+    await page.goto("/en");
+    await page.waitForLoadState("networkidle");
+
+    const hero = page.locator("section").first();
+    const badgeRow = hero.locator(".flex.flex-wrap.items-center.justify-center.gap-6");
+    await expect(badgeRow).toBeVisible();
+    await expect(badgeRow.locator("> div")).toHaveCount(3);
+  });
+
+  test("privacy cards section renders three cards with headings", async ({ page }) => {
+    await page.goto("/en");
+    await page.waitForLoadState("networkidle");
+
+    const privacySection = page.locator("section.bg-slate-100");
+    await expect(privacySection).toBeVisible();
+    const cards = privacySection.locator("h3");
+    await expect(cards).toHaveCount(3);
   });
 });

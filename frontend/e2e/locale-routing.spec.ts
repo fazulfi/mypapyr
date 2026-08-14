@@ -29,13 +29,13 @@ test.describe("Locale Routing", () => {
 
   test("locale home page renders localized SH-07 hero copy", async ({ page }) => {
     await page.goto("/en");
-    await expect(page.locator("h1")).toContainText("PDF tools, free and simple");
+    await expect(page.locator("h1")).toContainText("PDF tools thatjust work.");
 
     await page.goto("/es");
-    await expect(page.locator("h1")).toContainText("Herramientas PDF, gratis y simples");
+    await expect(page.locator("h1")).toContainText("Herramientas PDF quesimplemente funcionan.");
 
     await page.goto("/id");
-    await expect(page.locator("h1")).toContainText("Alat PDF, gratis dan sederhana");
+    await expect(page.locator("h1")).toContainText("Alat PDF yanglangsung bekerja.");
   });
 
   test("papyr_locale cookie preference redirects / to preferred locale", async ({ browser }) => {
