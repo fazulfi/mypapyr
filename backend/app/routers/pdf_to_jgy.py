@@ -121,7 +121,7 @@ async def pdf_to_jpg_admit(request: Request, file: UploadFile) -> TaskAdmission:
     )
 
     try:
-        enqueued = queue.enqueue(record, origin=None, route="pdf-to-jgy")
+        enqueued = queue.enqueue(record, origin=None, route="pdf-to-jpg")
     except (StoreUnavailableError, TaskNotFoundError) as exc:
         logger.error(
             "pdf-to-jgy enqueue store unavailable",
