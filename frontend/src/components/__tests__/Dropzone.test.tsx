@@ -19,14 +19,14 @@ afterEach(() => {
 });
 
 describe("components/Dropzone labels", () => {
-  it("renders the localized drop hint and browse label for every locale", () => {
+  it("renders the localized drop text, browse CTA, and hidden a11y label for every locale", () => {
     for (const locale of locales) {
       const copy = getMessages(locale);
       const { unmount } = render(
         <Dropzone files={[]} onChange={() => undefined} locale={locale} />,
       );
-      expect(screen.getByText(copy.uploader.drop)).toBeTruthy();
-      expect(screen.getByRole("button", { name: copy.uploader.browse })).toBeTruthy();
+      expect(screen.getByText((content) => content.includes(copy.uploader.drop))).toBeTruthy();
+      expect(screen.getByText((content) => content.includes(copy.uploader.browseCta))).toBeTruthy();
       expect(screen.getByLabelText(copy.uploader.browse)).toBeTruthy();
       unmount();
     }

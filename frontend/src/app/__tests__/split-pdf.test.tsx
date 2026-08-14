@@ -213,7 +213,7 @@ describe("split-pdf reset", () => {
     typeRanges("en", "1-3");
     fireEvent.click(screen.getByRole("button", { name: copy.tools.split.actions.split }));
     await waitFor(() => expect(screen.getByText(copy.states.error)).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: copy.reset.processAnother }));
+    fireEvent.click(screen.getByRole("button", { name: copy.states.retry }));
     const input = screen.getByLabelText(copy.tools.split.ranges.label) as HTMLInputElement;
     expect(input.value).toBe("");
     expect(screen.getByText(copy.tools.split.ranges.defaultNote)).toBeTruthy();

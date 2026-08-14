@@ -24,7 +24,6 @@ function UploadIcon(): React.ReactElement {
   );
 }
 
-
 export interface DropzoneProps {
   files: File[];
   onChange: (files: File[]) => void;
@@ -99,10 +98,17 @@ export function Dropzone({
     }
     onChange(filterFiles(Array.from(event.dataTransfer.files)));
   };
-
   return (
     <div
       data-testid="dropzone"
+      role="button"
+      tabIndex={0}
+      onClick={openPicker}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          openPicker();
+        }
+      }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
