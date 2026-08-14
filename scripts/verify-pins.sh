@@ -7,10 +7,17 @@
 # Pin shape is not pin truth. Unpinned or floating
 # references (e.g. `uses: actions/foo@v1`) fail here — they are never skipped.
 #
-# Needs network access to api.github.com. Uses `gh` when available (CI: the
-# automatic GITHUB_TOKEN satisfies authentication), else curl + python3.
-# Exits non-zero on any mismatch, unresolved tag, unpinned reference, or
-# missing tool.
+# Authenticated resolution: when GH_TOKEN / GITHUB_TOKEN is present the API is
+# called authenticated (gh CLI inherits the token; curl sends an Authorization
+# header). This avoids the unauthenticated rate limit (60 req/h) that turns a
+# repeated canonical regression into HTTP 403. Each unique `repo@tag` is
+# resolved at most ONCE per process via a file-backed cache, so the many
+# references to the same action (e.g. actions/checkout in every job) do not
+# re-hit the API. Genuine drift or an unresolvable tag still fails closed.
+#
+# Needs network access to api.github.com. Uses `gh` when available, else
+# curl + python3. Exits non-zero on any mismatch, unresolved tag, unpinned
+# reference, or missing tool.
 
 set -eu
 
@@ -29,35 +36,91 @@ command -v "$PYTHON" >/dev/null 2>&1 || PYTHON=python
 command -v "$PYTHON" >/dev/null 2>&1 || fail "python3/python required for JSON parsing"
 "$PYTHON" -c 'import json' >/dev/null 2>&1 || fail "python json module unavailable"
 
+# Token inherited from the environment; never hardcoded. GH_TOKEN wins so the
+# gh CLI and curl agree on which credential is in effect.
+TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
+
 USE_GH=0
 if command -v gh >/dev/null 2>&1 && \
-   { [ -n "${GH_TOKEN:-}" ] || [ -n "${GITHUB_TOKEN:-}" ] || gh auth status >/dev/null 2>&1; }; then
+   { [ -n "$TOKEN" ] || gh auth status >/dev/null 2>&1; }; then
     USE_GH=1
 elif ! command -v curl >/dev/null 2>&1; then
     fail "neither an authenticated gh CLI nor curl is available"
 fi
 
-# resolve <owner/repo> <tag> -> commit sha (empty on failure)
+# File-backed per-process cache: one line per unique repo@tag -> sha. A file
+# (not a shell variable) is required because resolve() runs in a command
+# substitution subshell, where variable mutations would be discarded.
+CACHE=$(mktemp 2>/dev/null) || CACHE="${TMPDIR:-/tmp}/verify-pins-cache.$$"
+: > "$CACHE"
+trap 'rm -f "$CACHE"' EXIT HUP INT TERM
+
+# Retry tuning is bounded and overridable (tests set the delay to 0).
+RETRY_MAX="${VERIFY_PINS_RETRY_MAX:-3}"
+RETRY_DELAY="${VERIFY_PINS_RETRY_DELAY:-1}"
+
+cache_get() {
+    awk -v k="$1" '$1 == k { print $2; exit }' "$CACHE"
+}
+
+cache_put() {
+    printf '%s %s\n' "$1" "$2" >> "$CACHE"
+}
+
+# api_get <path> — one authenticated GET against api.github.com, bounded retry.
+api_get() {
+    path=$1
+    attempt=0
+    while [ "$attempt" -lt "$RETRY_MAX" ]; do
+        if [ "$USE_GH" -eq 1 ]; then
+            if body=$(gh api "$path" 2>/dev/null); then
+                printf '%s' "$body"
+                return 0
+            fi
+        elif [ -n "$TOKEN" ]; then
+            if body=$(curl -fsSL -H "Authorization: Bearer $TOKEN" \
+                "https://api.github.com/$path" 2>/dev/null); then
+                printf '%s' "$body"
+                return 0
+            fi
+        else
+            if body=$(curl -fsSL "https://api.github.com/$path" 2>/dev/null); then
+                printf '%s' "$body"
+                return 0
+            fi
+        fi
+        attempt=$((attempt + 1))
+        if [ "$attempt" -lt "$RETRY_MAX" ] && [ "$RETRY_DELAY" -gt 0 ]; then
+            sleep "$RETRY_DELAY"
+        fi
+    done
+    return 1
+}
+
+# resolve <owner/repo> <tag> -> commit sha (empty on failure), cached per key.
 resolve() {
     repo=$1
     tag=$2
-    if [ "$USE_GH" -eq 1 ]; then
-        ref_json=$(gh api "repos/$repo/git/ref/tags/$tag" 2>/dev/null) || return 1
-    else
-        ref_json=$(curl -fsSL "https://api.github.com/repos/$repo/git/ref/tags/$tag") || return 1
+    key="$repo@$tag"
+
+    cached=$(cache_get "$key")
+    if [ -n "$cached" ]; then
+        printf '%s\n' "$cached"
+        return 0
     fi
+
+    ref_json=$(api_get "repos/$repo/git/ref/tags/$tag") || return 1
     obj_type=$(printf '%s' "$ref_json" | "$PYTHON" -c 'import json,sys; print(json.load(sys.stdin)["object"]["type"])') || return 1
     obj_sha=$(printf '%s' "$ref_json" | "$PYTHON" -c 'import json,sys; print(json.load(sys.stdin)["object"]["sha"])') || return 1
     if [ "$obj_type" = "tag" ]; then
-        if [ "$USE_GH" -eq 1 ]; then
-            tag_json=$(gh api "repos/$repo/git/tags/$obj_sha" 2>/dev/null) || return 1
-        else
-            tag_json=$(curl -fsSL "https://api.github.com/repos/$repo/git/tags/$obj_sha") || return 1
-        fi
-        printf '%s' "$tag_json" | "$PYTHON" -c 'import json,sys; print(json.load(sys.stdin)["object"]["sha"])' || return 1
+        tag_json=$(api_get "repos/$repo/git/tags/$obj_sha") || return 1
+        commit_sha=$(printf '%s' "$tag_json" | "$PYTHON" -c 'import json,sys; print(json.load(sys.stdin)["object"]["sha"])') || return 1
     else
-        printf '%s\n' "$obj_sha"
+        commit_sha=$obj_sha
     fi
+
+    cache_put "$key" "$commit_sha"
+    printf '%s\n' "$commit_sha"
 }
 
 WORKFLOW_FILES=$(find "$WF_DIR" -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) | sort || true)
