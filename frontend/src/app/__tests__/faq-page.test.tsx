@@ -61,24 +61,24 @@ describe("T8 FAQ page", () => {
 
     // Click the first question
     fireEvent.click(screen.getByText(copy.items[0].q));
-    expect(
-      screen.getByText(copy.items[0].a).closest(".grid")?.className,
-    ).toContain("grid-rows-[1fr]");
+    expect(screen.getByText(copy.items[0].a).closest(".grid")?.className).toContain(
+      "grid-rows-[1fr]",
+    );
 
     // Click the second question — first should collapse, second should expand
     fireEvent.click(screen.getByText(copy.items[1].q));
-    expect(
-      screen.getByText(copy.items[0].a).closest(".grid")?.className,
-    ).toContain("grid-rows-[0fr]");
-    expect(
-      screen.getByText(copy.items[1].a).closest(".grid")?.className,
-    ).toContain("grid-rows-[1fr]");
+    expect(screen.getByText(copy.items[0].a).closest(".grid")?.className).toContain(
+      "grid-rows-[0fr]",
+    );
+    expect(screen.getByText(copy.items[1].a).closest(".grid")?.className).toContain(
+      "grid-rows-[1fr]",
+    );
 
     // Click the first question again — second should collapse
     fireEvent.click(screen.getByText(copy.items[0].q));
-    expect(
-      screen.getByText(copy.items[1].a).closest(".grid")?.className,
-    ).toContain("grid-rows-[0fr]");
+    expect(screen.getByText(copy.items[1].a).closest(".grid")?.className).toContain(
+      "grid-rows-[0fr]",
+    );
 
     unmount();
   });
@@ -89,9 +89,9 @@ describe("T8 FAQ page", () => {
 
     fireEvent.click(screen.getByText(copy.items[0].q));
     fireEvent.click(screen.getByText(copy.items[0].q));
-    expect(
-      screen.getByText(copy.items[0].a).closest(".grid")?.className,
-    ).toContain("grid-rows-[0fr]");
+    expect(screen.getByText(copy.items[0].a).closest(".grid")?.className).toContain(
+      "grid-rows-[0fr]",
+    );
 
     unmount();
   });

@@ -1,7 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { toolCatalog } from "../../lib/catalog";
 import { locales } from "../../lib/i18n";
 import { getMessages } from "../../lib/messages";
 import { Footer } from "../Footer";
@@ -54,41 +53,41 @@ describe("SH-06 Footer", () => {
     expect(markup).toContain(copy.tools);
   });
 
-  it("renders exactly five tool links sourced from the catalog", () => {
+  it("renders four category columns with tools sourced from the catalog and legacy catalog", () => {
     const markup = renderFooter("en");
-    const toolsCount = toolCatalog.length;
-    expect(toolsCount).toBe(5);
-    // Check that all 5 tool hrefs appear
-    for (const tool of toolCatalog) {
-      expect(markup).toContain(tool.hrefs.en);
-    }
+    // Basic column
+    expect(markup).toContain("Compress PDF");
+    expect(markup).toContain("Merge PDF");
+    expect(markup).toContain("Split PDF");
+    // Security column
+    expect(markup).toContain("Protect PDF");
+    expect(markup).toContain("Unlock PDF");
+    // Enhancement column
+    expect(markup).toContain("Watermark");
+    expect(markup).toContain("Sign PDF");
+    // Conversion column
+    expect(markup).toContain("JPG to PDF");
+    expect(markup).toContain("PDF to JPG");
   });
 
-  it("tool links use the catalog's localized hrefs per locale", () => {
+  it("each category column has a labeled h3 heading", () => {
     for (const locale of locales) {
       const markup = renderFooter(locale);
-      for (const tool of toolCatalog) {
-        expect(markup).toContain(tool.hrefs[locale]);
-      }
-    }
-  });
-
-  it("tool links use the catalog's localized shortLabel per locale", () => {
-    for (const locale of locales) {
-      const markup = renderFooter(locale);
-      for (const tool of toolCatalog) {
-        expect(markup).toContain(tool.shortLabel[locale]);
-      }
+      const copy = getMessages(locale);
+      expect(markup).toContain(copy.nav.basic);
+      expect(markup).toContain(copy.nav.security);
+      expect(markup).toContain(copy.nav.enhancement);
+      expect(markup).toContain(copy.nav.conversion);
     }
   });
 
   it("tool links are rendered as Next.js Link anchors", () => {
     const markup = renderFooter("en");
-    // All 5 tool links must be anchor elements with hrefs
+    // All tool links must be anchor elements with hrefs
     const anchorMatches = markup.match(/<a\b/g);
-    // LogoLockup (1) + 5 tools + 6 support = 12 anchors
+    // LogoLockup (1) + 9 tools + 6 support = 16 anchors
     expect(anchorMatches).not.toBeNull();
-    expect(anchorMatches!.length).toBe(12);
+    expect(anchorMatches!.length).toBe(16);
   });
 
   /* ── Support section ── */

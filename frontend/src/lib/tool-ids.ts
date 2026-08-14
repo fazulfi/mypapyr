@@ -15,3 +15,23 @@ export type ToolId = (typeof TOOL_IDS)[number];
 export function isToolId(value: unknown): value is ToolId {
   return typeof value === "string" && (TOOL_IDS as readonly string[]).includes(value);
 }
+
+// Deferred tools, retained for backward compatibility with existing links and
+// bookmarks. Not part of the canonical TOOL_IDS set; kept here as a single
+// source for any legacy routing or redirect handling.
+export const LEGACY_TOOL_IDS = Object.freeze([
+  "rotate",
+  "protect",
+  "unlock",
+  "watermark",
+  "sign",
+  "pdf-to-word",
+  "ocr",
+  "pdf-to-excel",
+] as const);
+
+export type LegacyToolId = (typeof LEGACY_TOOL_IDS)[number];
+
+export function isLegacyToolId(value: unknown): value is LegacyToolId {
+  return typeof value === "string" && (LEGACY_TOOL_IDS as readonly string[]).includes(value);
+}

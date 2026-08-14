@@ -8,6 +8,8 @@ export const messages = {
       tools: "Tools",
       basic: "Basic",
       conversion: "Conversion",
+      security: "Security",
+      enhancement: "Enhancement",
       menu: "Menu",
       menuClose: "Close menu",
       cta: "Get started",
@@ -19,10 +21,21 @@ export const messages = {
       done: "Done",
       error: "Something went wrong",
       download: "Download",
+      downloadCta: "Download Compressed PDF",
+      complete: "Compression complete!",
+      before: "Before",
+      after: "After",
+      errorTitle: "Something went wrong",
+      retry: "Try Again",
+      processingHint: "Optimizing images and streams...",
+      queuePosition: "Position in queue",
+      queueProgress: "Preparing your file...",
     },
     uploader: {
       browse: "Browse files",
       drop: "Drop your files here or",
+      browseCta: "click to upload",
+      dropHint: "Max {size}MB · PDF only · Deleted in 1 hour",
     },
     reset: {
       processAnother: "Process another file",
@@ -30,9 +43,15 @@ export const messages = {
     languages: { en: "English", es: "Español", id: "Bahasa Indonesia" },
     home: {
       description: "Papyr PDF tools.",
+      heroPill: "Free · No account · Auto-delete",
+      heroLine1: "PDF tools that",
+      heroLine2: "just work.",
       hero: "PDF tools, free and simple",
       heroSub: "Compress, merge, split, and convert PDFs. No account needed.",
       toolsHeading: "Tools",
+      trustBadges: ["No account", "Auto-delete in 1 hour", "Works on your phone"],
+      toolsEyebrow: "All tools",
+      cardCta: "Use tool",
       tools: {
         compress: "Compress PDF",
         merge: "Merge PDF",
@@ -41,6 +60,21 @@ export const messages = {
         pdfToJpg: "PDF to JPG",
       },
       privacy: "Your files stay yours",
+      privacyEyebrow: "Privacy first",
+      privacyCards: [
+        {
+          title: "Secure transfer",
+          desc: "Files are transmitted over HTTPS and processed securely.",
+        },
+        {
+          title: "Deleted in 1 hour",
+          desc: "Every uploaded file is permanently deleted within 60 minutes, no exceptions.",
+        },
+        {
+          title: "No storage",
+          desc: "We never read, analyze, or store your documents. Ever.",
+        },
+      ],
       privacyDesc:
         "No account required. Files processed in your browser never leave your device. Server-processed files are deleted within one hour of upload.",
       howItWorks: "How it works",
@@ -128,7 +162,8 @@ export const messages = {
     tools: {
       compress: {
         title: "Compress PDF",
-        description: "Reduce the file size of your PDF while keeping quality. Processed on our servers and deleted within one hour.",
+        description:
+          "Reduce the file size of your PDF while keeping quality. Processed on our servers and deleted within one hour.",
         errors: {
           fileTooLarge: "File exceeds the maximum size limit.",
           uploadFailed: "Upload failed, please try again.",
@@ -144,31 +179,76 @@ export const messages = {
       merge: {
         title: "Merge PDF",
         description: "Combine multiple PDFs into one document. All files stay in your browser.",
-        errors: { fileTooLarge: "File too large (max 200MB combined)", needAtLeastTwo: "Select at least 2 files", uploadFailed: "Upload failed", downloadFailed: "Download failed" },
+        errors: {
+          fileTooLarge: "File too large (max 200MB combined)",
+          needAtLeastTwo: "Select at least 2 files",
+          uploadFailed: "Upload failed",
+          downloadFailed: "Download failed",
+        },
         actions: { merge: "Merge PDFs", uploading: "Uploading..." },
         status: { submitting: "Merging..." },
       },
       split: {
         title: "Split PDF",
         description: "Extract pages from a PDF document.",
-        errors: { fileTooLarge: "File too large (max 100MB)", uploadFailed: "Upload failed", downloadFailed: "Download failed" },
+        errors: {
+          fileTooLarge: "File too large (max 100MB)",
+          uploadFailed: "Upload failed",
+          downloadFailed: "Download failed",
+        },
         actions: { split: "Split PDF", uploading: "Uploading..." },
         status: { submitting: "Submitting..." },
       },
       jpgToPdf: {
         title: "JPG to PDF",
         description: "Convert your JPG images into a single PDF document.",
-        errors: { fileTooLarge: "File too large (max 100MB)", uploadFailed: "Upload failed", downloadFailed: "Download failed" },
+        errors: {
+          fileTooLarge: "File too large (max 100MB)",
+          uploadFailed: "Upload failed",
+          downloadFailed: "Download failed",
+        },
         actions: { convert: "Convert to PDF", uploading: "Uploading..." },
-        status: { submitting: "Submitting..." }
+        status: { submitting: "Submitting..." },
       },
       pdfToJpg: {
         title: "PDF to JPG",
         description: "Convert your PDF pages into high-quality JPG images.",
-        errors: { fileTooLarge: "File too large (max 100MB per page)", uploadFailed: "Upload failed", downloadFailed: "Download failed" },
+        errors: {
+          fileTooLarge: "File too large (max 100MB per page)",
+          uploadFailed: "Upload failed",
+          downloadFailed: "Download failed",
+        },
         actions: { convert: "Convert to JPG", uploading: "Uploading..." },
-        status: { submitting: "Submitting..." }
+        status: { submitting: "Submitting..." },
       },
+    },
+    toolPages: {
+      "compress-pdf": {
+        features: ["Up to 80% smaller", "Fast processing", "Privacy-first"],
+      },
+      "merge-pdf": {
+        features: ["Combine many files", "Order preserved", "Privacy-first"],
+      },
+      "split-pdf": {
+        features: ["Custom ranges", "One page per file", "Privacy-first"],
+      },
+      "jpg-to-pdf": {
+        features: ["Multi-image", "Auto-fit pages", "Privacy-first"],
+      },
+      "pdf-to-jpg": {
+        features: ["High quality", "Page per image", "Privacy-first"],
+      },
+    },
+    privacyNotice: {
+      model: {
+        server: "Your files are automatically deleted after 1 hour. We never store your documents.",
+        client: "Your files never leave your device. Everything runs in your browser.",
+        hybrid:
+          "Small files are processed in your browser. Large files are sent to the server and deleted within 1 hour.",
+      },
+    },
+    otherTools: {
+      title: "Other tools",
     },
     faqPage: {
       title: "Frequently Asked Questions",
@@ -213,7 +293,8 @@ export const messages = {
     privacyPage: {
       lastUpdated: "Last updated: April 2026",
       sections: {
-        intro: "Papyr is a free PDF tool that puts your privacy first. We designed this service to touch your personal data as little as possible.",
+        intro:
+          "Papyr is a free PDF tool that puts your privacy first. We designed this service to touch your personal data as little as possible.",
         whatWeCollect: {
           title: "What we collect",
           items: [
@@ -260,9 +341,7 @@ export const messages = {
         contact: {
           title: "Contact",
           email: "privacy@mypapyr.com",
-          paragraphs: [
-            "Have a privacy question? Contact us at {email}.",
-          ],
+          paragraphs: ["Have a privacy question? Contact us at {email}."],
         },
       },
     },
@@ -274,6 +353,8 @@ export const messages = {
       tools: "Herramientas",
       basic: "Básicas",
       conversion: "Conversión",
+      security: "Seguridad",
+      enhancement: "Mejora",
       menu: "Menú",
       menuClose: "Cerrar menú",
       cta: "Comenzar",
@@ -285,10 +366,21 @@ export const messages = {
       done: "Listo",
       error: "Algo salió mal",
       download: "Descargar",
+      downloadCta: "Descargar PDF comprimido",
+      complete: "¡Compresión completada!",
+      before: "Antes",
+      after: "Después",
+      errorTitle: "Algo salió mal",
+      retry: "Intentar de nuevo",
+      processingHint: "Optimizando imágenes y flujos...",
+      queuePosition: "Posición en la cola",
+      queueProgress: "Preparando tu archivo...",
     },
     uploader: {
       browse: "Elegir archivos",
       drop: "Arrastra tus archivos aquí o",
+      browseCta: "haz clic para subir",
+      dropHint: "Máx. {size}MB · Solo PDF · Eliminados en 1 hora",
     },
     reset: {
       processAnother: "Procesar otro archivo",
@@ -296,9 +388,15 @@ export const messages = {
     languages: { en: "English", es: "Español", id: "Bahasa Indonesia" },
     home: {
       description: "Herramientas PDF de Papyr.",
+      heroPill: "Gratis · Sin cuenta · Borrado automático",
+      heroLine1: "Herramientas PDF que",
+      heroLine2: "simplemente funcionan.",
       hero: "Herramientas PDF, gratis y simples",
       heroSub: "Comprime, combina, divide y convierte PDFs. Sin necesidad de cuenta.",
       toolsHeading: "Herramientas",
+      trustBadges: ["Sin cuenta", "Auto-eliminación en 1 hora", "Funciona en tu móvil"],
+      toolsEyebrow: "Todas las herramientas",
+      cardCta: "Usar herramienta",
       tools: {
         compress: "Comprimir PDF",
         merge: "Combinar PDF",
@@ -307,6 +405,21 @@ export const messages = {
         pdfToJpg: "PDF a JPG",
       },
       privacy: "Tus archivos son tuyos",
+      privacyEyebrow: "Privacidad primero",
+      privacyCards: [
+        {
+          title: "Transferencia segura",
+          desc: "Los archivos se transmiten por HTTPS y se procesan de forma segura.",
+        },
+        {
+          title: "Eliminados en 1 hora",
+          desc: "Cada archivo subido se elimina permanentemente en un plazo de 60 minutos, sin excepciones.",
+        },
+        {
+          title: "Sin almacenamiento",
+          desc: "Nunca leemos, analizamos ni almacenamos tus documentos. Nunca.",
+        },
+      ],
       privacyDesc:
         "No se requiere cuenta. Los archivos procesados en tu navegador nunca salen de tu dispositivo. Los archivos procesados en el servidor se eliminan en un plazo máximo de una hora tras la subida.",
       howItWorks: "Cómo funciona",
@@ -395,7 +508,8 @@ export const messages = {
     tools: {
       compress: {
         title: "Comprimir PDF",
-        description: "Reduce el tamaño de tu PDF manteniendo la calidad. Se procesa en nuestros servidores y se elimina en una hora.",
+        description:
+          "Reduce el tamaño de tu PDF manteniendo la calidad. Se procesa en nuestros servidores y se elimina en una hora.",
         errors: {
           fileTooLarge: "El archivo supera el límite de tamaño máximo.",
           uploadFailed: "Error al subir, inténtalo de nuevo.",
@@ -410,32 +524,79 @@ export const messages = {
       },
       merge: {
         title: "Unir PDF",
-        description: "Combina varios PDFs en un solo documento. Todos los archivos permanecen en tu navegador.",
-        errors: { fileTooLarge: "Archivo demasiado grande (máx. 200MB combinados)", needAtLeastTwo: "Selecciona al menos 2 archivos", uploadFailed: "Error de subida", downloadFailed: "Error de descarga" },
+        description:
+          "Combina varios PDFs en un solo documento. Todos los archivos permanecen en tu navegador.",
+        errors: {
+          fileTooLarge: "Archivo demasiado grande (máx. 200MB combinados)",
+          needAtLeastTwo: "Selecciona al menos 2 archivos",
+          uploadFailed: "Error de subida",
+          downloadFailed: "Error de descarga",
+        },
         actions: { merge: "Unir PDF", uploading: "Subiendo..." },
-        status: { submitting: "Enviando..." }
+        status: { submitting: "Enviando..." },
       },
       split: {
         title: "Dividir PDF",
         description: "Extrae páginas de tu PDF y crea un nuevo documento.",
-        errors: { fileTooLarge: "Archivo demasiado grande (máx. 100MB)", uploadFailed: "Error de subida", downloadFailed: "Error de descarga" },
+        errors: {
+          fileTooLarge: "Archivo demasiado grande (máx. 100MB)",
+          uploadFailed: "Error de subida",
+          downloadFailed: "Error de descarga",
+        },
         actions: { split: "Dividir PDF", uploading: "Subiendo..." },
-        status: { submitting: "Enviando..." }
+        status: { submitting: "Enviando..." },
       },
       jpgToPdf: {
         title: "JPG a PDF",
         description: "Convierte tus imágenes JPG en un solo documento PDF.",
-        errors: { fileTooLarge: "Archivo demasiado grande (máx. 100MB)", uploadFailed: "Error de subida", downloadFailed: "Error de descarga" },
+        errors: {
+          fileTooLarge: "Archivo demasiado grande (máx. 100MB)",
+          uploadFailed: "Error de subida",
+          downloadFailed: "Error de descarga",
+        },
         actions: { convert: "Convertir a PDF", uploading: "Subiendo..." },
-        status: { submitting: "Enviando..." }
+        status: { submitting: "Enviando..." },
       },
       pdfToJpg: {
         title: "PDF a JPG",
         description: "Convierte las páginas de tu PDF en imágenes JPG de alta calidad.",
-        errors: { fileTooLarge: "Archivo demasiado grande (máx. 16MP por página)", uploadFailed: "Error de subida", downloadFailed: "Error de descarga" },
+        errors: {
+          fileTooLarge: "Archivo demasiado grande (máx. 16MP por página)",
+          uploadFailed: "Error de subida",
+          downloadFailed: "Error de descarga",
+        },
         actions: { convert: "Convertir a JPG", uploading: "Subiendo..." },
-        status: { submitting: "Enviando..." }
+        status: { submitting: "Enviando..." },
       },
+    },
+    toolPages: {
+      "compress-pdf": {
+        features: ["Hasta 80% más pequeño", "Procesamiento rápido", "Privacidad primero"],
+      },
+      "merge-pdf": {
+        features: ["Combina muchos archivos", "Orden preservado", "Privacidad primero"],
+      },
+      "split-pdf": {
+        features: ["Intervalos personalizados", "Una página por archivo", "Privacidad primero"],
+      },
+      "jpg-to-pdf": {
+        features: ["Multi-imagen", "Ajuste automático de páginas", "Privacidad primero"],
+      },
+      "pdf-to-jpg": {
+        features: ["Alta calidad", "Una imagen por página", "Privacidad primero"],
+      },
+    },
+    privacyNotice: {
+      model: {
+        server:
+          "Tus archivos se eliminan automáticamente después de 1 hora. Nunca guardamos tus documentos.",
+        client: "Tus archivos nunca salen de tu dispositivo. Todo se procesa en tu navegador.",
+        hybrid:
+          "Los archivos pequeños se procesan en tu navegador. Los archivos grandes se envían al servidor y se eliminan en 1 hora.",
+      },
+    },
+    otherTools: {
+      title: "Otras herramientas",
     },
     faqPage: {
       title: "Preguntas frecuentes",
@@ -480,7 +641,8 @@ export const messages = {
     privacyPage: {
       lastUpdated: "Última actualización: abril de 2026",
       sections: {
-        intro: "Papyr es una herramienta PDF gratuita que antepone tu privacidad. Diseñamos este servicio para tocar tus datos personales lo menos posible.",
+        intro:
+          "Papyr es una herramienta PDF gratuita que antepone tu privacidad. Diseñamos este servicio para tocar tus datos personales lo menos posible.",
         whatWeCollect: {
           title: "Qué recopilamos",
           items: [
@@ -527,9 +689,7 @@ export const messages = {
         contact: {
           title: "Contacto",
           email: "privacy@mypapyr.com",
-          paragraphs: [
-            "¿Tienes una pregunta sobre privacidad? Contáctanos en {email}.",
-          ],
+          paragraphs: ["¿Tienes una pregunta sobre privacidad? Contáctanos en {email}."],
         },
       },
     },
@@ -541,6 +701,8 @@ export const messages = {
       tools: "Alat",
       basic: "Dasar",
       conversion: "Konversi",
+      security: "Keamanan",
+      enhancement: "Enhancement",
       menu: "Menu navigasi",
       menuClose: "Tutup menu",
       cta: "Mulai",
@@ -552,10 +714,21 @@ export const messages = {
       done: "Selesai",
       error: "Terjadi kesalahan",
       download: "Unduh",
+      downloadCta: "Unduh PDF yang Dikompres",
+      complete: "Kompresi selesai!",
+      before: "Sebelum",
+      after: "Sesudah",
+      errorTitle: "Terjadi Kesalahan",
+      retry: "Coba Lagi",
+      processingHint: "Mengoptimalkan gambar dan stream...",
+      queuePosition: "Posisi dalam antrean",
+      queueProgress: "Menyiapkan file Anda...",
     },
     uploader: {
       browse: "Pilih file",
       drop: "Seret file Anda ke sini atau",
+      browseCta: "klik untuk upload",
+      dropHint: "Maks {size}MB · Hanya file PDF · Dihapus dalam 1 jam",
     },
     reset: {
       processAnother: "Proses file lain",
@@ -563,9 +736,15 @@ export const messages = {
     languages: { en: "English", es: "Español", id: "Bahasa Indonesia" },
     home: {
       description: "Alat PDF Papyr.",
+      heroPill: "Gratis · Tanpa akun · Auto-hapus",
+      heroLine1: "Alat PDF yang",
+      heroLine2: "langsung bekerja.",
       hero: "Alat PDF, gratis dan sederhana",
       heroSub: "Kompres, gabung, pisah, dan konversi PDF. Tanpa perlu akun.",
       toolsHeading: "Alat",
+      trustBadges: ["Tanpa akun", "Auto-hapus 1 jam", "Bisa di HP"],
+      toolsEyebrow: "Semua alat",
+      cardCta: "Gunakan alat",
       tools: {
         compress: "Kompres PDF",
         merge: "Gabung PDF",
@@ -574,6 +753,21 @@ export const messages = {
         pdfToJpg: "PDF ke JPG",
       },
       privacy: "File Anda tetap milik Anda",
+      privacyEyebrow: "Privasi utama",
+      privacyCards: [
+        {
+          title: "Transfer aman",
+          desc: "File ditransmisikan melalui HTTPS dan diproses secara aman.",
+        },
+        {
+          title: "Dihapus dalam 1 jam",
+          desc: "Setiap file yang diunggah dihapus permanen dalam 60 menit, tanpa pengecualian.",
+        },
+        {
+          title: "Tanpa penyimpanan",
+          desc: "Kami tidak pernah membaca, menganalisis, atau menyimpan dokumenmu. Selamanya.",
+        },
+      ],
       privacyDesc:
         "Tidak perlu akun. File yang diproses di browser tidak pernah meninggalkan perangkat Anda. File yang diproses di server dihapus dalam waktu satu jam setelah diunggah.",
       howItWorks: "Cara kerja",
@@ -662,7 +856,8 @@ export const messages = {
     tools: {
       compress: {
         title: "Kompres PDF",
-        description: "Kurangi ukuran PDF Anda dengan tetap menjaga kualitas. Diproses di server kami dan dihapus dalam satu jam.",
+        description:
+          "Kurangi ukuran PDF Anda dengan tetap menjaga kualitas. Diproses di server kami dan dihapus dalam satu jam.",
         errors: {
           fileTooLarge: "File melebihi batas ukuran maksimum.",
           uploadFailed: "Gagal mengunggah, silakan coba lagi.",
@@ -677,32 +872,78 @@ export const messages = {
       },
       merge: {
         title: "Gabung PDF",
-        description: "Gabungkan beberapa PDF menjadi satu dokumen. Semua file tetap ada di browser Anda.",
-        errors: { fileTooLarge: "File terlalu besar (maks. 200MB gabungan)", needAtLeastTwo: "Pilih minimal 2 file", uploadFailed: "Gagal mengunggah", downloadFailed: "Gagal mengunduh" },
+        description:
+          "Gabungkan beberapa PDF menjadi satu dokumen. Semua file tetap ada di browser Anda.",
+        errors: {
+          fileTooLarge: "File terlalu besar (maks. 200MB gabungan)",
+          needAtLeastTwo: "Pilih minimal 2 file",
+          uploadFailed: "Gagal mengunggah",
+          downloadFailed: "Gagal mengunduh",
+        },
         actions: { merge: "Gabung PDF", uploading: "Mengunggah..." },
-        status: { submitting: "Mengirim..." }
+        status: { submitting: "Mengirim..." },
       },
       split: {
         title: "Pisah PDF",
         description: "Ekstrak halaman dari PDF dan buat dokumen baru.",
-        errors: { fileTooLarge: "File terlalu besar (maks. 100MB)", uploadFailed: "Gagal mengunggah", downloadFailed: "Gagal mengunduh" },
+        errors: {
+          fileTooLarge: "File terlalu besar (maks. 100MB)",
+          uploadFailed: "Gagal mengunggah",
+          downloadFailed: "Gagal mengunduh",
+        },
         actions: { split: "Pisah PDF", uploading: "Mengunggah..." },
-        status: { submitting: "Mengirim..." }
+        status: { submitting: "Mengirim..." },
       },
       jpgToPdf: {
         title: "JPG ke PDF",
         description: "Konversi gambar JPG Anda menjadi satu dokumen PDF.",
-        errors: { fileTooLarge: "File terlalu besar (maks. 100MB)", uploadFailed: "Gagal mengunggah", downloadFailed: "Gagal mengunduh" },
+        errors: {
+          fileTooLarge: "File terlalu besar (maks. 100MB)",
+          uploadFailed: "Gagal mengunggah",
+          downloadFailed: "Gagal mengunduh",
+        },
         actions: { convert: "Konversi ke PDF", uploading: "Mengunggah..." },
-        status: { submitting: "Mengirim..." }
+        status: { submitting: "Mengirim..." },
       },
       pdfToJpg: {
         title: "PDF ke JPG",
         description: "Konversi halaman PDF Anda menjadi gambar JPG berkualitas tinggi.",
-        errors: { fileTooLarge: "File terlalu besar (maks. 16MP per halaman)", uploadFailed: "Gagal mengunggah", downloadFailed: "Gagal mengunduh" },
+        errors: {
+          fileTooLarge: "File terlalu besar (maks. 16MP per halaman)",
+          uploadFailed: "Gagal mengunggah",
+          downloadFailed: "Gagal mengunduh",
+        },
         actions: { convert: "Konversi ke JPG", uploading: "Mengunggah..." },
-        status: { submitting: "Mengirim..." }
+        status: { submitting: "Mengirim..." },
       },
+    },
+    toolPages: {
+      "compress-pdf": {
+        features: ["Hingga 80% lebih kecil", "Pemrosesan cepat", "Privasi utama"],
+      },
+      "merge-pdf": {
+        features: ["Gabungkan banyak file", "Urutan terjaga", "Privasi utama"],
+      },
+      "split-pdf": {
+        features: ["Rentang kustom", "Satu halaman per file", "Privasi utama"],
+      },
+      "jpg-to-pdf": {
+        features: ["Multi-gambar", "Halaman menyesuaikan otomatis", "Privasi utama"],
+      },
+      "pdf-to-jpg": {
+        features: ["Kualitas tinggi", "Satu gambar per halaman", "Privasi utama"],
+      },
+    },
+    privacyNotice: {
+      model: {
+        server: "File kamu otomatis dihapus setelah 1 jam. Kami tidak pernah menyimpan dokumenmu.",
+        client: "File tidak pernah meninggalkan perangkatmu. Semua proses berjalan di browser.",
+        hybrid:
+          "File kecil diproses di browser. File besar dikirim ke server dan otomatis dihapus dalam 1 jam.",
+      },
+    },
+    otherTools: {
+      title: "Alat lainnya",
     },
     faqPage: {
       title: "Pertanyaan Umum",
@@ -747,7 +988,8 @@ export const messages = {
     privacyPage: {
       lastUpdated: "Terakhir diperbarui: April 2026",
       sections: {
-        intro: "Papyr adalah alat PDF gratis yang mengutamakan privasimu. Kami merancang layanan ini agar sesedikit mungkin menyentuh data pribadimu.",
+        intro:
+          "Papyr adalah alat PDF gratis yang mengutamakan privasimu. Kami merancang layanan ini agar sesedikit mungkin menyentuh data pribadimu.",
         whatWeCollect: {
           title: "Apa yang kami kumpulkan",
           items: [
@@ -794,9 +1036,7 @@ export const messages = {
         contact: {
           title: "Kontak",
           email: "privacy@mypapyr.com",
-          paragraphs: [
-            "Punya pertanyaan tentang privasi? Hubungi kami di {email}.",
-          ],
+          paragraphs: ["Punya pertanyaan tentang privasi? Hubungi kami di {email}."],
         },
       },
     },

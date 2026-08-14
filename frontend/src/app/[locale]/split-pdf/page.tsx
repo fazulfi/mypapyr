@@ -4,18 +4,30 @@ import { use } from "react";
 
 import type { Locale } from "@/lib/i18n";
 import { isLocale, defaultLocale } from "@/lib/i18n";
-import { getMessages } from "@/lib/messages";
+import { ToolPageHeader } from "@/components/ToolPageHeader";
+import { PrivacyNotice } from "@/components/PrivacyNotice";
+import OtherTools from "@/components/OtherTools";
+import { Dropzone } from "@/components/uploader/Dropzone";
+import { useState } from "react";
 
 export function SplitPdfTool({ locale }: { locale: Locale }) {
-  const messages = getMessages(locale);
+  const [files, setFiles] = useState<File[]>([]);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-      <main className="container mx-auto p-4">
-        <h1>{messages.tools.split.title}</h1>
-        <p>{messages.tools.split.description}</p>
-      </main>
-    </div>
+    <main className="min-h-screen bg-gray-50 p-8">
+      <div className="mx-auto max-w-3xl">
+        <ToolPageHeader locale={locale} toolId="split-pdf" />
+        <PrivacyNotice locale={locale} model="client" />
+        <Dropzone
+          files={files}
+          onChange={setFiles}
+          accept={["application/pdf"]}
+          maxFiles={1}
+          locale={locale}
+        />
+        <OtherTools currentTool="split-pdf" locale={locale} />
+      </div>
+    </main>
   );
 }
 

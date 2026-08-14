@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { TOOL_IDS, isToolId, type ToolId } from "../tool-ids";
+import { LEGACY_TOOL_IDS, TOOL_IDS, isLegacyToolId, isToolId, type ToolId } from "../tool-ids";
 
 // SH-04 review fix: tool ids were duplicated in catalog.ts and
 // product-status.ts and could drift. tool-ids.ts is the single authoritative
@@ -52,5 +52,48 @@ describe("TOOL_IDS (single authoritative tool-id source)", () => {
     } else {
       expect.unreachable("compress-pdf must be a canonical ToolId");
     }
+  });
+});
+
+describe("LEGACY_TOOL_IDS (deferred legacy tools, T3)", () => {
+  it("exposes exactly the eight deferred legacy tool ids in owner-approved order", () => {
+    expect(LEGACY_TOOL_IDS).toEqual([
+      "rotate",
+      "protect",
+      "unlock",
+      "watermark",
+      "sign",
+      "pdf-to-word",
+      "ocr",
+      "pdf-to-excel",
+    ]);
+  });
+
+  it("is frozen so consumers cannot mutate the legacy set", () => {
+    expect(Object.isFrozen(LEGACY_TOOL_IDS)).toBe(true);
+    const mutable = LEGACY_TOOL_IDS as unknown as string[];
+    expect(() => {
+      mutable.push("compress");
+    }).toThrow();
+  });
+
+  it("keeps canonical and legacy id sets disjoint", () => {
+    expect(LEGACY_TOOL_IDS.some((id) => TOOL_IDS.includes(id as ToolId))).toBe(false);
+  });
+
+  it("isLegacyToolId accepts every legacy id", () => {
+    for (const id of LEGACY_TOOL_IDS) {
+      expect(isLegacyToolId(id)).toBe(true);
+    }
+  });
+
+  it("isLegacyToolId rejects canonical, alias, and malformed values", () => {
+    expect(isLegacyToolId("compress-pdf")).toBe(false);
+    expect(isLegacyToolId("merge-pdf")).toBe(false);
+    expect(isLegacyToolId("image-to-pdf")).toBe(false);
+    expect(isLegacyToolId("pdf-to-image")).toBe(false);
+    expect(isLegacyToolId("compress")).toBe(false);
+    expect(isLegacyToolId("")).toBe(false);
+    expect(isLegacyToolId(undefined as unknown as string)).toBe(false);
   });
 });

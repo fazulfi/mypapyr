@@ -33,7 +33,9 @@ test.describe("Homepage rich UI", () => {
 
     // Each card has name, description, and CTA footer
     const firstCard = cards.first();
-    await expect(firstCard).toContainText(/compress pdf|merge pdf|split pdf|jpg to pdf|pdf to jpg/i);
+    await expect(firstCard).toContainText(
+      /compress pdf|merge pdf|split pdf|jpg to pdf|pdf to jpg/i,
+    );
     await expect(firstCard.locator(".mt-auto")).toBeVisible();
   });
 
@@ -122,7 +124,9 @@ test.describe("Footer columns", () => {
     expect(count).toBeGreaterThanOrEqual(4);
   });
 
-  test("footer has a support column with privacy, terms, contact, status, roadmap", async ({ page }) => {
+  test("footer has a support column with privacy, terms, contact, status, roadmap", async ({
+    page,
+  }) => {
     await page.goto("/en");
     await page.waitForLoadState("networkidle");
 

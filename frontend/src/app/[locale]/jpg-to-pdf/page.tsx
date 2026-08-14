@@ -31,7 +31,7 @@ function derivePhase(
   return "error";
 }
 
-export function CompressPdfTool({ locale }: { locale: Locale }) {
+export function JpgToPdfTool({ locale }: { locale: Locale }) {
   const copy = getMessages(locale);
   const [files, setFiles] = useState<File[]>([]);
   const [taskId, setTaskId] = useState<string | null>(null);
@@ -39,7 +39,7 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
 
   const { status } = useTaskPolling({
-    toolId: "compress-pdf",
+    toolId: "jpg-to-pdf",
     taskId: taskId ?? "",
     enabled: taskId !== null,
   });
@@ -49,7 +49,7 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
     if (taskId === null || status === null || status.state !== "done") return;
     if (downloadUrl !== null) return;
     let cancelled = false;
-    void fetch("/api/v1/tools/compress-pdf/tasks/" + taskId + "/download/0")
+    void fetch("/api/v1/tools/jpg-to-pdf/tasks/" + taskId + "/download/0")
       .then(async (response) => {
         if (!response.ok) return;
         const grant = (await response.json()) as { url: string };
@@ -67,7 +67,7 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
     try {
       const form = new FormData();
       for (const file of selected) form.append("file", file);
-      const response = await fetch("/api/v1/tools/compress-pdf/tasks", {
+      const response = await fetch("/api/v1/tools/jpg-to-pdf/tasks", {
         method: "POST",
         body: form,
       });
@@ -105,13 +105,13 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
     return (
       <main className="min-h-screen bg-gray-50 p-8">
         <div className="mx-auto max-w-3xl">
-          <ToolPageHeader locale={locale} toolId="compress-pdf" />
-          <PrivacyNotice locale={locale} model="server" />
+          <ToolPageHeader locale={locale} toolId="jpg-to-pdf" />
+          <PrivacyNotice locale={locale} model="hybrid" />
           <Dropzone
             files={files}
             onChange={setFiles}
-            accept={["application/pdf"]}
-            maxFiles={1}
+            accept={["image/jpeg", "image/png", "image/webp"]}
+            maxFiles={50}
             maxSizeBytes={MAX_SIZE_BYTES}
             disabled={phase === "uploading"}
             locale={locale}
@@ -123,10 +123,9 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
             className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             {phase === "uploading"
-              ? copy.tools.compress.actions.uploading
-              : copy.tools.compress.actions.compress}
+              ? copy.tools.jpgToPdf.actions.uploading
+              : copy.tools.jpgToPdf.actions.convert}
           </button>
-          <OtherTools currentTool="compress-pdf" locale={locale} />
         </div>
       </main>
     );
@@ -165,17 +164,17 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
   return (
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-3xl">
-        <ToolPageHeader locale={locale} toolId="compress-pdf" />
-        <PrivacyNotice locale={locale} model="server" />
-        <OtherTools currentTool="compress-pdf" locale={locale} />
+        <ToolPageHeader locale={locale} toolId="jpg-to-pdf" />
+        <PrivacyNotice locale={locale} model="hybrid" />
         {card}
+        <OtherTools currentTool="jpg-to-pdf" locale={locale} />
       </div>
     </main>
   );
 }
 
-export default function CompressPdfPage({ params }: { params: Promise<{ locale: string }> }) {
+export default function JpgToPdfPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale: rawLocale } = use(params);
   const locale: Locale = isLocale(rawLocale) ? rawLocale : defaultLocale;
-  return <CompressPdfTool locale={locale} />;
+  return <JpgToPdfTool locale={locale} />;
 }

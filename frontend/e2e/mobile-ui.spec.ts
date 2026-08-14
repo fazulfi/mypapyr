@@ -118,7 +118,9 @@ test.describe("Tool page mobile (Pixel 7)", () => {
     const uploader = page.locator('[data-testid="dropzone"], input[type="file"]');
     const box = await uploader.first().boundingBox();
     expect(box, "uploader must have a bounding box").not.toBeNull();
-    expect(box!.width, "uploader should span most of the 375px viewport").toBeGreaterThanOrEqual(320);
+    expect(box!.width, "uploader should span most of the 375px viewport").toBeGreaterThanOrEqual(
+      320,
+    );
   });
 
   test("no horizontal overflow on tool page at 375px", async ({ page }) => {

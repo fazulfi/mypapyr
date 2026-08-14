@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import ogImage, { alt as ogAlt, size as ogSize, contentType as ogContentType } from "../opengraph-image";
+import ogImage, {
+  alt as ogAlt,
+  size as ogSize,
+  contentType as ogContentType,
+} from "../opengraph-image";
 import twitterImage, {
   alt as twitterAlt,
   size as twitterSize,

@@ -4,6 +4,9 @@ import { use, useState } from "react";
 
 import type { Locale } from "@/lib/i18n";
 import { isLocale, defaultLocale } from "@/lib/i18n";
+import { ToolPageHeader } from "@/components/ToolPageHeader";
+import { PrivacyNotice } from "@/components/PrivacyNotice";
+import OtherTools from "@/components/OtherTools";
 import { getMessages } from "@/lib/messages";
 import { Dropzone } from "@/components/uploader/Dropzone";
 import { QueuedCard } from "@/components/states/QueuedCard";
@@ -89,8 +92,8 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
 
   return (
     <main className="container mx-auto px-4 py-8">
-      <h1 className="mb-6 text-3xl font-bold">{messages.tools.merge.title}</h1>
-      <p className="mb-8 text-gray-600">{messages.tools.merge.description}</p>
+      <ToolPageHeader locale={locale} toolId="merge-pdf" />
+      <PrivacyNotice locale={locale} model="client" />
 
       {!taskId ? (
         <>
@@ -135,6 +138,7 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
           )}
         </div>
       )}
+      <OtherTools currentTool="merge-pdf" locale={locale} />
     </main>
   );
 }

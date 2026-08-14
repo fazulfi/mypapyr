@@ -272,7 +272,6 @@ describe("SH-05/06 locale shell glue", () => {
     }
   });
 
-
   it("keeps exactly one main landmark with the shell chrome mounted", async () => {
     const markup = await renderShell("en");
     expect(markup.match(/<main/g)).toHaveLength(1);

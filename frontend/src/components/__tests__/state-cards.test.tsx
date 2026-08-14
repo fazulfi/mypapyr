@@ -39,13 +39,18 @@ describe("components/states shimmer cards", () => {
     }
   });
 
-  it("renders its localized processing label with a pulse skeleton for every locale", () => {
+  it("renders its localized processing label with a shimmer bar and file row for every locale", () => {
     for (const locale of locales) {
       const copy = getMessages(locale);
-      const { unmount } = render(<ProcessingCard locale={locale} />);
+      const { container, unmount } = render(
+        <ProcessingCard locale={locale} fileName="test.pdf" fileSizeBytes={500000} />,
+      );
       expect(screen.getByText(copy.states.processing)).toBeTruthy();
-      const skeleton = screen.getByTestId("skeleton");
-      expect(skeleton.className).toContain("animate-pulse");
+      const fileChip = container.querySelector("[class*='rounded-xl bg-slate-100']") as HTMLElement;
+      expect(fileChip).toBeTruthy();
+      expect(fileChip.className).toContain("rounded-xl");
+      const shimmer = container.querySelector("[class*='animate-shimmer']") as HTMLElement;
+      expect(shimmer.className).toContain("animate-shimmer");
       unmount();
     }
   });
@@ -91,7 +96,7 @@ describe("components/states ErrorCard", () => {
           onReset={() => undefined}
         />,
       );
-      expect(screen.getByText(copy.states.error)).toBeTruthy();
+      expect(screen.getAllByText(copy.states.error).length).toBeGreaterThanOrEqual(1);
       unmount();
     }
   });
@@ -99,7 +104,7 @@ describe("components/states ErrorCard", () => {
   it("falls back to the generic error copy when messageKey is null", () => {
     const copy = getMessages("es");
     render(<ErrorCard locale="es" messageKey={null} retryable={false} onReset={() => undefined} />);
-    expect(screen.getByText(copy.states.error)).toBeTruthy();
+    expect(screen.getAllByText(copy.states.error).length).toBeGreaterThanOrEqual(1);
   });
 
   it("surfaces the retryable flag honestly without faking success", () => {
@@ -115,7 +120,66 @@ describe("components/states ErrorCard", () => {
     const onReset = vi.fn();
     const copy = getMessages("id");
     render(<ErrorCard locale="id" messageKey={null} retryable={false} onReset={onReset} />);
-    fireEvent.click(screen.getByRole("button", { name: copy.reset.processAnother }));
+    fireEvent.click(screen.getByRole("button", { name: copy.states.retry }));
     expect(onReset).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("components/states rich reference markup", () => {
+  it("renders the rose error card with alert title, message, and retry button for every locale", () => {
+    for (const locale of locales) {
+      const copy = getMessages(locale);
+      const { unmount } = render(
+        <ErrorCard
+          locale={locale}
+          messageKey="states.error"
+          retryable={true}
+          onReset={() => undefined}
+        />,
+      );
+      expect(screen.getAllByText(copy.states.errorTitle).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(copy.states.error).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByRole("button", { name: copy.states.retry })).toBeTruthy();
+      unmount();
+    }
+  });
+
+  it("renders the compress done variant with before/after sizes, saved pill, and emerald check", () => {
+    const copy = getMessages("en");
+    const { container } = render(
+      <DoneCard
+        locale="en"
+        onDownload={() => undefined}
+        onReset={() => undefined}
+        originalBytes={10 * 1024 * 1024}
+        compressedBytes={2 * 1024 * 1024}
+      />,
+    );
+    expect(screen.getByText(copy.states.complete)).toBeTruthy();
+    const check = container.querySelector("[class*='bg-emerald-500']") as HTMLElement;
+    expect(check).toBeTruthy();
+    expect(check.className).toContain("rounded-full");
+    const compare = container.querySelector("[class*='bg-slate-50 px-4']") as HTMLElement;
+    expect(compare).toBeTruthy();
+    expect(compare.className).toContain("rounded-xl");
+    expect(screen.getByText(copy.states.before)).toBeTruthy();
+    expect(screen.getByText(copy.states.after)).toBeTruthy();
+    expect(screen.getByText("10.0 MB")).toBeTruthy();
+    expect(screen.getByText("2.0 MB")).toBeTruthy();
+    const pill = container.querySelector("[class*='bg-accent/10']") as HTMLElement;
+    expect(pill).toBeTruthy();
+    expect(pill.textContent).toBe("−80%");
+    expect(screen.getByRole("button", { name: copy.states.downloadCta })).toBeTruthy();
+  });
+
+  it("hides the before/after comparison when no result sizes are provided", () => {
+    const copy = getMessages("en");
+    const { container } = render(
+      <DoneCard locale="en" onDownload={() => undefined} onReset={() => undefined} />,
+    );
+    expect(screen.getByText(copy.states.done)).toBeTruthy();
+    expect(container.querySelector("[class*='bg-slate-50 px-4']")).toBeNull();
+    expect(container.querySelector("[class*='bg-emerald-500']")).toBeTruthy();
+    expect(screen.queryByText(copy.states.before)).toBeNull();
   });
 });
