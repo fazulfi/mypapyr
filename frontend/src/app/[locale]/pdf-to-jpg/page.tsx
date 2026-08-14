@@ -6,6 +6,8 @@ import { use } from "react";
 import type { Locale } from "@/lib/i18n";
 import { defaultLocale, isLocale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
+import { ToolPageHeader } from "@/components/ToolPageHeader";
+import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { Dropzone } from "@/components/uploader/Dropzone";
 import { PreparingCard } from "@/components/states/PreparingCard";
 import { QueuedCard } from "@/components/states/QueuedCard";
@@ -87,14 +89,13 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
           ? "error"
           : "idle"
       : derivePhase(status, true, pollingError);
-
   // Idle / ready / uploading phase: show dropzone + submit button
   if (phase === "idle" || phase === "ready" || phase === "uploading") {
     return (
       <main className="min-h-screen bg-gray-50 p-8">
         <div className="mx-auto max-w-3xl">
-          <h1 className="mb-2 text-3xl font-bold">{copy.tools.pdfToJpg.title}</h1>
-          <p className="mb-6 text-slate-600">{copy.tools.pdfToJpg.description}</p>
+          <ToolPageHeader locale={locale} toolId="pdf-to-jpg" />
+          <PrivacyNotice locale={locale} model="server" />
 
           <Dropzone
             files={files}
@@ -161,7 +162,8 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
   return (
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-3xl">
-        <h1 className="mb-6 text-3xl font-bold">{copy.tools.pdfToJpg.title}</h1>
+        <ToolPageHeader locale={locale} toolId="pdf-to-jpg" />
+        <PrivacyNotice locale={locale} model="server" />
         {card}
       </div>
     </main>

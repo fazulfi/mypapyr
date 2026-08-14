@@ -6,6 +6,8 @@ import { use } from "react";
 import type { Locale } from "@/lib/i18n";
 import { defaultLocale, isLocale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
+import { ToolPageHeader } from "@/components/ToolPageHeader";
+import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { Dropzone } from "@/components/uploader/Dropzone";
 import { PreparingCard } from "@/components/states/PreparingCard";
 import { QueuedCard } from "@/components/states/QueuedCard";
@@ -105,9 +107,8 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
     return (
       <main className="min-h-screen bg-gray-50 p-8">
         <div className="mx-auto max-w-3xl">
-          <h1 className="mb-2 text-3xl font-bold">{copy.tools.jpgToPdf.title}</h1>
-          <p className="mb-6 text-slate-600">{copy.tools.jpgToPdf.description}</p>
-
+          <ToolPageHeader locale={locale} toolId="jpg-to-pdf" />
+          <PrivacyNotice locale={locale} model="hybrid" />
           <Dropzone
             files={files}
             onChange={setFiles}
@@ -171,7 +172,8 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
   return (
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-3xl">
-        <h1 className="mb-6 text-3xl font-bold">{copy.tools.jpgToPdf.title}</h1>
+        <ToolPageHeader locale={locale} toolId="jpg-to-pdf" />
+        <PrivacyNotice locale={locale} model="hybrid" />
         {card}
       </div>
     </main>
