@@ -6,16 +6,10 @@ name: papyr
 # The stack declares exactly four service slots: api, nginx, redis, workers.
 #   * api     — the only currently activatable service; its image is built
 #               from backend/Dockerfile.production.
-#   * nginx   — deferred edge slot with an image placeholder.
-#   * redis   — queue-storage slot; image pinned by immutable digest to the
-#               approved R-09 persistence/eviction policy (queue profile).
-#   * workers — deferred worker slot; resource bounds and one-worker posture
-#               are declared per R-07/DEC-189, the image reference stays a
-#               __SET_ME__ placeholder until a real worker image exists.
-# Deferred slots are NOT activatable: nginx/workers carry __SET_ME__ image
-# placeholders, they live behind their own profiles, and their skeleton
-# wiring stays non-functional until the release procedure assigns real
-# values. They MUST NOT be deployed as-is.
+#   * nginx   — deferred edge slot; vhost hardened (rate limits, CF real-IP,
+#               security headers), image placeholder until release assigns a
+#               real nginx image tag. Ports 80/443 are exposed with the vhost
+#               fail-closed (default_server 444), safe before a real domain.
 #
 # Profile contract (activation safety): `--profile app` selects ONLY api.
 #   * api     -> profile "app"   (the only currently activatable profile)
@@ -100,13 +94,14 @@ services:
     depends_on:
       api:
         condition: service_healthy
-    # Port publication is deferred: the placeholder
-    # "127.0.0.1:__SET_ME__:80" was removed because it is invalid port syntax
-    # and made `docker compose config` fail for the whole file (B2). The
-    # release procedure assigns the real host port before nginx leaves the
-    # skeleton state; until then nginx stays unpublishable behind its "edge"
-    # profile and __SET_ME__ image tag.
-    ports: []
+    # Edge publication: nginx terminates public HTTP on 80/443 (TLS config is
+    # assigned by the release procedure). The skeleton previously published
+    # nothing (ports: []) because the vhost was a placeholder; the hardened
+    # vhost now fails closed (default_server 444) so exposing the port is
+    # safe before a real server_name lands.
+    ports:
+      - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
     restart: unless-stopped
@@ -119,9 +114,12 @@ services:
         max-file: "3"
         labels: "com.papyr.service=nginx"
     healthcheck:
-      # Skeleton probe for the default nginx page. Replace this with the
-      # final edge health route when the edge service is activated.
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      # Probes the hardened vhost's /health route (proxied to the api
+      # service). The vhost fails closed (default_server 444) for any Host
+      # other than its server_name, so the probe sends the placeholder Host
+      # header; the release procedure must update it to the real domain in
+      # lockstep with server_name in nginx/conf.d/production.conf.
+      test: ["CMD-SHELL", "wget -q -O /dev/null --header 'Host: __SET_ME__' http://127.0.0.1/health || exit 1"]
       interval: 30s
       timeout: 10s
       start_period: 10s
@@ -193,6 +191,24 @@ services:
     volumes:
       - redis-data:/data
     restart: unless-stopped
+    # --- Hardened container posture (compatible with redis:7.4.10-alpine) ---
+    # redis:7.4.10-alpine runs its entrypoint as root, chowns /data, then
+    # gosu-drops to the `redis` user; the official image supports a read-only
+    # rootfs because /data is the writable volume. cap_drop ALL plus the
+    # CHOWN/DAC_OVERRIDE/SETGID/SETUID adds preserve exactly that entrypoint
+    # behavior (mirrors the workers posture).
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+    tmpfs:
+      - /tmp:mode=1777,size=64M
     cpus: "0.5"
     mem_limit: 768M
     logging:
