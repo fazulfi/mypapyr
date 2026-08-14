@@ -101,12 +101,13 @@ function textContent(markup: string): string {
 }
 
 describe("SH-07 localized homepage hero", () => {
-  it("renders exactly one hero h1 carrying the localized hero copy for every locale", async () => {
+  it("renders exactly one hero h1 carrying both localized hero lines for every locale", async () => {
     for (const locale of locales) {
       const copy = getMessages(locale);
       const markup = await renderHome(locale);
       expect(markup.match(/<h1/g)).toHaveLength(1);
-      expect(markup).toContain(copy.home.hero);
+      expect(markup).toContain(copy.home.heroLine1);
+      expect(markup).toContain(copy.home.heroLine2);
     }
   });
 
@@ -234,8 +235,12 @@ describe("SH-07 privacy, how-it-works, and FAQ sections", () => {
     for (const locale of locales) {
       const copy = getMessages(locale);
       const markup = await renderHome(locale);
+      expect(markup).toContain(copy.home.privacyEyebrow);
       expect(markup).toContain(copy.home.privacy);
-      expect(markup).toContain(copy.home.privacyDesc);
+      for (const card of copy.home.privacyCards) {
+        expect(markup).toContain(card.title);
+        expect(markup).toContain(escapeText(card.desc));
+      }
     }
   });
 
@@ -283,11 +288,30 @@ describe("SH-07 copy and claim hygiene", () => {
   });
 
   it("carries no unproven speed, tracking, or absolute-privacy claims", async () => {
+    // The claim scan covers the hero, sub, CTA, trust badges, and tool cards.
+    // The privacy-card "never read/analyze/store" line is the REFERENCE parity
+    // copy mandated by the plan dossier (§1.3) and lives in messages.home.privacyCards,
+    // so it is deliberately excluded here and asserted verbatim by the T4 privacy test.
     const claimPattern =
-      /\bno tracking\b|\bno-tracking\b|\btracking\b|\binstant\b|\bfastest\b|fully private|client-only|client only|no personal data|never (read|analyze|store)/i;
+      /\bno tracking\b|\bno-tracking\b|\btracking\b|\binstant\b|\bfastest\b|fully private|client-only|client only|no personal data/i;
     for (const locale of locales) {
+      const copy = getMessages(locale);
       const markup = await renderHome(locale);
-      expect(textContent(markup)).not.toMatch(claimPattern);
+      const heroAndTools = [
+        copy.home.heroPill,
+        copy.home.heroLine1,
+        copy.home.heroLine2,
+        copy.home.heroSub,
+        copy.nav.cta,
+        ...copy.home.trustBadges,
+        copy.home.toolsEyebrow,
+        copy.home.toolsHeading,
+        ...getAllTools().map((tool) => tool.description),
+      ].join(" ");
+      expect(heroAndTools).not.toMatch(claimPattern);
+      expect(textContent(markup)).not.toMatch(
+        /\bno tracking\b|\bno-tracking\b|\binstant\b|\bfastest\b|fully private|client-only|client only|no personal data/i
+      );
     }
   });
 
@@ -354,6 +378,89 @@ describe("T3 rich homepage copy keys", () => {
         expect(card.title.trim()).not.toBe("");
         expect(card.desc.trim()).not.toBe("");
       }
+    }
+  });
+});
+
+describe("T4 rich homepage restore (hero pill, trust badges, card footer, privacy cards)", () => {
+  it("renders the hero pill badge with the localized pill copy and accent styling", async () => {
+    for (const locale of locales) {
+      const copy = getMessages(locale);
+      const markup = await renderHome(locale);
+      expect(markup).toContain(copy.home.heroPill);
+      expect(markup).toContain(
+        "rounded-full border border-accent/30 bg-accent/10"
+      );
+    }
+  });
+
+  it("renders the two-line hero with the accent heroLine2 span for every locale", async () => {
+    for (const locale of locales) {
+      const copy = getMessages(locale);
+      const markup = await renderHome(locale);
+      const h1 = markup.match(/<h1[^>]*>[\s\S]*?<\/h1>/)?.[0] ?? "";
+      expect(h1).toContain(copy.home.heroLine1);
+      expect(h1).toContain("<br/>");
+      expect(h1).toContain(`<span class="text-accent">${copy.home.heroLine2}</span>`);
+    }
+  });
+
+  it("renders all three trust badges with their localized copy", async () => {
+    for (const locale of locales) {
+      const copy = getMessages(locale);
+      const markup = await renderHome(locale);
+      const positions = copy.home.trustBadges.map((badge) => markup.indexOf(escapeText(badge)));
+      for (const position of positions) {
+        expect(position).toBeGreaterThan(-1);
+      }
+      for (let i = 1; i < positions.length; i++) {
+        expect(positions[i]).toBeGreaterThan(positions[i - 1]);
+      }
+    }
+  });
+
+  it("renders the tools section eyebrow above the tool grid", async () => {
+    for (const locale of locales) {
+      const copy = getMessages(locale);
+      const markup = await renderHome(locale);
+      const eyebrow = markup.indexOf(copy.home.toolsEyebrow);
+      // Compare against the h2 opener itself so a heading string that is a
+      // substring of the eyebrow never self-matches (e.g. en "Tools" vs "All tools").
+      const toolsHeadingTag = `<h2 class="text-[32px] font-semibold tracking-tight text-navy">`;
+      const headingPosition = markup.indexOf(toolsHeadingTag);
+      expect(eyebrow).toBeGreaterThan(-1);
+      expect(headingPosition).toBeGreaterThan(-1);
+      expect(eyebrow).toBeLessThan(headingPosition);
+    }
+  });
+
+  it("renders a footer row with the card CTA and arrow icon on every tool card", async () => {
+    for (const locale of locales) {
+      const copy = getMessages(locale);
+      const markup = await renderHome(locale);
+      const cards = markup.split(/<\/a>/g).filter((chunk) => chunk.includes("data-tool-id="));
+      expect(cards).toHaveLength(getAllTools().length);
+      for (const card of cards) {
+        expect(card).toContain(copy.home.cardCta);
+        expect(card).toContain("<line");
+        expect(card).toContain("<polyline");
+      }
+    }
+  });
+
+  it("renders the three privacy cards with icon chips and localized titles and descriptions", async () => {
+    for (const locale of locales) {
+      const copy = getMessages(locale);
+      const markup = await renderHome(locale);
+      expect(markup).toContain("bg-accent/15");
+      for (const card of copy.home.privacyCards) {
+        expect(markup).toContain(card.title);
+        expect(markup).toContain(escapeText(card.desc));
+      }
+      // Expectation: the privacy cards render with shield/clock/lock icon SVG paths.
+      expect(markup).toContain('d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"');
+      expect(markup).toContain('<circle cx="12" cy="12" r="10">');
+      expect(markup).toContain('<rect x="3" y="11" width="18" height="11" rx="2" ry="2">');
     }
   });
 });

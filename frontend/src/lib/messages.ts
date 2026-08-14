@@ -238,6 +238,31 @@ export const messages = {
         status: { submitting: "Submitting..." },
       },
     },
+    toolPages: {
+      "compress-pdf": {
+        features: ["Up to 80% smaller", "Fast processing", "Privacy-first"],
+      },
+      "merge-pdf": {
+        features: ["Combine many files", "Order preserved", "Privacy-first"],
+      },
+      "split-pdf": {
+        features: ["Custom ranges", "One page per file", "Privacy-first"],
+      },
+      "jpg-to-pdf": {
+        features: ["Multi-image", "Auto-fit pages", "Privacy-first"],
+      },
+      "pdf-to-jpg": {
+        features: ["High quality", "Page per image", "Privacy-first"],
+      },
+    },
+    privacyNotice: {
+      model: {
+        server: "Your files are automatically deleted after 1 hour. We never store your documents.",
+        client: "Your files never leave your device. Everything runs in your browser.",
+        hybrid:
+          "Small files are processed in your browser. Large files are sent to the server and deleted within 1 hour.",
+      },
+    },
   },
   es: {
     siteName: "Papyr",
@@ -480,6 +505,31 @@ export const messages = {
         },
         actions: { convert: "Convertir a JPG", uploading: "Subiendo..." },
         status: { submitting: "Enviando..." },
+      },
+    },
+    toolPages: {
+      "compress-pdf": {
+        features: ["Hasta 80% más pequeño", "Procesamiento rápido", "Privacidad primero"],
+      },
+      "merge-pdf": {
+        features: ["Combina muchos archivos", "Orden preservado", "Privacidad primero"],
+      },
+      "split-pdf": {
+        features: ["Intervalos personalizados", "Una página por archivo", "Privacidad primero"],
+      },
+      "jpg-to-pdf": {
+        features: ["Multi-imagen", "Ajuste automático de páginas", "Privacidad primero"],
+      },
+      "pdf-to-jpg": {
+        features: ["Alta calidad", "Una imagen por página", "Privacidad primero"],
+      },
+    },
+    privacyNotice: {
+      model: {
+        server: "Tus archivos se eliminan automáticamente después de 1 hora. Nunca guardamos tus documentos.",
+        client: "Tus archivos nunca salen de tu dispositivo. Todo se procesa en tu navegador.",
+        hybrid:
+          "Los archivos pequeños se procesan en tu navegador. Los archivos grandes se envían al servidor y se eliminan en 1 hora.",
       },
     },
   },
@@ -725,6 +775,31 @@ export const messages = {
         },
         actions: { convert: "Konversi ke JPG", uploading: "Mengunggah..." },
         status: { submitting: "Mengirim..." },
+      },
+    },
+    toolPages: {
+      "compress-pdf": {
+        features: ["Hingga 80% lebih kecil", "Pemrosesan cepat", "Privasi utama"],
+      },
+      "merge-pdf": {
+        features: ["Gabungkan banyak file", "Urutan terjaga", "Privasi utama"],
+      },
+      "split-pdf": {
+        features: ["Rentang kustom", "Satu halaman per file", "Privasi utama"],
+      },
+      "jpg-to-pdf": {
+        features: ["Multi-gambar", "Halaman menyesuaikan otomatis", "Privasi utama"],
+      },
+      "pdf-to-jpg": {
+        features: ["Kualitas tinggi", "Satu gambar per halaman", "Privasi utama"],
+      },
+    },
+    privacyNotice: {
+      model: {
+        server: "File kamu otomatis dihapus setelah 1 jam. Kami tidak pernah menyimpan dokumenmu.",
+        client: "File tidak pernah meninggalkan perangkatmu. Semua proses berjalan di browser.",
+        hybrid:
+          "File kecil diproses di browser. File besar dikirim ke server dan otomatis dihapus dalam 1 jam.",
       },
     },
   },
