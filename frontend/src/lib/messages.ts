@@ -277,6 +277,102 @@ export const messages = {
     otherTools: {
       title: "Other tools",
     },
+    faqPage: {
+      title: "Frequently Asked Questions",
+      subtitle: "Answers to frequently asked questions about Papyr.",
+      cta: "Still have questions?",
+      ctaEmail: "privacy@mypapyr.com",
+      items: [
+        {
+          q: "Is my file safe?",
+          a: "Yes, your file's safety is our priority. All transfers use HTTPS (encrypted). Files uploaded to the server are stored in Cloudflare R2 with restricted access and are automatically deleted within 1 hour. For browser-processed features (Merge PDF, Split PDF), your files never leave your device.",
+        },
+        {
+          q: "How long are files stored on the server?",
+          a: "Maximum 1 hour. After that, files are automatically deleted from our servers — no exceptions. Download links also expire after 1 hour. For browser-processed features, files are never uploaded to the server at all.",
+        },
+        {
+          q: "Do I need to create an account?",
+          a: "No. Papyr works immediately without registration, without login, without email. Open the website, pick a tool, done. We do not collect any personal data.",
+        },
+        {
+          q: "What is the maximum file size?",
+          a: "The current upload limit is 20 MB per file. For browser-processed features (Merge PDF, Split PDF), the limit is more flexible since no server upload is needed.",
+        },
+        {
+          q: "Can I use it on my phone?",
+          a: "Yes! Papyr is optimized for mobile. All features are accessible from your phone's browser without installing an app. Just open mypapyr.com from Chrome, Safari, or any other browser.",
+        },
+        {
+          q: "Is Papyr free?",
+          a: "Yes, all Papyr basic features are free — compress PDF, merge PDF, split PDF, JPG to PDF, and PDF to JPG. No hidden fees for normal use.",
+        },
+        {
+          q: "What file formats are supported?",
+          a: "Papyr supports PDF, JPG, and PNG files. You can compress PDFs, merge multiple PDFs, split PDF pages, convert images (JPG/PNG) to PDF, and convert PDF pages to PNG images.",
+        },
+        {
+          q: "How can I contact Papyr?",
+          a: "You can contact us via email at privacy@mypapyr.com. We will respond as soon as possible.",
+        },
+      ],
+    },
+    privacyPage: {
+      lastUpdated: "Last updated: April 2026",
+      sections: {
+        intro: "Papyr is a free PDF tool that puts your privacy first. We designed this service to touch your personal data as little as possible.",
+        whatWeCollect: {
+          title: "What we collect",
+          items: [
+            "<strong>Files you upload</strong> — PDF or image files you process through Papyr are stored temporarily on our servers only for processing purposes.",
+            "<strong>Anonymous analytics data</strong> — we use privacy-friendly Vercel Analytics to understand which pages are most frequently visited. No tracking cookies.",
+          ],
+        },
+        whatWeDontCollect: {
+          title: "What we do NOT collect",
+          items: [
+            "Name, email, or other personal information",
+            "Content of the documents you upload",
+            "We <strong>do not</strong> use your files to train AI or for any other purpose",
+            "No accounts, no login, no tracking",
+          ],
+        },
+        howLong: {
+          title: "How long files are kept",
+          paragraphs: [
+            "All files uploaded to our servers are <strong>automatically deleted within 1 hour</strong>. No exceptions — after 1 hour, your files are permanently gone from our systems.",
+            "For browser-processed features (Merge PDF, Split PDF), your files never leave your device at all.",
+          ],
+        },
+        analytics: {
+          title: "Analytics",
+          paragraphs: [
+            "We use <strong>Vercel Analytics</strong> to understand website performance. Vercel Analytics is privacy-friendly:",
+          ],
+          items: [
+            "No cookies used",
+            "No individual user tracking",
+            "Data collected anonymously and in aggregate",
+          ],
+        },
+        security: {
+          title: "Security",
+          items: [
+            "All file transfers use HTTPS (encrypted)",
+            "Files stored in Cloudflare R2 with restricted access",
+            "Download links use signed URLs that expire within 1 hour",
+            "Our servers never log file contents",
+          ],
+        },
+        contact: {
+          title: "Contact",
+          email: "privacy@mypapyr.com",
+          paragraphs: [
+            "Have a privacy question? Contact us at {email}.",
+          ],
+        },
+      },
+    },
   },
   es: {
     siteName: "Papyr",
@@ -559,6 +655,102 @@ export const messages = {
     },
     otherTools: {
       title: "Otras herramientas",
+    },
+    faqPage: {
+      title: "Preguntas frecuentes",
+      subtitle: "Respuestas a las preguntas más frecuentes sobre Papyr.",
+      cta: "¿Todavía tienes preguntas?",
+      ctaEmail: "privacy@mypapyr.com",
+      items: [
+        {
+          q: "¿Está seguro mi archivo?",
+          a: "Sí, la seguridad de tus archivos es nuestra prioridad. Todas las transferencias usan HTTPS (cifrado). Los archivos subidos al servidor se almacenan en Cloudflare R2 con acceso restringido y se eliminan automáticamente en 1 hora. Para las funciones procesadas en el navegador (Unir PDF, Dividir PDF), tus archivos nunca salen de tu dispositivo.",
+        },
+        {
+          q: "¿Cuánto tiempo se guardan los archivos en el servidor?",
+          a: "Máximo 1 hora. Después de ese tiempo, los archivos se eliminan automáticamente de nuestros servidores, sin excepciones. Los enlaces de descarga también caducan después de 1 hora. Para las funciones procesadas en el navegador, los archivos nunca se suben al servidor.",
+        },
+        {
+          q: "¿Necesito crear una cuenta?",
+          a: "No. Papyr funciona de inmediato sin registro, sin inicio de sesión y sin correo electrónico. Abre el sitio web, elige una herramienta y listo. No recopilamos ningún dato personal.",
+        },
+        {
+          q: "¿Cuál es el tamaño máximo de archivo?",
+          a: "El límite de subida actual es de 20 MB por archivo. Para las funciones procesadas en el navegador (Unir PDF, Dividir PDF), el límite es más flexible porque no se necesita subir al servidor.",
+        },
+        {
+          q: "¿Se puede usar en el móvil?",
+          a: "¡Sí! Papyr está optimizado para móviles. Todas las funciones son accesibles desde el navegador del teléfono sin instalar ninguna aplicación. Solo abre mypapyr.com desde Chrome, Safari o cualquier otro navegador.",
+        },
+        {
+          q: "¿Papyr es gratis?",
+          a: "Sí, todas las funciones básicas de Papyr son gratuitas: comprimir PDF, unir PDF, dividir PDF, JPG a PDF y PDF a JPG. Sin costes ocultos para el uso normal.",
+        },
+        {
+          q: "¿Qué formatos de archivo se admiten?",
+          a: "Papyr admite archivos PDF, JPG y PNG. Puedes comprimir PDF, unir varios PDF, dividir páginas de PDF, convertir imágenes (JPG/PNG) a PDF y convertir páginas de PDF a imágenes PNG.",
+        },
+        {
+          q: "¿Cómo puedo contactar con Papyr?",
+          a: "Puedes contactar con nosotros por correo electrónico en privacy@mypapyr.com. Responderemos lo antes posible.",
+        },
+      ],
+    },
+    privacyPage: {
+      lastUpdated: "Última actualización: abril de 2026",
+      sections: {
+        intro: "Papyr es una herramienta PDF gratuita que antepone tu privacidad. Diseñamos este servicio para tocar tus datos personales lo menos posible.",
+        whatWeCollect: {
+          title: "Qué recopilamos",
+          items: [
+            "<strong>Los archivos que subes</strong> — los archivos PDF o de imagen que procesas a través de Papyr se almacenan temporalmente en nuestros servidores únicamente para su procesamiento.",
+            "<strong>Datos de análisis anónimos</strong> — usamos Vercel Analytics, respetuoso con la privacidad, para entender qué páginas se visitan con más frecuencia. Sin cookies de seguimiento.",
+          ],
+        },
+        whatWeDontCollect: {
+          title: "Qué NO recopilamos",
+          items: [
+            "Nombre, correo electrónico u otra información personal",
+            "Contenido de los documentos que subes",
+            "No <strong>usamos</strong> tus archivos para entrenar IA ni para ningún otro fin",
+            "Sin cuentas, sin inicio de sesión, sin seguimiento",
+          ],
+        },
+        howLong: {
+          title: "Cuánto tiempo se guardan los archivos",
+          paragraphs: [
+            "Todos los archivos subidos a nuestros servidores se <strong>eliminan automáticamente en 1 hora</strong>. Sin excepciones: después de 1 hora, tus archivos desaparecen permanentemente de nuestros sistemas.",
+            "Para las funciones procesadas en el navegador (Unir PDF, Dividir PDF), tus archivos nunca salen de tu dispositivo.",
+          ],
+        },
+        analytics: {
+          title: "Analítica",
+          paragraphs: [
+            "Usamos <strong>Vercel Analytics</strong> para entender el rendimiento del sitio web. Vercel Analytics respeta la privacidad:",
+          ],
+          items: [
+            "No utiliza cookies",
+            "No rastrea a usuarios individualmente",
+            "Los datos se recopilan de forma anónima y agregada",
+          ],
+        },
+        security: {
+          title: "Seguridad",
+          items: [
+            "Todas las transferencias de archivos usan HTTPS (cifrado)",
+            "Archivos almacenados en Cloudflare R2 con acceso restringido",
+            "Los enlaces de descarga usan URL firmadas que caducan en 1 hora",
+            "Nuestros servidores nunca registran el contenido de los archivos",
+          ],
+        },
+        contact: {
+          title: "Contacto",
+          email: "privacy@mypapyr.com",
+          paragraphs: [
+            "¿Tienes una pregunta sobre privacidad? Contáctanos en {email}.",
+          ],
+        },
+      },
     },
   },
   id: {
@@ -843,6 +1035,102 @@ export const messages = {
     },
     otherTools: {
       title: "Alat lainnya",
+    },
+    faqPage: {
+      title: "Pertanyaan Umum",
+      subtitle: "Jawaban untuk pertanyaan yang sering ditanyakan tentang Papyr.",
+      cta: "Masih punya pertanyaan?",
+      ctaEmail: "privacy@mypapyr.com",
+      items: [
+        {
+          q: "Apakah file saya aman?",
+          a: "Ya, keamanan file-mu adalah prioritas kami. Semua transfer menggunakan HTTPS (terenkripsi). File yang di-upload ke server disimpan di Cloudflare R2 dengan akses terbatas, dan otomatis dihapus dalam 1 jam. Untuk fitur yang diproses di browser (Gabungkan PDF, Pisahkan PDF), file-mu tidak pernah meninggalkan perangkatmu.",
+        },
+        {
+          q: "Berapa lama file disimpan di server?",
+          a: "Maksimal 1 jam. Setelah itu, file dihapus otomatis dari server kami — tanpa pengecualian. Link download juga kedaluwarsa setelah 1 jam. Untuk fitur yang diproses di browser, file tidak pernah di-upload ke server sama sekali.",
+        },
+        {
+          q: "Apakah perlu daftar akun?",
+          a: "Tidak. Papyr bisa langsung dipakai tanpa daftar, tanpa login, tanpa email. Buka website, pilih alat, selesai. Kami tidak mengumpulkan data pribadi apapun.",
+        },
+        {
+          q: "Berapa ukuran file maksimum?",
+          a: "Saat ini batas upload adalah 20 MB per file. Untuk fitur yang diproses di browser (Gabungkan PDF, Pisahkan PDF), batasnya lebih fleksibel karena tidak perlu upload ke server.",
+        },
+        {
+          q: "Bisa dipakai di HP?",
+          a: "Ya! Papyr dioptimalkan untuk mobile. Semua fitur bisa diakses dari browser HP tanpa perlu install aplikasi. Cukup buka mypapyr.com dari Chrome, Safari, atau browser lainnya.",
+        },
+        {
+          q: "Apakah Papyr gratis?",
+          a: "Ya, semua fitur dasar Papyr gratis — kompres PDF, gabungkan PDF, pisahkan PDF, gambar ke PDF, dan PDF ke gambar. Tidak ada biaya tersembunyi untuk penggunaan normal.",
+        },
+        {
+          q: "Format file apa yang didukung?",
+          a: "Papyr mendukung file PDF, JPG, dan PNG. Kamu bisa mengompres PDF, menggabungkan beberapa PDF, memisahkan halaman PDF, mengubah gambar (JPG/PNG) menjadi PDF, dan mengubah halaman PDF menjadi gambar PNG.",
+        },
+        {
+          q: "Bagaimana cara menghubungi Papyr?",
+          a: "Kamu bisa menghubungi kami melalui email di privacy@mypapyr.com. Kami akan merespons secepat mungkin.",
+        },
+      ],
+    },
+    privacyPage: {
+      lastUpdated: "Terakhir diperbarui: April 2026",
+      sections: {
+        intro: "Papyr adalah alat PDF gratis yang mengutamakan privasimu. Kami merancang layanan ini agar sesedikit mungkin menyentuh data pribadimu.",
+        whatWeCollect: {
+          title: "Apa yang kami kumpulkan",
+          items: [
+            "<strong>File yang kamu upload</strong> — file PDF atau gambar yang kamu proses melalui Papyr disimpan sementara di server kami hanya untuk keperluan pemrosesan.",
+            "<strong>Data analytics anonim</strong> — kami menggunakan Vercel Analytics yang privacy-friendly untuk memahami halaman mana yang paling sering dikunjungi. Tidak ada cookie pelacakan.",
+          ],
+        },
+        whatWeDontCollect: {
+          title: "Apa yang TIDAK kami kumpulkan",
+          items: [
+            "Nama, email, atau informasi pribadi lainnya",
+            "Isi/konten dokumen yang kamu upload",
+            "Kami <strong>tidak</strong> menggunakan file-mu untuk melatih AI atau keperluan lain",
+            "Tidak ada akun, tidak ada login, tidak ada tracking",
+          ],
+        },
+        howLong: {
+          title: "Berapa lama file disimpan",
+          paragraphs: [
+            "Semua file yang di-upload ke server kami <strong>dihapus otomatis dalam 1 jam</strong>. Tidak ada pengecualian — setelah 1 jam, file-mu hilang permanen dari sistem kami.",
+            "Untuk fitur yang diproses di browser (Gabungkan PDF, Pisahkan PDF), file-mu tidak pernah meninggalkan perangkatmu sama sekali.",
+          ],
+        },
+        analytics: {
+          title: "Analytics",
+          paragraphs: [
+            "Kami menggunakan <strong>Vercel Analytics</strong> untuk memahami performa website. Vercel Analytics bersifat privacy-friendly:",
+          ],
+          items: [
+            "Tidak menggunakan cookie",
+            "Tidak melacak pengguna secara individual",
+            "Data dikumpulkan secara anonim dan agregat",
+          ],
+        },
+        security: {
+          title: "Keamanan",
+          items: [
+            "Semua transfer file menggunakan HTTPS (terenkripsi)",
+            "File disimpan di Cloudflare R2 dengan akses terbatas",
+            "Link download menggunakan signed URL yang kedaluwarsa dalam 1 jam",
+            "Server kami tidak pernah mencatat isi file dalam log",
+          ],
+        },
+        contact: {
+          title: "Kontak",
+          email: "privacy@mypapyr.com",
+          paragraphs: [
+            "Punya pertanyaan tentang privasi? Hubungi kami di {email}.",
+          ],
+        },
+      },
     },
   },
 } as const;

@@ -1,3 +1,9 @@
+vi.mock("@vercel/analytics/next", () => ({
+  Analytics: () => null,
+}));
+vi.mock("@vercel/speed-insights/next", () => ({
+  SpeedInsights: () => null,
+}));
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -24,7 +30,6 @@ import LocaleLayout from "../app/[locale]/layout";
 import BlogPage from "../app/[locale]/blog/page";
 import ContactPage from "../app/[locale]/contact/page";
 import CookiesAdvertisingPage from "../app/[locale]/cookies-advertising/page";
-import PrivacyPage from "../app/[locale]/privacy/page";
 import RoadmapPage from "../app/[locale]/roadmap/page";
 import StatusPage from "../app/[locale]/status/page";
 import TermsPage from "../app/[locale]/terms/page";
@@ -33,7 +38,6 @@ import { locales } from "../lib/i18n";
 import { getMessages, messages } from "../lib/messages";
 
 const supportingPages = [
-  { route: "privacy", key: "privacy", Component: PrivacyPage },
   { route: "terms", key: "terms", Component: TermsPage },
   { route: "cookies-advertising", key: "cookiesAdvertising", Component: CookiesAdvertisingPage },
   { route: "contact", key: "contact", Component: ContactPage },
