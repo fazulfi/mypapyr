@@ -308,3 +308,52 @@ describe("SH-07 accessibility foundations", () => {
     expect(css).toContain("prefers-reduced-motion");
   });
 });
+
+
+describe("T3 rich homepage copy keys", () => {
+  it("defines the localized hero pill copy for every locale", async () => {
+    for (const locale of locales) {
+      const copy = getMessages(locale);
+      expect(copy.home.heroPill.trim()).not.toBe("");
+
+    }
+  });
+
+  it("defines both split hero lines for every locale", async () => {
+    for (const locale of locales) {
+      const copy = getMessages(locale);
+      expect(copy.home.heroLine1.trim()).not.toBe("");
+      expect(copy.home.heroLine2.trim()).not.toBe("");
+    }
+  });
+
+  it("defines all three trust badges for every locale", async () => {
+    for (const locale of locales) {
+      const copy = getMessages(locale);
+      expect(copy.home.trustBadges).toHaveLength(3);
+      for (const badge of copy.home.trustBadges) {
+        expect(badge.trim()).not.toBe("");
+      }
+    }
+  });
+
+  it("defines the tools eyebrow and card CTA for every locale", async () => {
+    for (const locale of locales) {
+      const copy = getMessages(locale);
+      expect(copy.home.toolsEyebrow.trim()).not.toBe("");
+      expect(copy.home.cardCta.trim()).not.toBe("");
+    }
+  });
+
+  it("defines the privacy eyebrow and all three privacy cards for every locale", async () => {
+    for (const locale of locales) {
+      const copy = getMessages(locale);
+      expect(copy.home.privacyEyebrow.trim()).not.toBe("");
+      expect(copy.home.privacyCards).toHaveLength(3);
+      for (const card of copy.home.privacyCards) {
+        expect(card.title.trim()).not.toBe("");
+        expect(card.desc.trim()).not.toBe("");
+      }
+    }
+  });
+});

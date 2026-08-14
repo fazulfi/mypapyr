@@ -10,6 +10,35 @@
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
 
+/* Animations (ported from papyr-reference/frontend/src/app/globals.css:19-44) */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-shimmer {
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@utility animate-fade-up {
+  animation: fade-up 0.3s ease forwards;
+}
+
 :root {
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;

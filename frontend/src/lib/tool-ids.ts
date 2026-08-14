@@ -10,6 +10,26 @@ export const TOOL_IDS = Object.freeze([
   "pdf-to-jpg",
 ] as const);
 
+// The eight deferred legacy tool ids (DEC-194): they are catalogued for the
+// localized 410 disposition but are never part of the active five-tool set.
+// Kept disjoint from TOOL_IDS; imports nothing itself like TOOL_IDS.
+export const LEGACY_TOOL_IDS = Object.freeze([
+  "rotate",
+  "protect",
+  "unlock",
+  "watermark",
+  "sign",
+  "pdf-to-word",
+  "ocr",
+  "pdf-to-excel",
+] as const);
+
+export type LegacyToolId = (typeof LEGACY_TOOL_IDS)[number];
+
+export function isLegacyToolId(value: unknown): value is LegacyToolId {
+  return typeof value === "string" && (LEGACY_TOOL_IDS as readonly string[]).includes(value);
+}
+
 export type ToolId = (typeof TOOL_IDS)[number];
 
 export function isToolId(value: unknown): value is ToolId {

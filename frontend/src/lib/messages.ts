@@ -8,6 +8,8 @@ export const messages = {
       tools: "Tools",
       basic: "Basic",
       conversion: "Conversion",
+      security: "Security",
+      enhancement: "Enhancement",
       menu: "Menu",
       menuClose: "Close menu",
       cta: "Get started",
@@ -30,9 +32,15 @@ export const messages = {
     languages: { en: "English", es: "Español", id: "Bahasa Indonesia" },
     home: {
       description: "Papyr PDF tools.",
+      heroPill: "Free · No account · Auto-delete",
+      heroLine1: "PDF tools that",
+      heroLine2: "just work.",
       hero: "PDF tools, free and simple",
       heroSub: "Compress, merge, split, and convert PDFs. No account needed.",
       toolsHeading: "Tools",
+      trustBadges: ["No account", "Auto-delete in 1 hour", "Works on your phone"],
+      toolsEyebrow: "All tools",
+      cardCta: "Use tool",
       tools: {
         compress: "Compress PDF",
         merge: "Merge PDF",
@@ -41,6 +49,21 @@ export const messages = {
         pdfToJpg: "PDF to JPG",
       },
       privacy: "Your files stay yours",
+      privacyEyebrow: "Privacy first",
+      privacyCards: [
+        {
+          title: "Secure transfer",
+          desc: "Files are transmitted over HTTPS and processed securely.",
+        },
+        {
+          title: "Deleted in 1 hour",
+          desc: "Every uploaded file is permanently deleted within 60 minutes, no exceptions.",
+        },
+        {
+          title: "No storage",
+          desc: "We never read, analyze, or store your documents. Ever.",
+        },
+      ],
       privacyDesc:
         "No account required. Files processed in your browser never leave your device. Server-processed files are deleted within one hour of upload.",
       howItWorks: "How it works",
@@ -200,6 +223,7 @@ export const messages = {
         actions: { convert: "Convert to PDF", uploading: "Uploading..." },
         status: { submitting: "Submitting..." },
       },
+
       pdfToJpg: {
         title: "PDF to JPG",
         description: "Convert your PDF pages into high-quality JPG images.",
@@ -222,6 +246,8 @@ export const messages = {
       tools: "Herramientas",
       basic: "Básicas",
       conversion: "Conversión",
+      security: "Seguridad",
+      enhancement: "Mejoras",
       menu: "Menú",
       menuClose: "Cerrar menú",
       cta: "Comenzar",
@@ -244,9 +270,15 @@ export const messages = {
     languages: { en: "English", es: "Español", id: "Bahasa Indonesia" },
     home: {
       description: "Herramientas PDF de Papyr.",
+      heroPill: "Gratis · Sin cuenta · Auto-eliminación",
+      heroLine1: "Herramientas PDF que",
+      heroLine2: "funcionan al instante.",
       hero: "Herramientas PDF, gratis y simples",
       heroSub: "Comprime, combina, divide y convierte PDFs. Sin necesidad de cuenta.",
       toolsHeading: "Herramientas",
+      trustBadges: ["Sin cuenta", "Auto-eliminación en 1 hora", "Funciona en tu móvil"],
+      toolsEyebrow: "Todas las herramientas",
+      cardCta: "Usar herramienta",
       tools: {
         compress: "Comprimir PDF",
         merge: "Combinar PDF",
@@ -255,6 +287,21 @@ export const messages = {
         pdfToJpg: "PDF a JPG",
       },
       privacy: "Tus archivos son tuyos",
+      privacyEyebrow: "Privacidad primero",
+      privacyCards: [
+        {
+          title: "Transferencia segura",
+          desc: "Los archivos se transmiten por HTTPS y se procesan de forma segura.",
+        },
+        {
+          title: "Eliminados en 1 hora",
+          desc: "Cada archivo subido se elimina permanentemente en un plazo de 60 minutos, sin excepciones.",
+        },
+        {
+          title: "Sin almacenamiento",
+          desc: "Nunca leemos, analizamos ni almacenamos tus documentos. Nunca.",
+        },
+      ],
       privacyDesc:
         "No se requiere cuenta. Los archivos procesados en tu navegador nunca salen de tu dispositivo. Los archivos procesados en el servidor se eliminan en un plazo máximo de una hora tras la subida.",
       howItWorks: "Cómo funciona",
@@ -393,6 +440,7 @@ export const messages = {
               "El servidor rechazó estos intervalos. Cada número debe corresponder a una página existente de tu PDF, el número total de salidas está limitado y los archivos cifrados no pueden dividirse con intervalos personalizados. Ajusta los intervalos e inténtalo de nuevo.",
           },
         },
+
         errors: {
           fileTooLarge: "Archivo demasiado grande (máx. 100MB)",
           uploadFailed: "Error de subida",
@@ -414,9 +462,11 @@ export const messages = {
           downloadFailed: "Error de descarga",
         },
         actions: { convert: "Convertir a PDF", uploading: "Subiendo..." },
+
         status: { submitting: "Enviando..." },
       },
       pdfToJpg: {
+
         title: "PDF a JPG",
         description: "Convierte las páginas de tu PDF en imágenes JPG de alta calidad.",
         qualityNote: "Cada página se renderiza con un único perfil de salida de alta calidad.",
@@ -425,6 +475,7 @@ export const messages = {
         errors: {
           fileTooLarge: "Archivo demasiado grande (máx. 16MP por página)",
           uploadFailed: "Error de subida",
+
           downloadFailed: "Error de descarga",
         },
         actions: { convert: "Convertir a JPG", uploading: "Subiendo..." },
@@ -439,6 +490,8 @@ export const messages = {
       tools: "Alat",
       basic: "Dasar",
       conversion: "Konversi",
+      security: "Keamanan",
+      enhancement: "Enhancement",
       menu: "Menu navigasi",
       menuClose: "Tutup menu",
       cta: "Mulai",
@@ -458,12 +511,19 @@ export const messages = {
     reset: {
       processAnother: "Proses file lain",
     },
+
     languages: { en: "English", es: "Español", id: "Bahasa Indonesia" },
     home: {
       description: "Alat PDF Papyr.",
+      heroPill: "Gratis · Tanpa akun · Auto-hapus",
+      heroLine1: "Alat PDF yang",
+      heroLine2: "langsung bekerja.",
       hero: "Alat PDF, gratis dan sederhana",
       heroSub: "Kompres, gabung, pisah, dan konversi PDF. Tanpa perlu akun.",
       toolsHeading: "Alat",
+      trustBadges: ["Tanpa akun", "Auto-hapus 1 jam", "Bisa di HP"],
+      toolsEyebrow: "Semua alat",
+      cardCta: "Gunakan alat",
       tools: {
         compress: "Kompres PDF",
         merge: "Gabung PDF",
@@ -472,6 +532,21 @@ export const messages = {
         pdfToJpg: "PDF ke JPG",
       },
       privacy: "File Anda tetap milik Anda",
+      privacyEyebrow: "Privasi utama",
+      privacyCards: [
+        {
+          title: "Transfer aman",
+          desc: "File ditransmisikan melalui HTTPS dan diproses secara aman.",
+        },
+        {
+          title: "Dihapus dalam 1 jam",
+          desc: "Setiap file yang diunggah dihapus permanen dalam 60 menit, tanpa pengecualian.",
+        },
+        {
+          title: "Tanpa penyimpanan",
+          desc: "Kami tidak pernah membaca, menganalisis, atau menyimpan dokumenmu. Selamanya.",
+        },
+      ],
       privacyDesc:
         "Tidak perlu akun. File yang diproses di browser tidak pernah meninggalkan perangkat Anda. File yang diproses di server dihapus dalam waktu satu jam setelah diunggah.",
       howItWorks: "Cara kerja",
@@ -480,9 +555,11 @@ export const messages = {
       faqItems: [
         {
           question: "Apakah Papyr gratis?",
+
           answer: "Ya, kelima alat tersedia gratis.",
         },
         {
+
           question: "Apakah saya perlu akun?",
           answer: "Tidak perlu akun untuk menggunakan alat apa pun.",
         },
@@ -492,6 +569,7 @@ export const messages = {
             "File yang diproses di server otomatis dihapus dalam waktu satu jam setelah diunggah. File yang diproses di browser tidak pernah meninggalkan perangkat Anda.",
         },
       ],
+
     },
     pages: {
       privacy: {
