@@ -6,6 +6,17 @@ All notable changes to this project are tracked here. The format follows [Keep a
 
 Phase 5 hardens the platform toward production readiness: five-tool completion end to end, worker + queue + scanner + monitoring services, hardened delivery, and the production networking contract (frontend `/api/v1` → nginx → API origin) that was the historical gate-exit blocker.
 
+### Redo (audit-driven fixes, 2026-08-14)
+
+- **Fair-use isolation (I3)** — admission now threads a real origin fingerprint (`_resolve_origin`: `CF-Connecting-IP` → `x-forwarded-for` → client host, SHA-256) into `JobQueue.enqueue`; per-origin concurrency/frequency caps are no longer a single global bucket (`backend/app/routers/__init__.py`, all five routers).
+- **Orphan-cleanup completeness (I4)** — mid-loop validation/scan/sanitize rejections in `merge-pdf` and `jpg-to-pdf` now delete inputs uploaded so far; no R2 objects leak on failed admissions (`backend/app/routers/{merge,image_to_pdf}.py`).
+- **Worker PEL hygiene (M5)** — malformed and no-record stream entries are `XACK`ed alongside `XDEL`; recovered deleted ids are acked — no phantom pending-entry accumulation (`backend/app/worker/worker.py`).
+- **Terminal polling errors (M6/M7)** — persistent status failures (404/expired) surface as an error state instead of looping silently; `derivePhase` treats missing status as `idle` not `queued` (`frontend/src/hooks/useTaskPolling.ts`, all five tool pages).
+- **HTTP E2E for the five-tool lifecycle** — `backend/tests/test_tools_http_e2e.py` exercises admission (202) → status → download-grant over real HTTP routes with fakeredis/moto and a clean-scanner double; caught and fixed the `pdf-to-jpg` route typo and non-persisted task id.
+- **UI richness parity with the legacy Papyr** — homepage hero pill, trust badges, tool-card CTA footers, privacy 3-card section; per-tool icon-chip headers + feature badges + `PrivacyNotice`; rich uploader/result cards (shimmer progress, before/after `−X%` compression card, emerald success header); 4-category nav/footer; `OtherTools` rail; FAQ page (8 items); full privacy page (7 sections); sitemap/robots/OG/Twitter images; Vercel Analytics + Speed Insights (`frontend/src/app`, `frontend/src/components`).
+- **Coverage gate restored** — vitest branches threshold 74 → 80 (actual 87.5%); scripts `test-verify-pins.sh` + `check-r2-lifecycle.sh` restored (root `scripts/`).
+- **Nginx + deploy hardening** — hardened vhost (Cloudflare real-IP, multi-zone rate limits, security headers, fail-closed 444, bot/path blocking); redis `read_only`/`cap_drop`/`no-new-privileges`; edge ports 80/443; env-name migration map documented (`docs/env-migration.md`).
+
 ### Added
 
 - **Five-tool end-to-end delivery**
