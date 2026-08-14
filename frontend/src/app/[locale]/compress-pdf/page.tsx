@@ -128,6 +128,7 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
               ? copy.tools.compress.actions.uploading
               : copy.tools.compress.actions.compress}
           </button>
+        <OtherTools currentTool="compress-pdf" locale={locale} />
         </div>
       </main>
     );

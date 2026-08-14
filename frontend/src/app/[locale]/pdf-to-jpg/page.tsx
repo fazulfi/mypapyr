@@ -118,6 +118,7 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
               ? copy.tools.pdfToJpg.actions.uploading
               : copy.tools.pdfToJpg.actions.convert}
           </button>
+          <OtherTools currentTool="pdf-to-jpg" locale={locale} />
 
           <div className="mt-6 space-y-1">
             <p className="text-xs text-slate-600">{copy.tools.pdfToJpg.qualityNote}</p>

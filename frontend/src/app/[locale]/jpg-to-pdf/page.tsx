@@ -135,6 +135,7 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
             <p className="text-xs text-slate-600">{copy.tools.jpgToPdf.paperNote}</p>
             <p className="text-xs text-slate-500">{copy.tools.jpgToPdf.metadataNote}</p>
           </div>
+        <OtherTools currentTool="jpg-to-pdf" locale={locale} />
         </div>
       </main>
     );

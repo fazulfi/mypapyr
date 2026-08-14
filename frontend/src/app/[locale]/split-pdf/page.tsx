@@ -224,6 +224,7 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
               ? copy.tools.split.actions.uploading
               : copy.tools.split.actions.split}
           </button>
+        <OtherTools currentTool="split-pdf" locale={locale} />
         </div>
       </main>
     );

@@ -134,6 +134,7 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
               ? copy.tools.merge.actions.uploading
               : copy.tools.merge.actions.merge}
           </button>
+        <OtherTools currentTool="merge-pdf" locale={locale} />
         </div>
       </main>
     );
