@@ -140,6 +140,24 @@ describe("lib/taskPolling fetchTaskStatus", () => {
     }
   });
 
+  it("throws a non-retryable terminal TaskPollingError on 404", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(badJsonResponse(404));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const promise = fetchTaskStatus(api(), "gone-task", "compress-pdf");
+    await expect(promise).rejects.toBeInstanceOf(TaskPollingError);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    try {
+      await fetchTaskStatus(api(), "gone-task", "compress-pdf");
+    } catch (error) {
+      expect(error).toBeInstanceOf(TaskPollingError);
+      const pollingError = error as TaskPollingError;
+      expect(pollingError.retryable).toBe(false);
+      expect(pollingError.message).toContain("404");
+    }
+  });
+
   it("throws a retryable TaskPollingError after exhausting network retries", async () => {
     const fetchMock = vi.fn().mockRejectedValue(new TypeError("network down"));
     vi.stubGlobal("fetch", fetchMock);

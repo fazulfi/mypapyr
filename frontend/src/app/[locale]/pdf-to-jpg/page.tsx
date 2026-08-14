@@ -21,8 +21,10 @@ const MAX_SIZE_BYTES = 104857600; // 100 MiB
 function derivePhase(
   status: ReturnType<typeof useTaskPolling>["status"],
   hasTaskId: boolean,
+  pollingError: boolean,
 ): ToolState {
-  if (!hasTaskId || status === null) return "queued";
+  if (pollingError) return "error";
+  if (!hasTaskId || status === null) return "idle";
   if (status.state === "queued") return "queued";
   if (status.state === "processing") return "processing";
   if (status.state === "done") return "done";
@@ -35,7 +37,7 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
   const [taskId, setTaskId] = useState<string | null>(null);
   const [uploadPhase, setUploadPhase] = useState<"idle" | "uploading" | "error">("idle");
 
-  const { status } = useTaskPolling({
+  const { status, error: pollingError } = useTaskPolling({
     toolId: "pdf-to-jpg",
     taskId: taskId ?? "",
     enabled: taskId !== null,
@@ -84,7 +86,7 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
         : uploadPhase === "error"
           ? "error"
           : "idle"
-      : derivePhase(status, true);
+      : derivePhase(status, true, pollingError);
 
   // Idle / ready / uploading phase: show dropzone + submit button
   if (phase === "idle" || phase === "ready" || phase === "uploading") {

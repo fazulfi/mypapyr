@@ -28,8 +28,10 @@ function formatTemplate(template: string, params: Record<string, string | number
 function derivePhase(
   status: ReturnType<typeof useTaskPolling>["status"],
   hasTaskId: boolean,
+  pollingError: boolean,
 ): ToolState {
-  if (!hasTaskId || status === null) return "queued";
+  if (pollingError) return "error";
+  if (!hasTaskId || status === null) return "idle";
   if (status.state === "queued") return "queued";
   if (status.state === "processing") return "processing";
   if (status.state === "done") return "done";
@@ -44,7 +46,7 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
   const [rangeText, setRangeText] = useState("");
   const [serverRejected, setServerRejected] = useState(false);
 
-  const { status } = useTaskPolling({
+  const { status, error: pollingError } = useTaskPolling({
     toolId: "split-pdf",
     taskId: taskId ?? "",
     enabled: taskId !== null,
@@ -117,7 +119,7 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
         : uploadPhase === "error"
           ? "error"
           : "idle"
-      : derivePhase(status, true);
+      : derivePhase(status, true, pollingError);
 
   // Idle / ready / uploading phase: show dropzone + submit button
   if (phase === "idle" || phase === "ready" || phase === "uploading") {

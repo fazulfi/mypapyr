@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { ToolId } from "../lib/tool-ids";
-import { fetchTaskStatus, type TaskStatus } from "../lib/taskPolling";
+import { fetchTaskStatus, TaskPollingError, type TaskStatus } from "../lib/taskPolling";
 
 const POLL_INTERVAL_MS = 2000;
+const CONSECUTIVE_FAILURE_THRESHOLD = 3;
 const TOKEN_PREFIX = "papyr:task:";
 
 function tokenKey(toolId: string): string {
@@ -36,6 +37,7 @@ function clearToken(toolId: string): void {
   }
 }
 
+
 export type UseTaskPollingOptions = {
   toolId: ToolId;
   taskId: string;
@@ -44,11 +46,14 @@ export type UseTaskPollingOptions = {
 
 export function useTaskPolling({ toolId, taskId, enabled }: UseTaskPollingOptions): {
   status: TaskStatus | null;
+  error: boolean;
   refresh(): void;
   stop(): void;
 } {
   const [status, setStatus] = useState<TaskStatus | null>(null);
+  const [error, setError] = useState(false);
   const activeRef = useRef(false);
+  const failuresRef = useRef(0);
 
   const stop = useCallback(() => {
     activeRef.current = false;
@@ -58,13 +63,27 @@ export function useTaskPolling({ toolId, taskId, enabled }: UseTaskPollingOption
   const refresh = useCallback(async () => {
     try {
       const next = await fetchTaskStatus({ baseUrl: "", capabilities: null }, taskId, toolId);
+      failuresRef.current = 0;
+      setError(false);
       setStatus(next);
       writeToken(toolId, taskId);
       if (next.state === "done" || next.state === "failed") {
         stop();
       }
-    } catch {
-      // Transient polling error: leave the last status and keep polling.
+    } catch (caught) {
+      // A terminal (non-retryable) error such as a 404 must surface
+      // immediately; transient failures flip the error state after N
+      // consecutive misses so the UI never loops silently (M6).
+      if (caught instanceof TaskPollingError && !caught.retryable) {
+        failuresRef.current = CONSECUTIVE_FAILURE_THRESHOLD;
+      } else {
+        failuresRef.current += 1;
+      }
+      if (failuresRef.current >= CONSECUTIVE_FAILURE_THRESHOLD) {
+        setError(true);
+        setStatus(null);
+        stop();
+      }
     }
   }, [taskId, toolId, stop]);
 
@@ -92,5 +111,5 @@ export function useTaskPolling({ toolId, taskId, enabled }: UseTaskPollingOption
     };
   }, [enabled, taskId, toolId, refresh]);
 
-  return { status, refresh, stop };
+  return { status, error, refresh, stop };
 }

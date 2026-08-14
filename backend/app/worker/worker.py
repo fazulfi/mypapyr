@@ -703,6 +703,10 @@ class JobWorker:
                     "worker dropped deleted pending entries",
                     extra={"fields": {"count": len(deleted)}},
                 )
+                # M5: ack the ids the stream no longer carries so the PEL
+                # cannot accumulate phantom pending entries.
+                for entry_id in deleted:
+                    self._xack(entry_id)
                 handled = True
             for entry_id, fields in entries:
                 self._handle_entry(entry_id, dict(fields))
@@ -884,6 +888,7 @@ class JobWorker:
                 )
             except TaskNotFoundError:
                 self._xdel(job.entry_id)
+                self._xack(job.entry_id)
                 self._release_fingerprint(job.origin_fingerprint, job.task_id)
                 return None
             except TaskConflictError:

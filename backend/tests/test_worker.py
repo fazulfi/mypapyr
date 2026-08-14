@@ -494,6 +494,119 @@ class _RetryRecorder:
         self.sleeps.append(seconds)
 
 
+
+class _RecordingAckClient:
+    """Stream client wrapper recording xdel/xack calls (M5)."""
+
+    def __init__(self, inner: StreamsRedisLike) -> None:
+        self._inner = inner
+        self.xdel_calls: list[bytes] = []
+        self.xack_calls: list[bytes] = []
+
+    def xgroup_create(
+        self, name: str, groupname: str, id: str = "0", mkstream: bool = False
+    ) -> None:
+        self._inner.xgroup_create(name, groupname, id=id, mkstream=mkstream)
+
+    def xadd(
+        self,
+        name: str,
+        fields: dict[str, str],
+        id: str = "*",
+        maxlen: int | None = None,
+        approximate: bool = True,
+    ) -> bytes:
+        return self._inner.xadd(name, fields, id=id, maxlen=maxlen, approximate=approximate)
+
+    def pipeline(self, transaction: bool = True) -> PipelineLike:
+        return self._inner.pipeline(transaction=transaction)
+
+    def xreadgroup(
+        self,
+        groupname: str,
+        consumername: str,
+        streams: dict[str, str],
+        count: int | None = None,
+        block: int | None = None,
+    ) -> list[tuple[bytes, list[tuple[bytes, Mapping[bytes, bytes]]]]]:
+        return self._inner.xreadgroup(
+            groupname, consumername, streams, count=count, block=block
+        )
+
+    def xack(self, name: str, groupname: str, *ids: bytes) -> int:
+        self.xack_calls.extend(ids)
+        return self._inner.xack(name, groupname, *ids)
+
+    def xautoclaim(
+        self,
+        name: str,
+        groupname: str,
+        consumername: str,
+        min_idle_time: int,
+        start_id: bytes = b"0-0",
+    ) -> tuple[bytes, list[tuple[bytes, Mapping[bytes, bytes]]], list[bytes]]:
+        return self._inner.xautoclaim(
+            name, groupname, consumername, min_idle_time, start_id=start_id
+        )
+
+    def xlen(self, name: str) -> int:
+        return self._inner.xlen(name)
+
+    def xrange(
+        self, name: str, start: str = "-", end: str = "+", count: int | None = None
+    ) -> list[tuple[bytes, Mapping[bytes, bytes]]]:
+        return self._inner.xrange(name, start, end, count=count)
+
+    def xdel(self, name: str, *ids: bytes) -> int:
+        self.xdel_calls.extend(ids)
+        return self._inner.xdel(name, *ids)
+
+
+
+
+class _DeleteBeforeTerminalStore:
+    """TaskStore proxy deleting the record before every terminal transition.
+
+    Reproduces the M5 no-record path: the job claims successfully, then the
+    record vanishes before the terminal store write, so the transition
+    raises :class:`TaskNotFoundError`.
+    """
+
+    def __init__(self, inner: TaskStore) -> None:
+        self._inner = inner
+
+    def transition_state(
+        self,
+        task_id: str,
+        event: JobEvent,
+        *,
+        expected_state: JobState,
+        payload: TransitionPayload | None = None,
+    ) -> TaskRecord:
+        if event is not JobEvent.WORKER_CLAIMED:
+            self._inner.delete(task_id)
+        return self._inner.transition_state(
+            task_id, event, expected_state=expected_state, payload=payload
+        )
+
+    def get(self, task_id: str) -> TaskRecord:
+        return self._inner.get(task_id)
+
+    def update_progress(
+        self,
+        task_id: str,
+        progress: Progress | None,
+        *,
+        expected_state: JobState,
+        expected_updated_at: datetime | None = None,
+    ) -> TaskRecord:
+        return self._inner.update_progress(
+            task_id,
+            progress,
+            expected_state=expected_state,
+            expected_updated_at=expected_updated_at,
+        )
+
 class _FlakyTerminalStore:
     """TaskStore proxy whose terminal transitions fail with StoreUnavailableError.
 
@@ -890,6 +1003,8 @@ def test_crash_before_store_claim_is_reclaimed_and_retried(
     assert _pending_count(raw_client) == 0
 
 
+
+
 def test_crash_after_claim_stale_processing_fails_as_timeout_without_reexecution(
     store: TaskStore,
     stream_client: StreamsRedisLike,
@@ -948,6 +1063,64 @@ def test_deleted_pending_entry_is_dropped_without_execution(
     assert worker.run_once() is True
     assert executor.calls == []
     assert store.get(record.task_id).state is JobState.QUEUED
+    assert _pending_count(raw_client) == 0
+
+
+def test_recover_acks_deleted_pending_entries(
+    store: TaskStore,
+    stream_client: StreamsRedisLike,
+    raw_client: fakeredis.FakeRedis,
+    clock: FakeClock,
+) -> None:
+    """M5: recovery explicitly XACKs ids deleted from the stream, so the
+    PEL cannot accumulate phantom pending entries."""
+    queue = make_queue(stream_client, store, clock)
+    enqueue_job(queue, clock)
+    entry_id = _deliver(raw_client)
+    raw_client.xdel(STREAM_KEY, entry_id)
+    time.sleep(0.05)
+    recording = _RecordingAckClient(stream_client)
+    worker = make_worker(
+        store,
+        cast(StreamsRedisLike, recording),
+        SuccessExecutor(),
+        clock,
+        options=WorkerOptions(
+            claim_min_idle=timedelta(milliseconds=1),
+            timeout_policy=TinyTimeoutPolicy(),
+        ),
+    )
+    assert worker.run_once() is True
+    assert entry_id in recording.xack_calls, "recovered deleted ids must be acked"
+
+
+def test_terminal_transition_record_gone_acks_alongside_delete(
+    store: TaskStore,
+    stream_client: StreamsRedisLike,
+    raw_client: fakeredis.FakeRedis,
+    clock: FakeClock,
+) -> None:
+    """M5: when the record vanishes before the terminal store write, the
+    worker XDELs and XACKs the entry so no phantom PEL entry survives."""
+    queue = make_queue(stream_client, store, clock)
+    enqueue_job(queue, clock)
+    entry_id = _deliver(raw_client)
+    time.sleep(0.05)
+    recording = _RecordingAckClient(stream_client)
+    proxy = cast(TaskStore, _DeleteBeforeTerminalStore(store))
+    worker = make_worker(
+        proxy,
+        cast(StreamsRedisLike, recording),
+        SuccessExecutor(),
+        clock,
+        options=WorkerOptions(
+            claim_min_idle=timedelta(milliseconds=1),
+            timeout_policy=TinyTimeoutPolicy(),
+        ),
+    )
+    assert worker.run_once() is True
+    assert entry_id in recording.xdel_calls, "gone-record entry must be deleted"
+    assert entry_id in recording.xack_calls, "gone-record entry must be acked"
     assert _pending_count(raw_client) == 0
 
 
