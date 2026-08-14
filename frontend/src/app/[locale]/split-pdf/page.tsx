@@ -1,22 +1,18 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import React from "react";
+import { use } from "react";
 
-import { Dropzone } from "@/components/uploader/Dropzone";
-import DoneCard from "@/components/states/DoneCard";
-import ErrorCard from "@/components/states/ErrorCard";
-import PreparingCard from "@/components/states/PreparingCard";
-import ProcessingCard from "@/components/states/ProcessingCard";
-import QueuedCard from "@/components/states/QueuedCard";
-import useTaskPolling from "@/hooks/useTaskPolling";
+import { isLocale, type Locale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
-import { ToolId } from "@/lib/tool-ids";
 
-type PageProps = { params?: Promise<{ locale: string }> };
-
-export default async function CompressPdfPage({ params }: PageProps) {
-  const messages = await getMessages(params?.locale || "en");
+export default function SplitPdfPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = use(params);
+  const validLocale = isLocale(locale) ? (locale as Locale) : "en";
+  const messages = getMessages(validLocale);
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">

@@ -109,8 +109,8 @@ export default function MergePdfPage({
           <Dropzone
             files={files}
             onChange={handleFileChange}
-            accept={"application/pdf"}
-            multiple
+            accept={["application/pdf"]}
+
             maxFiles={20}
             locale={locale as Locale}
           />
