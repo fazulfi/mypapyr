@@ -409,13 +409,13 @@ describe("AdSlot component", () => {
 // ---------------------------------------------------------------------------
 
 describe("AdSlot lazy script injection", () => {
-  it("appends the isolated srcdoc iframe only after IntersectionObserver fires isIntersecting", () => {
+  it("registers the slot in atAsyncOptions with a container div after IntersectionObserver fires", () => {
     const { fire } = installIntersectionObserver();
 
     const { container } = render(React.createElement(AdSlot, { pageSlug: "jpg-to-pdf" }));
 
-    // Before observer fires: no iframe injected.
-    expect(container.querySelector("iframe[data-papyr-ad-isolated='true']")).toBeNull();
+    // Before observer fires: no container div injected.
+    expect(container.querySelector('[id^="atContainer-"]')).toBeNull();
 
     const placeholder = container.querySelector('[aria-label="Advertisement"]');
     expect(placeholder).not.toBeNull();
@@ -425,21 +425,27 @@ describe("AdSlot lazy script injection", () => {
       fire(true);
     });
 
-    // After observer fires: an isolated srcdoc iframe is injected with its
-    // own atOptions + invoke.js (multi-placement isolation, root cause fix).
-    const iframe = container.querySelector(
-      "iframe[data-papyr-ad-isolated='true']",
-    ) as HTMLIFrameElement | null;
-    expect(iframe).not.toBeNull();
-    expect(iframe?.getAttribute("srcdoc")).toContain("b552110bd65e7690ed89a04a1d654898");
-    expect(iframe?.getAttribute("srcdoc")).toContain("'format': 'iframe'");
-    expect(iframe?.getAttribute("srcdoc")).toContain("'height': 250");
-    expect(iframe?.getAttribute("srcdoc")).toContain("'width': 300");
-    // No shared global atOptions on the parent page (the old one-shot bug).
+    // After observer fires: the slot registers in the official
+    // atAsyncOptions queue and renders its container div (multi-placement
+    // pattern). No single-consumption global atOptions.
+    const win = window as Window & { atAsyncOptions?: Array<Record<string, unknown>> };
+    expect(win.atAsyncOptions).toBeDefined();
+    const entry = (win.atAsyncOptions ?? []).find(
+      (o) => o.key === "b552110bd65e7690ed89a04a1d654898",
+    );
+    expect(entry).toBeDefined();
+    expect(entry?.format).toBe("js");
+    expect(entry?.async).toBe(true);
+    expect(entry?.container).toBe("atContainer-b552110bd65e7690ed89a04a1d654898");
+
+    const containerDiv = container.querySelector(
+      '[id="atContainer-b552110bd65e7690ed89a04a1d654898"]',
+    );
+    expect(containerDiv).not.toBeNull();
     expect((window as Window & { atOptions?: unknown }).atOptions).toBeUndefined();
   });
 
-  it("removes the isolated iframe on unmount", () => {
+  it("removes the container div and script on unmount", () => {
     const { fire } = installIntersectionObserver();
 
     const { unmount, container } = render(React.createElement(AdSlot, { pageSlug: "split-pdf" }));
@@ -450,11 +456,11 @@ describe("AdSlot lazy script injection", () => {
       fire(true);
     });
 
-    expect(container.querySelector("iframe[data-papyr-ad-isolated='true']")).not.toBeNull();
+    expect(container.querySelector('[id^="atContainer-"]')).not.toBeNull();
 
     unmount();
 
-    expect(container.querySelector("iframe[data-papyr-ad-isolated='true']")).toBeNull();
+    expect(container.querySelector('[id^="atContainer-"]')).toBeNull();
   });
 
   it("falls back immediately when IntersectionObserver is undefined (e.g. jsdom)", () => {
@@ -562,8 +568,8 @@ describe("LeaderboardAdSlot (responsive)", () => {
 // Multi-placement isolation (root cause: atOptions global one-shot consume)
 // ---------------------------------------------------------------------------
 
-describe("AdSlot multi-placement isolation", () => {
-  it("injects each slot as an isolated srcdoc iframe (no shared window.atOptions)", () => {
+describe("AdSlot multi-placement (official atAsyncOptions pattern)", () => {
+  it("registers each slot in window.atAsyncOptions with its own container div", () => {
     const { fireAll } = installIntersectionObserver();
     const { container } = render(
       React.createElement("div", null, [
@@ -582,22 +588,33 @@ describe("AdSlot multi-placement isolation", () => {
       ]),
     );
 
-    // Fire every registered observer (each slot has its own).
     act(() => {
       fireAll(true);
     });
 
-    const iframes = container.querySelectorAll("iframe[data-papyr-ad-isolated='true']");
-    // Both slots must render their own isolated document
-    expect(iframes.length).toBe(2);
+    // Each slot must register its own entry in the official atAsyncOptions
+    // queue (the pattern used by working Adsterra multi-placement sites).
+    const win = window as Window & { atAsyncOptions?: Array<Record<string, unknown>> };
+    expect(win.atAsyncOptions).toBeDefined();
+    const queue = win.atAsyncOptions ?? [];
+    const keys = queue.map((o) => o.key);
+    expect(keys).toContain("d78b74f28dcbbde269d55fe72b8a96a3");
+    expect(keys).toContain("b552110bd65e7690ed89a04a1d654898");
 
-    // Each iframe srcdoc carries its OWN atOptions with its own zone key
-    const srcdocs = Array.from(iframes).map((f) => f.getAttribute("srcdoc") ?? "");
-    expect(srcdocs.length).toBe(2);
-    expect(srcdocs[0]).toContain("d78b74f28dcbbde269d55fe72b8a96a3");
-    expect(srcdocs[1]).toContain("b552110bd65e7690ed89a04a1d654898");
+    // Each entry carries the official fields: format 'js', async, and a
+    // container id the slot div renders as.
+    for (const entry of queue) {
+      expect(entry.format).toBe("js");
+      expect(entry.async).toBe(true);
+      expect(typeof entry.container).toBe("string");
+      expect(entry.container).toMatch(/^atContainer-/);
+    }
 
-    // No global atOptions should exist on the parent window (one-shot bug)
+    // Each slot div renders its own container div for the ad.
+    const containers = container.querySelectorAll('[id^="atContainer-"]');
+    expect(containers.length).toBe(2);
+
+    // No single-consumption global atOptions (one-shot bug).
     expect((window as Window & { atOptions?: unknown }).atOptions).toBeUndefined();
   });
 
@@ -616,7 +633,6 @@ describe("AdSlot multi-placement isolation", () => {
     act(() => {
       fire(true);
     });
-    const iframe = container.querySelector("iframe[data-papyr-ad-isolated='true']");
-    expect(iframe).not.toBeNull();
+    expect(container.querySelector('[id^="atContainer-"]')).not.toBeNull();
   });
 });

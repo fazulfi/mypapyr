@@ -88,47 +88,44 @@ export function AdSlot({
 
     const slotNode = slotRef.current;
     if (slotNode === null) return;
-    if (slotNode.querySelector("iframe[data-papyr-ad-isolated='true']") !== null) return;
+    const containerId = `atContainer-${selected.key}`;
+    if (slotNode.querySelector(`[id="${containerId}"]`) !== null) return;
 
-    // Multi-placement isolation (root cause 2026-08-15): Adsterra's
+    // Official Adsterra multi-placement pattern (root cause fix 2026-08-15):
     // invoke.js consumes a SINGLE global window.atOptions and deletes it
-    // after the first placement (verified by deobfuscating invoke.js:
-    // `m1(window.atOptions, Qt), delete window.atOptions`). On pages with
-    // two or more slots the second invoke.js finds no atOptions and renders
-    // nothing. The official multi-placement pattern isolates each unit in
-    // its own srcdoc iframe, giving every slot its own window.atOptions.
-    const adDocument = [
-      "<!DOCTYPE html><html><head><meta charset='utf-8'></head><body style='margin:0'>",
-      "<script>atOptions = {'key': '" +
-        selected.key +
-        "','format': 'iframe','height': " +
-        selected.height +
-        ",'width': " +
-        selected.width +
-        ",'params': {}};</scr" +
-        "ipt>",
-      "<script src='" + ADSTERRA_HOST + "/" + selected.key + "/invoke.js'></scr" + "ipt>",
-      "</body></html>",
-    ].join("");
+    // after the first placement (`m1(window.atOptions, Qt), delete
+    // window.atOptions`), so a second invoke.js on the same page renders
+    // nothing. The supported way to place multiple units on one page is the
+    // atAsyncOptions queue: each slot pushes its own config
+    // {key, format:'js', async:true, container:<id>}, renders a <div> with
+    // that container id, and loads its own invoke.js. Verified against live
+    // working multi-slot Adsterra sites (format 'js' + container div).
+    const win = window as Window & {
+      atAsyncOptions?: Array<Record<string, unknown>>;
+    };
+    if (!Array.isArray(win.atAsyncOptions)) win.atAsyncOptions = [];
+    win.atAsyncOptions.push({
+      key: selected.key,
+      format: "js",
+      async: true,
+      container: containerId,
+      params: {},
+    });
 
-    const iframe = document.createElement("iframe");
-    iframe.dataset.papyrAdIsolated = "true";
-    iframe.dataset.papyrUnit = selected.id;
-    iframe.srcdoc = adDocument;
-    iframe.width = String(selected.width);
-    iframe.height = String(selected.height);
-    iframe.style.border = "0";
-    iframe.style.display = "block";
-    iframe.title = resolvedLabel;
-    iframe.setAttribute("scrolling", "no");
-    iframe.setAttribute("frameborder", "0");
+    const container = document.createElement("div");
+    container.id = containerId;
+    slotNode.appendChild(container);
 
-    slotNode.appendChild(iframe);
+    const invokeScript = document.createElement("script");
+    invokeScript.type = "text/javascript";
+    invokeScript.async = true;
+    invokeScript.src = `${ADSTERRA_HOST}/${selected.key}/invoke.js`;
+    document.head.appendChild(invokeScript);
 
     return () => {
       slotNode.innerHTML = "";
     };
-  }, [enabled, allowed, visible, selected, resolvedLabel]);
+  }, [enabled, allowed, visible, selected]);
 
   if (!enabled || !allowed) return null;
 
