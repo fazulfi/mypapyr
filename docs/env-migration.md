@@ -12,7 +12,7 @@ non-secret committed template). The REFERENCE contract comes from the
 ## Renamed variables (must be renamed in the provisioned `.env`)
 
 | REFERENCE name | WORK name | Notes |
-|---|---|---|
+| ---| ---| ---| --- |
 | `ENVIRONMENT` | `APP_ENV` | Same semantics (`production`); renamed for clarity in `deploy/.env.production.example`. Not read by `backend/app/config.py`; kept for deployment/process context. |
 | `CORS_ORIGINS` | `ALLOWED_ORIGINS` | Comma-separated origin allowlist. **Required** in WORK: `backend/app/config.py` rejects an empty value at boot (`_parse_allowed_origins`), and wildcard origins are rejected by the security middleware. |
 | `FILE_RETENTION_MINUTES` | `RETENTION_SECONDS` | **Unit changed** (minutes → seconds). WORK enforces a hard one-hour ceiling (DEC-070): `RETENTION_SECONDS=3600` maximum; values above 3600 are rejected at boot. Convert: `minutes × 60`. |
@@ -20,14 +20,14 @@ non-secret committed template). The REFERENCE contract comes from the
 ## Removed variables (delete from the provisioned `.env`)
 
 | REFERENCE name | WORK disposition |
-|---|---|
+| ---| ---| --- |
 | `RATE_LIMIT_PER_MINUTE` | Removed. Replaced by the queue/admission knobs `MAX_WAIT_SECONDS` (default 900), `MAX_QUEUE_LENGTH` (default 2000), `MAX_CONCURRENT_PER_ORIGIN` (default 4), and `DEFAULT_TIMEOUT_SECONDS` (default 180). Rate limiting at the edge is nginx-scope (`limit_req_zone` in `deploy/nginx/conf.d/production.conf`), not an app env knob. |
 | `MAX_UPLOAD_SIZE_MB` | Removed. Upload caps are per-tool (BE-08), not a single global env knob; `backend/app/config.py` no longer reads it. |
 
 ## R2 variables
 
 | REFERENCE name | WORK name | Notes |
-|---|---|---|
+| ---| ---| ---| --- |
 | `R2_ACCOUNT_ID` | `R2_ACCOUNT_ID` | Unchanged; still required. |
 | `R2_ACCESS_KEY_ID` | `R2_ACCESS_KEY_ID` | Unchanged; still required. |
 | `R2_SECRET_ACCESS_KEY` | `R2_SECRET_ACCESS_KEY` | Unchanged; still required. Redacted from settings repr. |
@@ -37,7 +37,7 @@ non-secret committed template). The REFERENCE contract comes from the
 ## Added variables (not present in REFERENCE; optional unless noted)
 
 | WORK name | Default | Notes |
-|---|---|---|
+| ---| ---| ---| --- |
 | `REDIS_URL` | `redis://localhost:6379/0` | Compose network binding for the task store; READ by the API image (`backend/app/config.py`). Provision `redis://redis:6379/0` (compose service name). May embed credentials; redacted from settings repr. |
 | `REDIS_MAXMEMORY_BYTES` | `402653184` (384 MiB) | R-09; must stay consistent with the compose `redis` service `--maxmemory 384mb`. |
 | `REDIS_EVICTION_POLICY` | `noeviction` | R-09. |
