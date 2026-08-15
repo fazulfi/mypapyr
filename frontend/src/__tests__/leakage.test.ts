@@ -9,7 +9,6 @@ import {
   ALLOWED_FIELDS,
   bandSize,
   isAllowedField,
-  isOptedOut,
   redactPayload,
   trackEvent,
 } from "../lib/analytics";

@@ -4,6 +4,7 @@ import { use, useState } from "react";
 
 import type { Locale } from "@/lib/i18n";
 import { isLocale, defaultLocale } from "@/lib/i18n";
+import { AdSlot } from "@/components/ads/AdSlot";
 import { ToolPageHeader } from "@/components/ToolPageHeader";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
 import OtherTools from "@/components/OtherTools";
@@ -90,6 +91,15 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
     setError(null);
   };
 
+  const mergePhase =
+    taskId === null
+      ? "idle"
+      : status?.state === "failed"
+        ? "error"
+        : status?.state === "done"
+          ? "done"
+          : "processing";
+
   return (
     <main className="container mx-auto px-4 py-8">
       <ToolPageHeader locale={locale} toolId="merge-pdf" />
@@ -138,6 +148,7 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
           )}
         </div>
       )}
+      <AdSlot pageSlug="merge-pdf" phase={mergePhase} />
       <OtherTools currentTool="merge-pdf" locale={locale} />
     </main>
   );

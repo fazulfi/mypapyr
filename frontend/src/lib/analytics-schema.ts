@@ -131,12 +131,7 @@ export type Outcome = "success" | "failure" | "cancelled" | "expired";
 export type ProcessingMode = "server" | "browser";
 
 /** Canonical tool identifier, aligned with src/lib/tool-ids.ts. */
-export type ToolId =
-  | "compress-pdf"
-  | "merge-pdf"
-  | "split-pdf"
-  | "jpg-to-pdf"
-  | "pdf-to-jpg";
+export type ToolId = "compress-pdf" | "merge-pdf" | "split-pdf" | "jpg-to-pdf" | "pdf-to-jpg";
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { use } from "react";
 
 import { ToolPageHeader } from "@/components/ToolPageHeader";
+import { AdSlot } from "@/components/ads/AdSlot";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
 import OtherTools from "@/components/OtherTools";
 import type { Locale } from "@/lib/i18n";
@@ -168,6 +169,7 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
         <ToolPageHeader locale={locale} toolId="compress-pdf" />
         <PrivacyNotice locale={locale} model="server" />
         <OtherTools currentTool="compress-pdf" locale={locale} />
+        <AdSlot pageSlug="compress-pdf" phase={phase} />
         {card}
       </div>
     </main>

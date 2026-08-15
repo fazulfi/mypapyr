@@ -86,7 +86,6 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-
 /* ─── Validation (support.ts) ─── */
 
 describe("validateContactSubmission", () => {
@@ -119,12 +118,10 @@ describe("validateContactSubmission", () => {
   });
 
   it("accepts an empty or null optional email", () => {
-    expect(validateContactSubmission({ category: "bug", message: "Hi", email: "" }).ok).toBe(
+    expect(validateContactSubmission({ category: "bug", message: "Hi", email: "" }).ok).toBe(true);
+    expect(validateContactSubmission({ category: "bug", message: "Hi", email: null }).ok).toBe(
       true,
     );
-    expect(
-      validateContactSubmission({ category: "bug", message: "Hi", email: null }).ok,
-    ).toBe(true);
   });
 
   it("rejects a badly formatted email", () => {
@@ -329,6 +326,51 @@ describe("ContactForm", () => {
 
     expect(screen.getByRole("status")).toBeTruthy();
     expect(screen.getByText(EN.contact.endpointUnavailable)).toBeTruthy();
+  });
+
+  it("requires a Turnstile token when Turnstile is enabled", async () => {
+    // Turnstile is enabled only when NEXT_PUBLIC_TURNSTILE_SITE_KEY is set.
+    const prev = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = "0x_test_site_key";
+    try {
+      // The globals stub replaces window, so re-expose the fake timer for
+      // the Turnstile effect's `window.setTimeout` fallback.
+      (window as Window & { setTimeout: typeof setTimeout }).setTimeout = setTimeout;
+      (window as Window & { clearTimeout: typeof clearTimeout }).clearTimeout = clearTimeout;
+
+      render(createElement(ContactForm, { locale: "en" }));
+      typeMessage("Turnstile-gated message");
+      await submitForm();
+
+      expect(screen.getByText(EN.contact.turnstileRequired)).toBeTruthy();
+      expect(fetch).not.toHaveBeenCalled();
+    } finally {
+      if (prev === undefined) {
+        delete process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+      } else {
+        process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = prev;
+      }
+    }
+  });
+
+  it("resets to a fresh form from the done state via send-another", async () => {
+    render(createElement(ContactForm, { locale: "en" }));
+    typeMessage("Successful submission");
+    await submitForm();
+
+    // Done state is rendered.
+    expect(screen.getByRole("status")).toBeTruthy();
+
+    fireEvent.click(screen.getByText(EN.contact.sendAnother));
+    // Back to the form with a clean category select.
+    expect(screen.getByLabelText(EN.contact.categoryLabel)).toBeTruthy();
+    expect(screen.getByRole("form")).toBeTruthy();
+  });
+
+  it("renders the collapsed variant with fewer rows", async () => {
+    render(createElement(ContactForm, { locale: "en", collapsed: true }));
+    const textarea = screen.getByLabelText(EN.contact.messageLabel) as HTMLTextAreaElement;
+    expect(textarea.rows).toBe(4);
   });
 });
 

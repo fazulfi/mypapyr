@@ -73,10 +73,7 @@ const TURNSTILE_SCRIPT_SRC =
   "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 
 function turnstileEnabled(): boolean {
-  return (
-    typeof process !== "undefined" &&
-    Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY)
-  );
+  return typeof process !== "undefined" && Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 }
 
 function injectTurnstileScript(): void {
@@ -239,11 +236,12 @@ export function ContactForm({
 
   if (status === "done") {
     return (
-      <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 px-5 py-4" role="status">
+      <div
+        className="rounded-xl border border-emerald-100 bg-emerald-50/60 px-5 py-4"
+        role="status"
+      >
         <p className="text-sm font-medium text-emerald-800">{copy.confirmation}</p>
-        {serverError ? (
-          <p className="mt-1 text-xs text-slate-500">{serverError}</p>
-        ) : null}
+        {serverError ? <p className="mt-1 text-xs text-slate-500">{serverError}</p> : null}
         <button
           type="button"
           className="mt-3 text-xs font-semibold text-emerald-700 underline underline-offset-2"

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { use } from "react";
 
 import { ToolPageHeader } from "@/components/ToolPageHeader";
+import { AdSlot } from "@/components/ads/AdSlot";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
 import OtherTools from "@/components/OtherTools";
 import type { Locale } from "@/lib/i18n";
@@ -166,6 +167,7 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
       <div className="mx-auto max-w-3xl">
         <ToolPageHeader locale={locale} toolId="pdf-to-jpg" />
         <PrivacyNotice locale={locale} model="server" />
+        <AdSlot pageSlug="pdf-to-jpg" phase={phase} />
         {card}
         <OtherTools currentTool="pdf-to-jpg" locale={locale} />
       </div>

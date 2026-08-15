@@ -2,18 +2,20 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import {
-  AD_SLOT_DIMENSIONS,
-  ADSTERRA_HOST,
-  ADSTERRA_KEY,
-  isAdEnabled,
-} from "@/lib/ads";
+import { AD_SLOT_DIMENSIONS, ADSTERRA_HOST, ADSTERRA_KEY, isAdEnabled } from "@/lib/ads";
 
-import { shouldRenderAd } from "./placement";
+import { isAfterPrimaryExperience, shouldRenderAd } from "./placement";
 
 interface AdSlotProps {
   /** Route slug of the page rendering the slot (e.g. "compress-pdf"). */
   pageSlug: string;
+  /**
+   * Current tool interaction phase. When provided, the slot only renders
+   * after the primary tool experience (done/error/finalizing). Omit to
+   * always render (suitable for non-tool surfaces if needed, though ads
+   * are page-gated by `allowedAdPages`).
+   */
+  phase?: string;
 }
 
 const SCRIPT_ID = "papyr-adsterra-script";
@@ -27,26 +29,27 @@ const PLACEHOLDER_ID = "papyr-adsterra-slot";
  *   placeholder becomes visible in the viewport (IntersectionObserver).
  * - The injected script node is removed on unmount.
  * - Never renders on non-allowed pages or when ads are disabled.
+ * - When `phase` is provided, the slot waits for the primary tool
+ *   experience to complete before rendering.
  */
-export function AdSlot({ pageSlug }: AdSlotProps): React.ReactElement | null {
+export function AdSlot({ pageSlug, phase }: AdSlotProps): React.ReactElement | null {
   const slotRef = useRef<HTMLDivElement | null>(null);
   const [enabled] = useState<boolean>(() => isAdEnabled());
-  const allowed = shouldRenderAd(pageSlug);
+  const allowed =
+    shouldRenderAd(pageSlug) && (phase === undefined || isAfterPrimaryExperience(phase));
 
-  // The guard starts false: on non-allowed pages the slot never renders.
-  const [visible, setVisible] = useState(false);
+  // Initialize visible to true when IntersectionObserver is unavailable
+  // (jsdom, older browsers, SSR before hydration). This avoids a
+  // synchronous setState inside the effect body which would violate
+  // react-hooks/set-state-in-effect.
+  const [visible, setVisible] = useState<boolean>(
+    () => typeof window !== "undefined" && typeof IntersectionObserver === "undefined",
+  );
 
   useEffect(() => {
-    if (!enabled || !allowed) return;
+    if (!enabled || !allowed || visible) return;
     const node = slotRef.current;
     if (node === null) return;
-
-    // jsdom (and older browsers) lack IntersectionObserver; in that case
-    // treat the slot as visible immediately so nothing silently breaks.
-    if (typeof IntersectionObserver === "undefined") {
-      setVisible(true);
-      return;
-    }
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -59,7 +62,7 @@ export function AdSlot({ pageSlug }: AdSlotProps): React.ReactElement | null {
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, [enabled, allowed]);
+  }, [enabled, allowed, visible]);
 
   useEffect(() => {
     if (!enabled || !allowed || !visible) return;

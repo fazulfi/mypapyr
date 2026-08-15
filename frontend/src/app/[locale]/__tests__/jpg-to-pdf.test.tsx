@@ -72,9 +72,7 @@ function stubFetch(taskId = "task-jpg-1"): ReturnType<typeof vi.fn> {
   return fetchMock;
 }
 
-async function submitImages(
-  locale: "en" | "es" | "id" = "en",
-): Promise<ReturnType<typeof render>> {
+async function submitImages(locale: "en" | "es" | "id" = "en"): Promise<ReturnType<typeof render>> {
   const rendered = render(<JpgToPdfTool locale={locale} />);
   selectFiles(rendered.container, [makeImage("photo.jpg"), makeImage("scan.jpg")]);
   fireEvent.click(
@@ -160,9 +158,7 @@ describe("JpgToPdfTool upload / admission", () => {
     const copy = getMessages("en");
     const { container } = render(<JpgToPdfTool locale="en" />);
     selectFiles(container, [makeImage("photo.jpg")]);
-    fireEvent.click(
-      screen.getByRole("button", { name: copy.tools.jpgToPdf.actions.convert }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: copy.tools.jpgToPdf.actions.convert }));
 
     await waitFor(() =>
       expect(
@@ -210,9 +206,7 @@ describe("JpgToPdfTool polling / result states", () => {
     pollingWithStatus({ state: "processing", messageKey: null, retryable: false, outputCount: 1 });
     stubFetch();
     await submitImages("en");
-    await waitFor(() =>
-      expect(screen.getByText(getMessages("en").states.processing)).toBeTruthy(),
-    );
+    await waitFor(() => expect(screen.getByText(getMessages("en").states.processing)).toBeTruthy());
     // AdSlot should NOT render during processing
     expect(document.getElementById("papyr-adsterra-slot")).toBeNull();
   });

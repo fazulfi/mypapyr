@@ -62,7 +62,10 @@ describe("SH-08 supporting surface shells", () => {
         const markup = await renderPage(Component, locale);
         const title = getMessages(locale).pages[key].title;
         // renderToStaticMarkup escapes HTML entities, so match the escaped version.
-        const escapedTitle = title.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const escapedTitle = title
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
         // Contact is a rich page and renders the title inside a classed h1;
         // assert the heading text is present in the first h1 rather than
         // relying on the byte-exact shell markup.

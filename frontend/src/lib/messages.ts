@@ -1061,7 +1061,8 @@ export const messages = {
       messageTooLong: "Pesan maksimal 2000 karakter.",
       emailLabel: "Email (opsional)",
       optional: "opsional",
-      emailHint: "Hanya dipakai untuk membalas pesan ini. Tidak pernah ditambahkan ke daftar apa pun.",
+      emailHint:
+        "Hanya dipakai untuk membalas pesan ini. Tidak pernah ditambahkan ke daftar apa pun.",
       emailInvalid: "Masukkan alamat email yang valid.",
       emailTooLong: "Email maksimal 254 karakter.",
       categoryInvalid: "Pilih kategori yang valid.",
@@ -1070,7 +1071,8 @@ export const messages = {
       confirmation: "Terima kasih! Pesan Anda telah kami terima.",
       endpointUnavailable:
         "Layanan kontak kami sedang tidak tersedia. Pesan Anda tidak terkirim ke server; silakan coba lagi nanti.",
-      rateLimited: "Anda terlalu banyak mengirim pesan. Silakan tunggu beberapa menit dan coba lagi.",
+      rateLimited:
+        "Anda terlalu banyak mengirim pesan. Silakan tunggu beberapa menit dan coba lagi.",
       sendAnother: "Kirim pesan lain",
       turnstileRequired: "Selesaikan pemeriksaan keamanan.",
     },

@@ -41,9 +41,7 @@ export function isRequiredForLockedFile(
 }
 
 /** Result of validating a password candidate. */
-export type PasswordValidation =
-  | { ok: true }
-  | { ok: false; reason: "too-long" | "empty" };
+export type PasswordValidation = { ok: true } | { ok: false; reason: "too-long" | "empty" };
 
 /**
  * Validate a password candidate.

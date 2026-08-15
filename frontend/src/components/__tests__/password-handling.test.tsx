@@ -122,10 +122,18 @@ describe("isRequiredForLockedFile", () => {
 
   it("treats pdf/ and .pdf type strings as PDFs", () => {
     const barePdf: LockedFileInfo = {
-      id: "a", name: "a.pdf", type: "pdf", size: 1, isEncrypted: true,
+      id: "a",
+      name: "a.pdf",
+      type: "pdf",
+      size: 1,
+      isEncrypted: true,
     };
     const dotPdf: LockedFileInfo = {
-      id: "b", name: "b.pdf", type: "application/pdf.pdf", size: 1, isEncrypted: true,
+      id: "b",
+      name: "b.pdf",
+      type: "application/pdf.pdf",
+      size: 1,
+      isEncrypted: true,
     };
     expect(isRequiredForLockedFile(barePdf, true)).toBe(true);
     expect(isRequiredForLockedFile(dotPdf, true)).toBe(true);
@@ -251,9 +259,7 @@ describe("PasswordInput rendering", () => {
 
   it("renders the file name in the label", () => {
     const mu = memoryUsageFixture();
-    render(
-      <PasswordInput file={lockedFileFixture({ name: "classified.pdf" })} memoryUsage={mu} />,
-    );
+    render(<PasswordInput file={lockedFileFixture({ name: "classified.pdf" })} memoryUsage={mu} />);
     expect(screen.getByText(/classified\.pdf/)).toBeDefined();
   });
 });

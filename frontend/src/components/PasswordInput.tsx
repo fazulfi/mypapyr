@@ -54,10 +54,7 @@ const ERROR_MESSAGE_KEY: Record<PasswordErrorKind, "wrongPassword" | "corrupt" |
  * Resolves the display text for an error kind: localized copy when the
  * message resource is present, otherwise the stable closed key string.
  */
-function errorText(
-  locale: Locale,
-  kind: PasswordErrorKind,
-): string {
+function errorText(locale: Locale, kind: PasswordErrorKind): string {
   const copy = getMessages(locale).password.errors;
   const localized = copy[ERROR_MESSAGE_KEY[kind]];
   return localized.trim() === "" ? distinctError(kind) : localized;
