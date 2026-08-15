@@ -46,6 +46,7 @@ from app.routers.pdf_to_jpg import router as pdf_to_jpg_router
 from app.routers.split import router as split_router
 from app.routers.status import router as status_router
 from app.schemas.job import ResultSummary
+from app.security.classification import ScannerStatus, ScannerVerdict
 from app.tasks.state_machine import JobEvent, JobState
 from app.utils.r2 import R2Client
 
@@ -119,6 +120,13 @@ def _corrupt_pdf_bytes() -> bytes:
 def _corrupt_image_bytes() -> bytes:
     """Return bytes that fail image validation."""
     return b"This is not an image file."
+
+
+class _CleanScanner:
+    """Scanner double returning CLEAN verdict (U-SEC admission gate seam)."""
+
+    def scan(self, data: bytes) -> ScannerVerdict:
+        return ScannerVerdict(status=ScannerStatus.CLEAN)
 
 
 def _admit_body(tool: str, *, valid: bool = True) -> list[tuple[str, tuple[str, bytes, str]]]:
@@ -239,6 +247,7 @@ def app(
     application.state.task_store = store
     application.state.job_queue = queue
     application.state.r2_client = r2_client
+    application.state.scanner = _CleanScanner()
     for router in (
         compress_router,
         merge_router,
@@ -280,7 +289,6 @@ def _drive_to_done(
     """
     deadline = time.monotonic() + _DRIVE_TIMEOUT_SECONDS
     poll_interval = _DRIVE_POLL_SECONDS
-
 
     # Upload a synthetic output object to R2 so the download grant URL
     # maps to a real stored object.
@@ -357,17 +365,13 @@ class TestToolLifecycle:
         files = _admit_body(tool, valid=True)
         url = _post_url(tool)
         admit_response = client.post(url, files=files)
-        assert admit_response.status_code == 202, (
-            f"{tool}: admit failed: {admit_response.text}"
-        )
+        assert admit_response.status_code == 202, f"{tool}: admit failed: {admit_response.text}"
         admit_data: dict[str, Any] = admit_response.json()
         task_id = admit_data["task_id"]
 
         # ---- 2. Poll status: initial queued ----------------------------------
         status_response = client.get(_status_url(tool, task_id))
-        assert status_response.status_code == 200, (
-            f"{tool}: status failed: {status_response.text}"
-        )
+        assert status_response.status_code == 200, f"{tool}: status failed: {status_response.text}"
         status_data = status_response.json()
         assert status_data["state"] == "queued", (
             f"{tool}: expected queued initially, got {status_data['state']}"
@@ -389,9 +393,7 @@ class TestToolLifecycle:
                     break
             time.sleep(0.05)
 
-        assert final_state == "done", (
-            f"{tool}: expected done, got {final_state!r}"
-        )
+        assert final_state == "done", f"{tool}: expected done, got {final_state!r}"
 
         # ---- 5. Download grant ------------------------------------------------
         download_response = client.get(_download_url(tool, task_id, output=0))
@@ -411,9 +413,9 @@ class TestToolLifecycle:
         parsed = urlsplit(grant["url"])
         params = parse_qs(parsed.query)
         # At minimum there should be some signature/credential parameter.
-        assert any(
-            key in params for key in ("X-Amz-Algorithm", "AWSAccessKeyId", "Signature")
-        ), f"{tool}: signed URL missing expected query params; got {list(params)}"
+        assert any(key in params for key in ("X-Amz-Algorithm", "AWSAccessKeyId", "Signature")), (
+            f"{tool}: signed URL missing expected query params; got {list(params)}"
+        )
 
         # The URL should be fetchable (moto allows unsigned fetches after
         # presigning, so this proves the URL maps to a stored object).
@@ -427,9 +429,7 @@ class TestRejectedAdmission:
     """Corrupt/non-conforming uploads -> 400/415 envelope."""
 
     @pytest.mark.parametrize("tool", ["compress-pdf", "merge-pdf", "split-pdf", "pdf-to-jpg"])
-    def test_rejects_corrupt_pdf(
-        self, client: TestClient, tool: str
-    ) -> None:
+    def test_rejects_corrupt_pdf(self, client: TestClient, tool: str) -> None:
         """Corrupt (non-PDF) bytes -> 400/415 with error.code."""
         files = _admit_body(tool, valid=False)
         url = _post_url(tool)
