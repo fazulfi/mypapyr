@@ -1173,7 +1173,7 @@ This document contains no TODO, TBD, FIXME, or other placeholder tokens. Unresol
 The following paths under `papyr-reference/` were inspected as baseline evidence for this specification. They are read-only reference material (AGENTS.md, DEC-001, DEC-059).
 
 | Path | What it evidences |
-|---|---|
+| --- | --- |
 | `backend/main.py` | FastAPI application shell, lifespan cleanup loop, CORS allowlist, rate-limit handler, router mounting, `/health` |
 | `backend/utils/config.py` | Centralized settings: `MAX_UPLOAD_SIZE_MB` (20), `FILE_RETENTION_MINUTES` (60), `RATE_LIMIT_PER_MINUTE` (10) |
 | `backend/utils/r2.py` | R2 client, UUID object keys, `SIGNED_URL_EXPIRY_SECONDS`, force-download signed URLs |
