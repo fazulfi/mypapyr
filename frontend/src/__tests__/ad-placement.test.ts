@@ -371,10 +371,21 @@ describe("AdSlot lazy script injection", () => {
     const script = document.getElementById("papyr-adsterra-script") as HTMLScriptElement | null;
     expect(script).not.toBeNull();
     expect(script?.src).toBe(
-      `https://www.highperformanceformat.com/lib/b552110bd65e7690ed89a04a1d654898.js`,
+      `https://www.highperformanceformat.com/b552110bd65e7690ed89a04a1d654898/invoke.js`,
     );
     expect(script?.async).toBe(true);
     expect(script?.dataset.papyrAdSlot).toBe("true");
+    // The owner-approved unit code defines the global atOptions config
+    // (key, iframe format, 300x250 dimensions) before invoke.js loads.
+    const atOptions = document.head.querySelector(
+      'script[data-papyr-atoptions="true"]',
+    ) as HTMLScriptElement | null;
+    expect(atOptions).not.toBeNull();
+    expect(atOptions?.textContent).toContain("'key'");
+    expect(atOptions?.textContent).toContain("b552110bd65e7690ed89a04a1d654898");
+    expect(atOptions?.textContent).toContain("'format': 'iframe'");
+    expect(atOptions?.textContent).toContain("'height': 250");
+    expect(atOptions?.textContent).toContain("'width': 300");
   });
 
   it("removes the script node on unmount", () => {
