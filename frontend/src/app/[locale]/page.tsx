@@ -436,7 +436,7 @@ export default async function LocaleHomePage({
       </section>
 
       <section className="mx-auto max-w-[1200px] px-6 pb-6" aria-label="Advertisement">
-        <LeaderboardAdSlot pageSlug="home" />
+        <LeaderboardAdSlot pageSlug="home" label={copy.ads.label} />
       </section>
 
       <div className="mx-auto max-w-[1200px] border-t border-slate-200" />

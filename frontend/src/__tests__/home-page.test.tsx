@@ -462,10 +462,12 @@ describe("T4 rich homepage restore (hero pill, trust badges, card footer, privac
   it("renders ad slots after the hero and after the FAQ (owner decision 2026-08-15)", async () => {
     for (const locale of locales) {
       const markup = await renderHome(locale);
-      const adCount = (markup.match(/aria-label="Advertisement"/g) ?? []).length;
+      const adCount = (markup.match(/aria-label="(?:Advertisement|Publicidad|Iklan)"/g) ?? [])
+        .length;
       expect(adCount).toBeGreaterThanOrEqual(2);
       const faqIdx = markup.indexOf("Frequently");
-      const lastAdIdx = markup.lastIndexOf('aria-label="Advertisement"');
+      const label = locale === "es" ? "Publicidad" : locale === "id" ? "Iklan" : "Advertisement";
+      const lastAdIdx = markup.lastIndexOf(`aria-label="${label}"`);
       expect(lastAdIdx).toBeGreaterThan(faqIdx);
     }
   });

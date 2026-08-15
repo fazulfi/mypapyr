@@ -120,8 +120,8 @@ export default async function PrivacyPage({
           })}
         </section>
       </div>
-      <div className="mt-10 max-w-full overflow-hidden" aria-label="Advertisement">
-        <AdSlot pageSlug="privacy" immediate unit="banner-468x60" />
+      <div className="mt-10 max-w-full overflow-hidden" aria-label={copy.ads.label}>
+        <AdSlot pageSlug="privacy" immediate unit="banner-468x60" label={copy.ads.label} />
       </div>
     </div>
   );

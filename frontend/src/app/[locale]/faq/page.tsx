@@ -125,8 +125,8 @@ export function FAQContent({ locale }: { locale: string }): React.ReactElement {
         className="mt-10 flex max-w-full flex-col items-center gap-6 overflow-hidden"
         aria-label="Advertisement"
       >
-        <AdSlot pageSlug="faq" immediate unit="banner-468x60" />
-        <AdSlot pageSlug="faq" immediate unit="half-page-160x300" />
+        <AdSlot pageSlug="faq" immediate unit="banner-468x60" label={copy.ads.label} />
+        <AdSlot pageSlug="faq" immediate unit="half-page-160x300" label={copy.ads.label} />
       </div>
     </div>
   );
