@@ -81,6 +81,7 @@ Papyr labels every claim so the repository can be read honestly: the source tree
 | Reserved-dimension Adsterra ad placement with layout/placement guards (PT-02) | In branch |
 | Categorized contact form and result-problem report with anti-spam (PT-03) | In branch |
 | Memory-only encrypted-PDF password handling (PT-04) | In branch |
+| Backend contact delivery endpoint with server-side validation, rate limiting, Turnstile siteverify, and Cloudflare Email Sending (PT-03) | In branch |
 | Blog publishing programme | Planned |
 | Redis queue and bounded worker processing | Available now |
 | Privacy-safe structured logging and minimal-metadata task records | Available now |
