@@ -409,22 +409,41 @@ describe("AdSlot component", () => {
 // ---------------------------------------------------------------------------
 
 describe("AdSlot lazy script injection", () => {
-  it("injects atOptions + invoke.js immediately on mount (no observer gating)", () => {
+  it("registers the slot in atAsyncOptions with a container div on mount", () => {
     const { container } = render(React.createElement(AdSlot, { pageSlug: "jpg-to-pdf" }));
 
+    // The placeholder renders with reserved dimensions.
     const placeholder = container.querySelector('[aria-label="Advertisement"]');
     expect(placeholder).not.toBeNull();
-    expect(container.querySelector('script[data-papyr-atoptions="true"]')).not.toBeNull();
-    expect(container.querySelector('script[data-papyr-ad-slot="true"]')).not.toBeNull();
+
+    // The slot registers in the official atAsyncOptions queue and renders
+    // its container div immediately (no observer gating). No
+    // single-consumption global atOptions.
+    const win = window as Window & { atAsyncOptions?: Array<Record<string, unknown>> };
+    expect(win.atAsyncOptions).toBeDefined();
+    const entry = (win.atAsyncOptions ?? []).find(
+      (o) => o.key === "b552110bd65e7690ed89a04a1d654898",
+    );
+    expect(entry).toBeDefined();
+    expect(entry?.format).toBe("js");
+    expect(entry?.async).toBe(true);
+    expect(entry?.container).toBe("atContainer-b552110bd65e7690ed89a04a1d654898");
+
+    const containerDiv = container.querySelector(
+      '[id="atContainer-b552110bd65e7690ed89a04a1d654898"]',
+    );
+    expect(containerDiv).not.toBeNull();
+    expect((window as Window & { atOptions?: unknown }).atOptions).toBeUndefined();
   });
 
-  it("removes the injected scripts on unmount", () => {
+  it("removes the container div on unmount", () => {
     const { unmount, container } = render(React.createElement(AdSlot, { pageSlug: "split-pdf" }));
-    expect(container.querySelector('script[data-papyr-ad-slot="true"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Advertisement"]')).not.toBeNull();
+    expect(container.querySelector('[id^="atContainer-"]')).not.toBeNull();
 
     unmount();
 
-    expect(container.querySelector('script[data-papyr-ad-slot="true"]')).toBeNull();
+    expect(container.querySelector('[id^="atContainer-"]')).toBeNull();
   });
 
   it("falls back immediately when IntersectionObserver is undefined (e.g. jsdom)", () => {
@@ -532,31 +551,51 @@ describe("LeaderboardAdSlot (responsive)", () => {
 // Multi-placement isolation (root cause: atOptions global one-shot consume)
 // ---------------------------------------------------------------------------
 
-describe("AdSlot owner-approved embed pattern (P6 verified)", () => {
-  it("injects atOptions + invoke.js inside the slot div on mount", () => {
-    const { container } = render(React.createElement(AdSlot, { pageSlug: "jpg-to-pdf" }));
-
-    // The placeholder renders with reserved dimensions.
-    const slot = container.querySelector('[data-testid="papyr-ad-slot"]') as HTMLElement;
-    expect(slot).not.toBeNull();
-    expect(slot.style.width).toBe("300px");
-    expect(slot.style.height).toBe("250px");
-
-    // atOptions defines the zone config inside the slot div.
-    const atOptions = slot.querySelector('script[data-papyr-atoptions="true"]');
-    expect(atOptions).not.toBeNull();
-    expect(atOptions?.textContent).toContain("b552110bd65e7690ed89a04a1d654898");
-    expect(atOptions?.textContent).toContain("'format': 'iframe'");
-
-    // invoke.js loads from the slot div position (script-position render).
-    const invoke = slot.querySelector(
-      'script[data-papyr-ad-slot="true"]',
-    ) as HTMLScriptElement | null;
-    expect(invoke).not.toBeNull();
-    expect(invoke?.src).toBe(
-      "https://www.highperformanceformat.com/b552110bd65e7690ed89a04a1d654898/invoke.js",
+describe("AdSlot multi-placement (official atAsyncOptions pattern)", () => {
+  it("registers each slot in window.atAsyncOptions with its own container div", () => {
+    const { container } = render(
+      React.createElement("div", null, [
+        React.createElement(AdSlot, {
+          key: "lb",
+          pageSlug: "home",
+          immediate: true,
+          unit: "leaderboard-728x90",
+        }),
+        React.createElement(AdSlot, {
+          key: "box",
+          pageSlug: "home",
+          immediate: true,
+          unit: "box-300x250",
+        }),
+      ]),
     );
-    expect(invoke?.async).toBe(true);
+
+    // Each slot registers its own entry in the official atAsyncOptions
+    // queue (the pattern used by working Adsterra multi-placement sites).
+    const win = window as Window & { atAsyncOptions?: Array<Record<string, unknown>> };
+    expect(win.atAsyncOptions).toBeDefined();
+    const queue = win.atAsyncOptions ?? [];
+    const keys = queue.map((o) => o.key);
+    expect(keys).toContain("d78b74f28dcbbde269d55fe72b8a96a3");
+    expect(keys).toContain("b552110bd65e7690ed89a04a1d654898");
+
+    for (const entry of queue) {
+      expect(entry.format).toBe("js");
+      expect(entry.async).toBe(true);
+      expect(typeof entry.container).toBe("string");
+      expect(entry.container).toMatch(/^atContainer-/);
+    }
+
+    const containers = container.querySelectorAll('[id^="atContainer-"]');
+    expect(containers.length).toBe(2);
+    // Both slots render container divs inside their reserved slot divs.
+    const slotDivs = container.querySelectorAll('[data-testid="papyr-ad-slot"]');
+    expect(slotDivs.length).toBe(2);
+    for (const slot of Array.from(slotDivs)) {
+      expect(slot.querySelector('[id^="atContainer-"]')).not.toBeNull();
+    }
+
+    expect((window as Window & { atOptions?: unknown }).atOptions).toBeUndefined();
   });
 
   it("keeps reserved placeholder dimensions on the outer slot div", () => {
@@ -568,18 +607,15 @@ describe("AdSlot owner-approved embed pattern (P6 verified)", () => {
       }),
     );
     const slot = container.querySelector('[data-testid="papyr-ad-slot"]') as HTMLElement;
+    expect(slot).not.toBeNull();
     expect(slot.style.width).toBe("160px");
     expect(slot.style.height).toBe("600px");
-    expect(slot.querySelector('script[data-papyr-atoptions="true"]')).not.toBeNull();
-    expect(slot.querySelector('script[data-papyr-ad-slot="true"]')).not.toBeNull();
-  });
-
-  it("removes injected scripts on unmount", () => {
-    const { unmount, container } = render(React.createElement(AdSlot, { pageSlug: "split-pdf" }));
-    expect(container.querySelector('script[data-papyr-ad-slot="true"]')).not.toBeNull();
-
-    unmount();
-
-    expect(container.querySelector('script[data-papyr-ad-slot="true"]')).toBeNull();
+    const win = window as Window & { atAsyncOptions?: Array<Record<string, unknown>> };
+    const entry = (win.atAsyncOptions ?? []).find(
+      (o) => o.key === "d7750ca9d81b86c2f911c3fee1f5cadd",
+    );
+    expect(entry).toBeDefined();
+    expect(entry?.container).toBe("atContainer-d7750ca9d81b86c2f911c3fee1f5cadd");
+    expect(container.querySelector('[id^="atContainer-"]')).not.toBeNull();
   });
 });
