@@ -12,6 +12,7 @@
  * - Non-allowed pages: slot returns null, nothing breaks.
  */
 import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import { cleanup, render, act } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -25,6 +26,7 @@ import {
 } from "@/lib/ads";
 
 import { AdSlot } from "@/components/ads/AdSlot";
+import { LeaderboardAdSlot } from "@/components/ads/LeaderboardAdSlot";
 import {
   isAfterPrimaryExperience,
   isSeparatedFromDownload,
@@ -116,7 +118,7 @@ describe("ads config", () => {
     expect(ADSTERRA_HOST).toBe("https://www.highperformanceformat.com");
   });
 
-  it("allowedAdPages includes the homepage plus the five canonical tool slugs (owner decision 2026-08-15)", () => {
+  it("allowedAdPages covers home, tools, and supporting pages; status stays ad-free (owner decision 2026-08-15)", () => {
     expect(allowedAdPages).toEqual([
       "home",
       "compress-pdf",
@@ -124,7 +126,14 @@ describe("ads config", () => {
       "split-pdf",
       "jpg-to-pdf",
       "pdf-to-jpg",
+      "contact",
+      "privacy",
+      "terms",
+      "cookies-advertising",
+      "roadmap",
+      "faq",
     ]);
+    expect(allowedAdPages).not.toContain("status");
   });
 });
 
@@ -206,7 +215,7 @@ describe("shouldRenderAd()", () => {
   });
 
   it("returns false for status, legal, and support surfaces", () => {
-    const nonAllowed = ["status", "terms", "privacy", "faq", "contact", "blog", "roadmap"];
+    const nonAllowed = ["status", "blog", "tool-unavailable", "unknown-page"];
     for (const slug of nonAllowed) {
       expect(shouldRenderAd(slug)).toBe(false);
     }
@@ -307,14 +316,46 @@ describe("AdSlot component", () => {
     expect(container.querySelector('[aria-label="Advertisement"]')).toBeNull();
   });
 
-  it("renders nothing on a legal page (terms)", () => {
-    const { container } = render(React.createElement(AdSlot, { pageSlug: "terms" }));
-    expect(container.querySelector('[aria-label="Advertisement"]')).toBeNull();
+  it("renders on supporting content pages per the 2026-08-15 owner decision (terms, faq)", () => {
+    for (const slug of ["terms", "faq", "contact", "privacy", "roadmap", "cookies-advertising"]) {
+      const { container } = render(React.createElement(AdSlot, { pageSlug: slug }));
+      expect(container.querySelector('[aria-label="Advertisement"]')).not.toBeNull();
+      cleanup();
+    }
   });
 
-  it("renders nothing on a support page (faq)", () => {
-    const { container } = render(React.createElement(AdSlot, { pageSlug: "faq" }));
-    expect(container.querySelector('[aria-label="Advertisement"]')).toBeNull();
+  it("immediate prop renders the tool-page slot in idle phase (owner decision 2026-08-15)", () => {
+    const { container } = render(
+      React.createElement(AdSlot, { pageSlug: "compress-pdf", immediate: true }),
+    );
+    expect(container.querySelector('[aria-label="Advertisement"]')).not.toBeNull();
+  });
+
+  it("renders the leaderboard unit with reserved 728x90 dimensions", () => {
+    const { container } = render(
+      React.createElement(AdSlot, {
+        pageSlug: "home",
+        immediate: true,
+        unit: "leaderboard-728x90",
+      }),
+    );
+    const el = container.querySelector('[aria-label="Advertisement"]') as HTMLElement;
+    expect(el).not.toBeNull();
+    expect(el.style.width).toBe("728px");
+    expect(el.style.height).toBe("90px");
+  });
+
+  it("renders the mobile banner unit with reserved 320x50 dimensions", () => {
+    const { container } = render(
+      React.createElement(AdSlot, {
+        pageSlug: "home",
+        immediate: true,
+        unit: "mobile-banner-320x50",
+      }),
+    );
+    const el = container.querySelector('[aria-label="Advertisement"]') as HTMLElement;
+    expect(el.style.width).toBe("320px");
+    expect(el.style.height).toBe("50px");
   });
 
   it("does not break when ad script is blocked (no error thrown)", () => {
@@ -358,7 +399,7 @@ describe("AdSlot lazy script injection", () => {
     const { container } = render(React.createElement(AdSlot, { pageSlug: "jpg-to-pdf" }));
 
     // Before observer fires: no script injected.
-    expect(document.querySelector(`script#papyr-adsterra-script`)).toBeNull();
+    expect(document.querySelector('script[data-papyr-ad-slot="true"]')).toBeNull();
 
     const placeholder = container.querySelector('[aria-label="Advertisement"]');
     expect(placeholder).not.toBeNull();
@@ -369,7 +410,9 @@ describe("AdSlot lazy script injection", () => {
     });
 
     // After observer fires: script is injected.
-    const script = document.getElementById("papyr-adsterra-script") as HTMLScriptElement | null;
+    const script = document.querySelector(
+      'script[data-papyr-ad-slot="true"]',
+    ) as HTMLScriptElement | null;
     expect(script).not.toBeNull();
     expect(script?.src).toBe(
       `https://www.highperformanceformat.com/b552110bd65e7690ed89a04a1d654898/invoke.js`,
@@ -380,7 +423,7 @@ describe("AdSlot lazy script injection", () => {
     // (key, iframe format, 300x250 dimensions) before invoke.js loads.
     const atOptions =
       document
-        .getElementById("papyr-adsterra-slot")
+        .querySelector('div[data-testid="papyr-ad-slot"]')
         ?.querySelector('script[data-papyr-atoptions="true"]') ?? null;
     expect(atOptions).not.toBeNull();
     expect(atOptions?.textContent).toContain("'key'");
@@ -401,11 +444,11 @@ describe("AdSlot lazy script injection", () => {
       fire(true);
     });
 
-    expect(document.getElementById("papyr-adsterra-script")).not.toBeNull();
+    expect(document.querySelector('script[data-papyr-ad-slot="true"]')).not.toBeNull();
 
     unmount();
 
-    expect(document.getElementById("papyr-adsterra-script")).toBeNull();
+    expect(document.querySelector('script[data-papyr-ad-slot="true"]')).toBeNull();
   });
 
   it("falls back immediately when IntersectionObserver is undefined (e.g. jsdom)", () => {
@@ -429,7 +472,7 @@ describe("AdSlot lazy script injection", () => {
       fire(true);
     });
 
-    expect(document.getElementById("papyr-adsterra-script")).toBeNull();
+    expect(document.querySelector('script[data-papyr-ad-slot="true"]')).toBeNull();
   });
 });
 
@@ -492,5 +535,19 @@ describe("ad placement guards integration", () => {
       expect(el.style.width).toBe("300px");
       expect(el.style.height).toBe("250px");
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Responsive leaderboard
+// ---------------------------------------------------------------------------
+
+describe("LeaderboardAdSlot (responsive)", () => {
+  it("renders the SSR-safe mobile unit before hydration (320x50)", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(LeaderboardAdSlot, { pageSlug: "home" }),
+    );
+    expect(markup).toContain("width:320px");
+    expect(markup).toContain("height:50px");
   });
 });

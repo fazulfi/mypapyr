@@ -6,6 +6,7 @@ import { use } from "react";
 import { ToolPageHeader } from "@/components/ToolPageHeader";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { AdSlot } from "@/components/ads/AdSlot";
+import { LeaderboardAdSlot } from "@/components/ads/LeaderboardAdSlot";
 import OtherTools from "@/components/OtherTools";
 import { ResultProblemReport } from "@/components/support/ResultProblemReport";
 import type { Locale } from "@/lib/i18n";
@@ -110,6 +111,7 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
         <div className="mx-auto max-w-3xl">
           <ToolPageHeader locale={locale} toolId="jpg-to-pdf" />
           <PrivacyNotice locale={locale} model="hybrid" />
+          <LeaderboardAdSlot pageSlug="jpg-to-pdf" />
           <Dropzone
             files={files}
             onChange={setFiles}
@@ -179,6 +181,7 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
         <AdSlot pageSlug="jpg-to-pdf" phase={phase} />
         <OtherTools currentTool="jpg-to-pdf" locale={locale} />
         <ResultProblemReport locale={locale} page="/jpg-to-pdf" localeContext={locale} />
+        <AdSlot pageSlug="jpg-to-pdf" immediate unit="skyscraper-160x600" />
       </div>
     </main>
   );

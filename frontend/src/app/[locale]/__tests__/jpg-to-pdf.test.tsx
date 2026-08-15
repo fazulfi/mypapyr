@@ -137,9 +137,9 @@ describe("JpgToPdfTool idle phase", () => {
     expect(button.disabled).toBe(false);
   });
 
-  it("does NOT render AdSlot during idle phase", () => {
+  it("renders the immediate leaderboard slot during idle phase (owner decision 2026-08-15)", () => {
     render(<JpgToPdfTool locale="en" />);
-    expect(document.getElementById("papyr-adsterra-slot")).toBeNull();
+    expect(document.querySelector('div[data-testid="papyr-ad-slot"]')).toBeTruthy();
   });
 });
 
@@ -199,7 +199,7 @@ describe("JpgToPdfTool polling / result states", () => {
     await submitImages("en");
     await waitFor(() => expect(screen.getByText(getMessages("en").states.queued)).toBeTruthy());
     // AdSlot should NOT render during queued
-    expect(document.getElementById("papyr-adsterra-slot")).toBeNull();
+    expect(document.querySelector('div[data-testid="papyr-ad-slot"]')).toBeTruthy();
   });
 
   it("renders the processing card while the task is processing", async () => {
@@ -208,7 +208,7 @@ describe("JpgToPdfTool polling / result states", () => {
     await submitImages("en");
     await waitFor(() => expect(screen.getByText(getMessages("en").states.processing)).toBeTruthy());
     // AdSlot should NOT render during processing
-    expect(document.getElementById("papyr-adsterra-slot")).toBeNull();
+    expect(document.querySelector('div[data-testid="papyr-ad-slot"]')).toBeTruthy();
   });
 
   it("auto-fetches the download grant when the task completes and offers download + reset", async () => {
@@ -235,7 +235,7 @@ describe("JpgToPdfTool polling / result states", () => {
       expect(screen.getByRole("button", { name: getMessages("en").states.download })).toBeTruthy(),
     );
     // AdSlot placeholder should be in the DOM during done phase
-    expect(document.getElementById("papyr-adsterra-slot")).toBeTruthy();
+    expect(document.querySelector('div[data-testid="papyr-ad-slot"]')).toBeTruthy();
   });
 
   it("renders the error card with the message key on failure", async () => {
@@ -263,7 +263,7 @@ describe("JpgToPdfTool polling / result states", () => {
 
     await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
     // AdSlot placeholder should be in the DOM during error phase
-    expect(document.getElementById("papyr-adsterra-slot")).toBeTruthy();
+    expect(document.querySelector('div[data-testid="papyr-ad-slot"]')).toBeTruthy();
   });
 
   it("fires window.location.href on download click", async () => {

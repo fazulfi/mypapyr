@@ -2,6 +2,7 @@ import type { Locale } from "./i18n";
 
 export const messages = {
   en: {
+    ads: { label: "Advertisement" },
     siteName: "Papyr",
     nav: {
       home: "Home",
@@ -416,6 +417,7 @@ export const messages = {
     },
   },
   es: {
+    ads: { label: "Publicidad" },
     siteName: "Papyr",
     nav: {
       home: "Inicio",
@@ -834,6 +836,7 @@ export const messages = {
     },
   },
   id: {
+    ads: { label: "Iklan" },
     siteName: "Papyr",
     nav: {
       home: "Beranda",

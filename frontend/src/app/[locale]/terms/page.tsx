@@ -8,5 +8,5 @@ export default async function TermsPage({
   params,
 }: SupportingPageProps): Promise<React.ReactElement> {
   const copy = await resolveSupportingPageCopy(params, "terms");
-  return <SupportingPageContent copy={copy} />;
+  return <SupportingPageContent copy={copy} pageSlug="terms" />;
 }
