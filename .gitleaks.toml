@@ -1,11 +1,11 @@
 [extend]
 useDefault = true
 
-# The Adsterra publisher ad-unit key is public by design: it is embedded in
-# client-side ad scripts (the owner-approved PT-02 unit code ships it verbatim
-# in <script> markup). It grants no access to any Papyr system, account, or
-# document; gitleaks flags it as a generic API key. Allowlist the exact key
-# value so the secret-scan gate reflects reality.
+# Adsterra publisher ad-unit keys are public by design: they are embedded in
+# client-side ad scripts (the owner-approved unit code ships them verbatim in
+# <script> markup). They grant access to no Papyr system, account, or
+# document. All six zone keys live in frontend/src/lib/ads.ts and are
+# allowlisted by file+pattern so the secret-scan gate reflects reality.
 [allowlist]
-description = "Adsterra publisher ad-unit key (public client-side by design)"
-regexes = ['''b552110bd65e7690ed89a04a1d654898''']
+description = "Adsterra publisher ad-unit keys in the ad registry (public client-side by design)"
+paths = ['''frontend/src/lib/ads\.ts''']
