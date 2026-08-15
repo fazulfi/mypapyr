@@ -15,7 +15,6 @@ function makePdf(name: string, size = 128): File {
   return new File([new Uint8Array(size)], name, { type: "application/pdf" });
 }
 
-
 function selectFiles(container: HTMLElement, files: File[]): void {
   const input = container.querySelector('input[type="file"]') as HTMLInputElement;
   fireEvent.change(input, { target: { files } });
@@ -127,7 +126,6 @@ describe("MergePdfTool localized rendering", () => {
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
     expect(input.getAttribute("accept")).toBe("application/pdf");
   });
-
 });
 
 describe("MergePdfTool upload / admission contract", () => {

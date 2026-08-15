@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { use } from "react";
+import { use, useState } from "react";
 
 import { ToolPageHeader } from "@/components/ToolPageHeader";
 import { PrivacyNotice } from "@/components/PrivacyNotice";

@@ -145,7 +145,6 @@ describe("CompressPdfTool upload / admission contract", () => {
     resolveUpload({ ok: true, json: async () => ({ task_id: "t", expires_at: "" }) });
   });
 
-
   it("surfaces the error card when the admission request fails", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 503 }));
     await submitPdf("en");
