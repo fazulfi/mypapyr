@@ -86,39 +86,49 @@ export function AdSlot({
   useEffect(() => {
     if (!enabled || !allowed || !visible) return;
 
-    // Owner-approved unit code: define the zone's `atOptions`
-    // configuration, then load its invoke.js — both inside the slot div,
-    // because invoke.js renders the iframe at the script's own position.
     const slotNode = slotRef.current;
     if (slotNode === null) return;
-    if (slotNode.querySelector("script[data-papyr-ad-slot='true']") !== null) return;
+    if (slotNode.querySelector("iframe[data-papyr-ad-isolated='true']") !== null) return;
 
-    const atOptionsScript = document.createElement("script");
-    atOptionsScript.dataset.papyrAtoptions = "true";
-    atOptionsScript.text =
-      "atOptions = {'key': '" +
-      selected.key +
-      "','format': 'iframe','height': " +
-      selected.height +
-      ",'width': " +
-      selected.width +
-      ",'params': {}};";
+    // Multi-placement isolation (root cause 2026-08-15): Adsterra's
+    // invoke.js consumes a SINGLE global window.atOptions and deletes it
+    // after the first placement (verified by deobfuscating invoke.js:
+    // `m1(window.atOptions, Qt), delete window.atOptions`). On pages with
+    // two or more slots the second invoke.js finds no atOptions and renders
+    // nothing. The official multi-placement pattern isolates each unit in
+    // its own srcdoc iframe, giving every slot its own window.atOptions.
+    const adDocument = [
+      "<!DOCTYPE html><html><head><meta charset='utf-8'></head><body style='margin:0'>",
+      "<script>atOptions = {'key': '" +
+        selected.key +
+        "','format': 'iframe','height': " +
+        selected.height +
+        ",'width': " +
+        selected.width +
+        ",'params': {}};</scr" +
+        "ipt>",
+      "<script src='" + ADSTERRA_HOST + "/" + selected.key + "/invoke.js'></scr" + "ipt>",
+      "</body></html>",
+    ].join("");
 
-    const invokeScript = document.createElement("script");
-    invokeScript.dataset.papyrAdSlot = "true";
-    invokeScript.dataset.papyrUnit = selected.id;
-    invokeScript.type = "text/javascript";
-    invokeScript.async = true;
-    invokeScript.src = `${ADSTERRA_HOST}/${selected.key}/invoke.js`;
+    const iframe = document.createElement("iframe");
+    iframe.dataset.papyrAdIsolated = "true";
+    iframe.dataset.papyrUnit = selected.id;
+    iframe.srcdoc = adDocument;
+    iframe.width = String(selected.width);
+    iframe.height = String(selected.height);
+    iframe.style.border = "0";
+    iframe.style.display = "block";
+    iframe.title = resolvedLabel;
+    iframe.setAttribute("scrolling", "no");
+    iframe.setAttribute("frameborder", "0");
 
-    slotNode.innerHTML = "";
-    slotNode.appendChild(atOptionsScript);
-    slotNode.appendChild(invokeScript);
+    slotNode.appendChild(iframe);
 
     return () => {
       slotNode.innerHTML = "";
     };
-  }, [enabled, allowed, visible, selected]);
+  }, [enabled, allowed, visible, selected, resolvedLabel]);
 
   if (!enabled || !allowed) return null;
 

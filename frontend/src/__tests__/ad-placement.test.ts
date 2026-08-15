@@ -92,6 +92,10 @@ function installIntersectionObserver() {
       const last = instances[instances.length - 1];
       if (last) last.fire(isIntersecting);
     },
+    /** Fire every registered observer instance (multi-slot pages). */
+    fireAll: (isIntersecting: boolean) => {
+      for (const instance of instances) instance.fire(isIntersecting);
+    },
   };
 }
 
@@ -405,13 +409,13 @@ describe("AdSlot component", () => {
 // ---------------------------------------------------------------------------
 
 describe("AdSlot lazy script injection", () => {
-  it("appends the script node only after IntersectionObserver fires isIntersecting", () => {
+  it("appends the isolated srcdoc iframe only after IntersectionObserver fires isIntersecting", () => {
     const { fire } = installIntersectionObserver();
 
     const { container } = render(React.createElement(AdSlot, { pageSlug: "jpg-to-pdf" }));
 
-    // Before observer fires: no script injected.
-    expect(document.querySelector('script[data-papyr-ad-slot="true"]')).toBeNull();
+    // Before observer fires: no iframe injected.
+    expect(container.querySelector("iframe[data-papyr-ad-isolated='true']")).toBeNull();
 
     const placeholder = container.querySelector('[aria-label="Advertisement"]');
     expect(placeholder).not.toBeNull();
@@ -421,31 +425,21 @@ describe("AdSlot lazy script injection", () => {
       fire(true);
     });
 
-    // After observer fires: script is injected.
-    const script = document.querySelector(
-      'script[data-papyr-ad-slot="true"]',
-    ) as HTMLScriptElement | null;
-    expect(script).not.toBeNull();
-    expect(script?.src).toBe(
-      `https://www.highperformanceformat.com/b552110bd65e7690ed89a04a1d654898/invoke.js`,
-    );
-    expect(script?.async).toBe(true);
-    expect(script?.dataset.papyrAdSlot).toBe("true");
-    // The owner-approved unit code defines the global atOptions config
-    // (key, iframe format, 300x250 dimensions) before invoke.js loads.
-    const atOptions =
-      document
-        .querySelector('div[data-testid="papyr-ad-slot"]')
-        ?.querySelector('script[data-papyr-atoptions="true"]') ?? null;
-    expect(atOptions).not.toBeNull();
-    expect(atOptions?.textContent).toContain("'key'");
-    expect(atOptions?.textContent).toContain("b552110bd65e7690ed89a04a1d654898");
-    expect(atOptions?.textContent).toContain("'format': 'iframe'");
-    expect(atOptions?.textContent).toContain("'height': 250");
-    expect(atOptions?.textContent).toContain("'width': 300");
+    // After observer fires: an isolated srcdoc iframe is injected with its
+    // own atOptions + invoke.js (multi-placement isolation, root cause fix).
+    const iframe = container.querySelector(
+      "iframe[data-papyr-ad-isolated='true']",
+    ) as HTMLIFrameElement | null;
+    expect(iframe).not.toBeNull();
+    expect(iframe?.getAttribute("srcdoc")).toContain("b552110bd65e7690ed89a04a1d654898");
+    expect(iframe?.getAttribute("srcdoc")).toContain("'format': 'iframe'");
+    expect(iframe?.getAttribute("srcdoc")).toContain("'height': 250");
+    expect(iframe?.getAttribute("srcdoc")).toContain("'width': 300");
+    // No shared global atOptions on the parent page (the old one-shot bug).
+    expect((window as Window & { atOptions?: unknown }).atOptions).toBeUndefined();
   });
 
-  it("removes the script node on unmount", () => {
+  it("removes the isolated iframe on unmount", () => {
     const { fire } = installIntersectionObserver();
 
     const { unmount, container } = render(React.createElement(AdSlot, { pageSlug: "split-pdf" }));
@@ -456,11 +450,11 @@ describe("AdSlot lazy script injection", () => {
       fire(true);
     });
 
-    expect(document.querySelector('script[data-papyr-ad-slot="true"]')).not.toBeNull();
+    expect(container.querySelector("iframe[data-papyr-ad-isolated='true']")).not.toBeNull();
 
     unmount();
 
-    expect(document.querySelector('script[data-papyr-ad-slot="true"]')).toBeNull();
+    expect(container.querySelector("iframe[data-papyr-ad-isolated='true']")).toBeNull();
   });
 
   it("falls back immediately when IntersectionObserver is undefined (e.g. jsdom)", () => {
@@ -561,5 +555,68 @@ describe("LeaderboardAdSlot (responsive)", () => {
     );
     expect(markup).toContain("width:320px");
     expect(markup).toContain("height:50px");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Multi-placement isolation (root cause: atOptions global one-shot consume)
+// ---------------------------------------------------------------------------
+
+describe("AdSlot multi-placement isolation", () => {
+  it("injects each slot as an isolated srcdoc iframe (no shared window.atOptions)", () => {
+    const { fireAll } = installIntersectionObserver();
+    const { container } = render(
+      React.createElement("div", null, [
+        React.createElement(AdSlot, {
+          key: "lb",
+          pageSlug: "home",
+          immediate: true,
+          unit: "leaderboard-728x90",
+        }),
+        React.createElement(AdSlot, {
+          key: "box",
+          pageSlug: "home",
+          immediate: true,
+          unit: "box-300x250",
+        }),
+      ]),
+    );
+
+    // Fire every registered observer (each slot has its own).
+    act(() => {
+      fireAll(true);
+    });
+
+    const iframes = container.querySelectorAll("iframe[data-papyr-ad-isolated='true']");
+    // Both slots must render their own isolated document
+    expect(iframes.length).toBe(2);
+
+    // Each iframe srcdoc carries its OWN atOptions with its own zone key
+    const srcdocs = Array.from(iframes).map((f) => f.getAttribute("srcdoc") ?? "");
+    expect(srcdocs.length).toBe(2);
+    expect(srcdocs[0]).toContain("d78b74f28dcbbde269d55fe72b8a96a3");
+    expect(srcdocs[1]).toContain("b552110bd65e7690ed89a04a1d654898");
+
+    // No global atOptions should exist on the parent window (one-shot bug)
+    expect((window as Window & { atOptions?: unknown }).atOptions).toBeUndefined();
+  });
+
+  it("keeps reserved placeholder dimensions on the outer slot div", () => {
+    const { fire } = installIntersectionObserver();
+    const { container } = render(
+      React.createElement(AdSlot, {
+        pageSlug: "home",
+        immediate: true,
+        unit: "skyscraper-160x600",
+      }),
+    );
+    const slot = container.querySelector('[data-testid="papyr-ad-slot"]') as HTMLElement;
+    expect(slot.style.width).toBe("160px");
+    expect(slot.style.height).toBe("600px");
+    act(() => {
+      fire(true);
+    });
+    const iframe = container.querySelector("iframe[data-papyr-ad-isolated='true']");
+    expect(iframe).not.toBeNull();
   });
 });
