@@ -7,6 +7,7 @@ import { ToolPageHeader } from "@/components/ToolPageHeader";
 import { AdSlot } from "@/components/ads/AdSlot";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
 import OtherTools from "@/components/OtherTools";
+import { ResultProblemReport } from "@/components/support/ResultProblemReport";
 import type { Locale } from "@/lib/i18n";
 import { defaultLocale, isLocale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
@@ -171,6 +172,7 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
         <OtherTools currentTool="compress-pdf" locale={locale} />
         {card}
         <AdSlot pageSlug="compress-pdf" phase={phase} />
+        <ResultProblemReport locale={locale} page="/compress-pdf" localeContext={locale} />
       </div>
     </main>
   );

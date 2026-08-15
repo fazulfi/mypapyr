@@ -10,6 +10,7 @@ import { ToolPageHeader } from "@/components/ToolPageHeader";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { AdSlot } from "@/components/ads/AdSlot";
 import OtherTools from "@/components/OtherTools";
+import { ResultProblemReport } from "@/components/support/ResultProblemReport";
 import { Dropzone } from "@/components/uploader/Dropzone";
 import { PreparingCard } from "@/components/states/PreparingCard";
 import { QueuedCard } from "@/components/states/QueuedCard";
@@ -176,6 +177,7 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
         {card}
         <AdSlot pageSlug="merge-pdf" phase={phase} />
         <OtherTools currentTool="merge-pdf" locale={locale} />
+        <ResultProblemReport locale={locale} page="/merge-pdf" localeContext={locale} />
       </div>
     </main>
   );

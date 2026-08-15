@@ -10,6 +10,7 @@ import { ToolPageHeader } from "@/components/ToolPageHeader";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { AdSlot } from "@/components/ads/AdSlot";
 import OtherTools from "@/components/OtherTools";
+import { ResultProblemReport } from "@/components/support/ResultProblemReport";
 import { Dropzone } from "@/components/uploader/Dropzone";
 import { PreparingCard } from "@/components/states/PreparingCard";
 import { QueuedCard } from "@/components/states/QueuedCard";
@@ -269,6 +270,7 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
         {card}
         <AdSlot pageSlug="split-pdf" phase={phase} />
         <OtherTools currentTool="split-pdf" locale={locale} />
+        <ResultProblemReport locale={locale} page="/split-pdf" localeContext={locale} />
       </div>
     </main>
   );
