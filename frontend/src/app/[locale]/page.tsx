@@ -4,7 +4,6 @@ import { getAllTools, getToolById, type ToolIconName } from "@/lib/catalog";
 import { isLocale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
 import { AdSlot } from "@/components/ads/AdSlot";
-import { LeaderboardAdSlot } from "@/components/ads/LeaderboardAdSlot";
 
 function ArrowRightIcon({ size = 18 }: { size?: number }): React.ReactElement {
   return (
@@ -433,10 +432,6 @@ export default async function LocaleHomePage({
             );
           })}
         </div>
-      </section>
-
-      <section className="mx-auto max-w-[1200px] px-6 pb-6" aria-label="Advertisement">
-        <LeaderboardAdSlot pageSlug="home" label={copy.ads.label} />
       </section>
 
       <div className="mx-auto max-w-[1200px] border-t border-slate-200" />
