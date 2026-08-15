@@ -131,6 +131,7 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
               : copy.tools.compress.actions.compress}
           </button>
           <OtherTools currentTool="compress-pdf" locale={locale} />
+          <AdSlot pageSlug="compress-pdf" immediate unit="skyscraper-160x600" />
         </div>
       </main>
     );
@@ -171,6 +172,7 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
       <div className="mx-auto max-w-3xl">
         <ToolPageHeader locale={locale} toolId="compress-pdf" />
         <PrivacyNotice locale={locale} model="server" />
+        <LeaderboardAdSlot pageSlug="compress-pdf" />
         <OtherTools currentTool="compress-pdf" locale={locale} />
         {card}
         <AdSlot pageSlug="compress-pdf" phase={phase} />

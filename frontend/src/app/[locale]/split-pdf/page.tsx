@@ -227,6 +227,7 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
               : copy.tools.split.actions.split}
           </button>
           <OtherTools currentTool="split-pdf" locale={locale} />
+          <AdSlot pageSlug="split-pdf" immediate unit="skyscraper-160x600" />
         </div>
       </main>
     );
@@ -269,6 +270,7 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
       <div className="mx-auto max-w-3xl">
         <ToolPageHeader locale={locale} toolId="split-pdf" />
         <PrivacyNotice locale={locale} model="client" />
+        <LeaderboardAdSlot pageSlug="split-pdf" />
         {card}
         <AdSlot pageSlug="split-pdf" phase={phase} />
         <OtherTools currentTool="split-pdf" locale={locale} />

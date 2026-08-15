@@ -124,6 +124,7 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
             <p className="text-xs text-slate-500">{copy.tools.pdfToJpg.resolutionNote}</p>
           </div>
           <OtherTools currentTool="pdf-to-jpg" locale={locale} />
+          <AdSlot pageSlug="pdf-to-jpg" immediate unit="skyscraper-160x600" />
         </div>
       </main>
     );
@@ -166,6 +167,7 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
       <div className="mx-auto max-w-3xl">
         <ToolPageHeader locale={locale} toolId="pdf-to-jpg" />
         <PrivacyNotice locale={locale} model="server" />
+        <LeaderboardAdSlot pageSlug="pdf-to-jpg" />
         {card}
         <AdSlot pageSlug="pdf-to-jpg" phase={phase} />
         <OtherTools currentTool="pdf-to-jpg" locale={locale} />

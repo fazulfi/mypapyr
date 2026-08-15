@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { isLocale, type Locale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
+import { AdSlot } from "@/components/ads/AdSlot";
 
 export default async function PrivacyPage({
   params,
@@ -118,6 +119,9 @@ export default async function PrivacyPage({
             );
           })}
         </section>
+      </div>
+      <div className="mt-10 max-w-full overflow-hidden" aria-label="Advertisement">
+        <AdSlot pageSlug="privacy" immediate unit="banner-468x60" />
       </div>
     </div>
   );

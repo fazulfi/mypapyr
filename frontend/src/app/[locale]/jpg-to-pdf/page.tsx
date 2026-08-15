@@ -137,6 +137,7 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
             <p className="text-xs text-slate-500">{copy.tools.jpgToPdf.metadataNote}</p>
           </div>
           <OtherTools currentTool="jpg-to-pdf" locale={locale} />
+          <AdSlot pageSlug="jpg-to-pdf" immediate unit="skyscraper-160x600" />
         </div>
       </main>
     );
@@ -177,6 +178,7 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
       <div className="mx-auto max-w-3xl">
         <ToolPageHeader locale={locale} toolId="jpg-to-pdf" />
         <PrivacyNotice locale={locale} model="hybrid" />
+        <LeaderboardAdSlot pageSlug="jpg-to-pdf" />
         {card}
         <AdSlot pageSlug="jpg-to-pdf" phase={phase} />
         <OtherTools currentTool="jpg-to-pdf" locale={locale} />
