@@ -116,8 +116,9 @@ describe("ads config", () => {
     expect(ADSTERRA_HOST).toBe("https://www.highperformanceformat.com");
   });
 
-  it("allowedAdPages matches the five canonical tool slugs", () => {
+  it("allowedAdPages includes the homepage plus the five canonical tool slugs (owner decision 2026-08-15)", () => {
     expect(allowedAdPages).toEqual([
+      "home",
       "compress-pdf",
       "merge-pdf",
       "split-pdf",

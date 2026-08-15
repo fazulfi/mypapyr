@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getAllTools, getToolById, type ToolIconName } from "@/lib/catalog";
 import { isLocale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
+import { AdSlot } from "@/components/ads/AdSlot";
 
 function ArrowRightIcon({ size = 18 }: { size?: number }): React.ReactElement {
   return (
@@ -534,6 +535,10 @@ export default async function LocaleHomePage({
             </details>
           ))}
         </div>
+      </section>
+
+      <section className="mx-auto max-w-[760px] px-6 pb-24" aria-label="Advertisement">
+        <AdSlot pageSlug="home" />
       </section>
     </>
   );

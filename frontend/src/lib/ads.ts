@@ -16,10 +16,12 @@ export const ADSTERRA_KEY = "b552110bd65e7690ed89a04a1d654898";
 export const ADSTERRA_HOST = "https://www.highperformanceformat.com";
 
 /**
- * Canonical list of tool-page route slugs where ads may be rendered.
- * Ads are NEVER rendered on status, legal, support, or other non-tool pages.
+ * Canonical list of page slugs where ads may be rendered: the five tool
+ * pages plus the homepage (owner decision 2026-08-15). Ads are NEVER
+ * rendered on status, legal, support, or other non-tool pages.
  */
 export const allowedAdPages: readonly string[] = Object.freeze([
+  "home",
   "compress-pdf",
   "merge-pdf",
   "split-pdf",

@@ -459,4 +459,15 @@ describe("T4 rich homepage restore (hero pill, trust badges, card footer, privac
       expect(markup).toContain('<rect x="3" y="11" width="18" height="11" rx="2" ry="2">');
     }
   });
+  it("renders the ad slot section after the FAQ (owner decision 2026-08-15)", async () => {
+    for (const locale of locales) {
+      const markup = await renderHome(locale);
+      // The homepage renders an ad section (aria-label) containing the AdSlot
+      // placeholder, positioned after the FAQ section.
+      expect(markup).toContain('aria-label="Advertisement"');
+      const faqIdx = markup.indexOf("Frequently");
+      const adIdx = markup.indexOf('aria-label="Advertisement"');
+      expect(adIdx).toBeGreaterThan(faqIdx);
+    }
+  });
 });
