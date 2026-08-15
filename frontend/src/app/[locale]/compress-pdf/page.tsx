@@ -169,8 +169,8 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
         <ToolPageHeader locale={locale} toolId="compress-pdf" />
         <PrivacyNotice locale={locale} model="server" />
         <OtherTools currentTool="compress-pdf" locale={locale} />
-        <AdSlot pageSlug="compress-pdf" phase={phase} />
         {card}
+        <AdSlot pageSlug="compress-pdf" phase={phase} />
       </div>
     </main>
   );

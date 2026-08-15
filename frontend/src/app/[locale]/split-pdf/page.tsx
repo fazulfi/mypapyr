@@ -266,8 +266,8 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
       <div className="mx-auto max-w-3xl">
         <ToolPageHeader locale={locale} toolId="split-pdf" />
         <PrivacyNotice locale={locale} model="client" />
-        <AdSlot pageSlug="split-pdf" phase={phase} />
         {card}
+        <AdSlot pageSlug="split-pdf" phase={phase} />
         <OtherTools currentTool="split-pdf" locale={locale} />
       </div>
     </main>

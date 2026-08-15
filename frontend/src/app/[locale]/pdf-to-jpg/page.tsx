@@ -163,8 +163,8 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
       <div className="mx-auto max-w-3xl">
         <ToolPageHeader locale={locale} toolId="pdf-to-jpg" />
         <PrivacyNotice locale={locale} model="server" />
-        <AdSlot pageSlug="pdf-to-jpg" phase={phase} />
         {card}
+        <AdSlot pageSlug="pdf-to-jpg" phase={phase} />
         <OtherTools currentTool="pdf-to-jpg" locale={locale} />
       </div>
     </main>

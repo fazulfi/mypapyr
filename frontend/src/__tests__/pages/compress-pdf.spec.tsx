@@ -187,6 +187,20 @@ describe("CompressPdfTool polling / result states", () => {
     expect(screen.getByRole("button", { name: copy.reset.processAnother })).toBeTruthy();
   });
 
+  it("renders the ad slot after the download control in the done state (FR/DEC-151)", async () => {
+    pollingWithStatus({ state: "done", messageKey: null, retryable: false, outputCount: 1 });
+    stubFetch("task-comp-ads");
+    await submitPdf("en");
+
+    const copy = getMessages("en");
+    const download = await screen.findByRole("button", { name: copy.states.download });
+    const adSlot = await waitFor(() => document.getElementById("papyr-adsterra-slot"));
+    expect(adSlot).toBeTruthy();
+    // The ad placeholder must come after the primary download control in DOM
+    // order so it never precedes or wraps the result/download experience.
+    expect(download.compareDocumentPosition(adSlot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("renders the localized error card with the stable message key on failure", async () => {
     pollingWithStatus({
       state: "failed",

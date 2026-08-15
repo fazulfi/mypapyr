@@ -174,8 +174,8 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
       <div className="mx-auto max-w-3xl">
         <ToolPageHeader locale={locale} toolId="jpg-to-pdf" />
         <PrivacyNotice locale={locale} model="hybrid" />
-        <AdSlot pageSlug="jpg-to-pdf" phase={phase} />
         {card}
+        <AdSlot pageSlug="jpg-to-pdf" phase={phase} />
         <OtherTools currentTool="jpg-to-pdf" locale={locale} />
       </div>
     </main>

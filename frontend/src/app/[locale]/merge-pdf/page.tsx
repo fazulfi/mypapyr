@@ -173,8 +173,8 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
       <div className="mx-auto max-w-3xl">
         <ToolPageHeader locale={locale} toolId="merge-pdf" />
         <PrivacyNotice locale={locale} model="client" />
-        <AdSlot pageSlug="merge-pdf" phase={phase} />
         {card}
+        <AdSlot pageSlug="merge-pdf" phase={phase} />
         <OtherTools currentTool="merge-pdf" locale={locale} />
       </div>
     </main>
