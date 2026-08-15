@@ -12,6 +12,7 @@
  * - Non-allowed pages: slot returns null, nothing breaks.
  */
 import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import { cleanup, render, act } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -25,6 +26,7 @@ import {
 } from "@/lib/ads";
 
 import { AdSlot } from "@/components/ads/AdSlot";
+import { LeaderboardAdSlot } from "@/components/ads/LeaderboardAdSlot";
 import {
   isAfterPrimaryExperience,
   isSeparatedFromDownload,
@@ -533,5 +535,19 @@ describe("ad placement guards integration", () => {
       expect(el.style.width).toBe("300px");
       expect(el.style.height).toBe("250px");
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Responsive leaderboard
+// ---------------------------------------------------------------------------
+
+describe("LeaderboardAdSlot (responsive)", () => {
+  it("renders the SSR-safe mobile unit before hydration (320x50)", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(LeaderboardAdSlot, { pageSlug: "home" }),
+    );
+    expect(markup).toContain("width:320px");
+    expect(markup).toContain("height:50px");
   });
 });

@@ -22,7 +22,10 @@ export default async function ContactPage({
       <div className="mt-8">
         <ContactForm locale={locale} context={{ page: "/contact", locale }} />
       </div>
-      <div className="mt-10 flex flex-col items-center gap-6" aria-label="Advertisement">
+      <div
+        className="mt-10 flex max-w-full flex-col items-center gap-6 overflow-hidden"
+        aria-label="Advertisement"
+      >
         <AdSlot pageSlug="contact" immediate unit="banner-468x60" />
         <AdSlot pageSlug="contact" immediate unit="half-page-160x300" />
       </div>

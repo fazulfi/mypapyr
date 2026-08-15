@@ -121,7 +121,10 @@ export function FAQContent({ locale }: { locale: string }): React.ReactElement {
           {copy.faqPage.ctaEmail}
         </a>
       </div>
-      <div className="mt-10 flex flex-col items-center gap-6" aria-label="Advertisement">
+      <div
+        className="mt-10 flex max-w-full flex-col items-center gap-6 overflow-hidden"
+        aria-label="Advertisement"
+      >
         <AdSlot pageSlug="faq" immediate unit="banner-468x60" />
         <AdSlot pageSlug="faq" immediate unit="half-page-160x300" />
       </div>

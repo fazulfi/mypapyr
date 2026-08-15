@@ -5,6 +5,7 @@ import { use } from "react";
 
 import { ToolPageHeader } from "@/components/ToolPageHeader";
 import { AdSlot } from "@/components/ads/AdSlot";
+import { LeaderboardAdSlot } from "@/components/ads/LeaderboardAdSlot";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
 import OtherTools from "@/components/OtherTools";
 import { ResultProblemReport } from "@/components/support/ResultProblemReport";
@@ -109,7 +110,7 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
         <div className="mx-auto max-w-3xl">
           <ToolPageHeader locale={locale} toolId="compress-pdf" />
           <PrivacyNotice locale={locale} model="server" />
-          <AdSlot pageSlug="compress-pdf" immediate unit="leaderboard-728x90" />
+          <LeaderboardAdSlot pageSlug="compress-pdf" />
           <Dropzone
             files={files}
             onChange={setFiles}

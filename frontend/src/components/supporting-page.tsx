@@ -45,7 +45,7 @@ export function SupportingPageContent({
       <h1>{copy.title}</h1>
       <p>{copy.description}</p>
       {pageSlug !== undefined ? (
-        <div className="mt-8" aria-label="Advertisement">
+        <div className="mt-8 max-w-full overflow-hidden" aria-label="Advertisement">
           <AdSlot pageSlug={pageSlug} immediate unit="banner-468x60" />
         </div>
       ) : null}

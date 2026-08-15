@@ -9,6 +9,7 @@ import { getMessages } from "@/lib/messages";
 import { ToolPageHeader } from "@/components/ToolPageHeader";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { AdSlot } from "@/components/ads/AdSlot";
+import { LeaderboardAdSlot } from "@/components/ads/LeaderboardAdSlot";
 import OtherTools from "@/components/OtherTools";
 import { ResultProblemReport } from "@/components/support/ResultProblemReport";
 import { Dropzone } from "@/components/uploader/Dropzone";
@@ -131,7 +132,7 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
         <div className="mx-auto max-w-3xl">
           <ToolPageHeader locale={locale} toolId="split-pdf" />
           <PrivacyNotice locale={locale} model="client" />
-          <AdSlot pageSlug="split-pdf" immediate unit="leaderboard-728x90" />
+          <LeaderboardAdSlot pageSlug="split-pdf" />
           <Dropzone
             files={files}
             onChange={setFiles}
