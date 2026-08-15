@@ -8,6 +8,11 @@ interface LanguageSwitcherProps {
   getEquivalentPath: (targetLocale: Locale) => string;
 }
 
+/**
+ * Language selector rendered as a native <select> so it is keyboard- and
+ * screen-reader-friendly by default. Changing the option navigates to the
+ * equivalent path in the chosen locale (preserves tool route + subpath).
+ */
 export function LanguageSwitcher({
   currentLocale,
   a11yLabel,
@@ -15,26 +20,25 @@ export function LanguageSwitcher({
   getEquivalentPath,
 }: LanguageSwitcherProps): React.ReactElement {
   return (
-    <fieldset aria-label={a11yLabel}>
-      <legend className="sr-only">{a11yLabel}</legend>
-      <div className="flex items-center gap-1">
+    <label className="inline-flex items-center gap-1">
+      <span className="sr-only">{a11yLabel}</span>
+      <select
+        aria-label={a11yLabel}
+        value={currentLocale}
+        onChange={(event) => {
+          const target = event.target.value as Locale;
+          if (target !== currentLocale) {
+            window.location.href = getEquivalentPath(target);
+          }
+        }}
+        className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700 transition-colors hover:border-slate-300 focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy"
+      >
         {locales.map((locale) => (
-          <a
-            key={locale}
-            href={getEquivalentPath(locale)}
-            aria-current={locale === currentLocale ? "page" : undefined}
-            lang={locale}
-            hrefLang={locale}
-            className={
-              locale === currentLocale
-                ? "rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-navy"
-                : "rounded-md px-2 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
-            }
-          >
+          <option key={locale} value={locale} lang={locale}>
             {languageLabels[locale]}
-          </a>
+          </option>
         ))}
-      </div>
-    </fieldset>
+      </select>
+    </label>
   );
 }

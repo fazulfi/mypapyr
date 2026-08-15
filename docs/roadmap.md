@@ -2,7 +2,7 @@
 
 This roadmap distinguishes code available in the repository from intended product capability. It is directional, not a release commitment.
 
-Status note: the work described under "In this feature branch" below is implemented on `feat/phase-5-production-readiness`, not yet merged to `main`, and not deployed. Production still runs the prior Phase 4 release, whose readiness probe reports unavailable until the Phase 5 topology (single Compose project, worker, scanner, cleanup, monitor) is deployed under separate authorization.
+Status note: the work described under "In this feature branch" below is implemented on the phase-5 and phase-6 feature branches, not yet merged to `main`, and not deployed. Production still runs the prior Phase 4 release, whose readiness probe reports unavailable until the Phase 5 topology (single Compose project, worker, scanner, cleanup, monitor) is deployed under separate authorization. The Phase 6 privacy, analytics, advertising, and support work is frontend-side and verified by unit + coverage gates on its branch.
 
 ## Available foundation
 
@@ -33,7 +33,7 @@ The shared trilingual shell that lands the locale routing, accessibility navigat
 
 ## In this feature branch: five tools end to end (pending merge and deployment)
 
-The following is implemented on `feat/phase-5-production-readiness` and verified by the branch's unit, integration, and E2E gates. It is not merged to `main` and not active in production.
+The following is implemented on the phase-5 feature branch and verified by the branch's unit, integration, and E2E gates. It is not merged to `main` and not active in production.
 
 - Five localized tool pages (English, Spanish, Indonesian) with localized slugs — `/en/compress-pdf` (`/es/comprimir-pdf`, `/id/kompres-pdf`), `/en/merge-pdf` (`/es/combinar-pdf`, `/id/gabungkan-pdf`), `/en/split-pdf` (`/es/dividir-pdf`, `/id/pisahkan-pdf`), `/en/jpg-to-pdf` (`/es/jpg-a-pdf`, `/id/gambar-ke-pdf`), `/en/pdf-to-jpg` (`/es/pdf-a-jpg`, `/id/pdf-ke-gambar`) — plus canonical EN route aliases for translated slugs, a shared task download helper, and Playwright E2E coverage of the five tools.
 - Upload and enqueue admission on all five tool routers, with the five-tool executor registry (`compress-pdf`, `merge-pdf`, `split-pdf`, `jpg-to-pdf`, `pdf-to-jpg`) dispatching worker jobs; pinned conversion engines and Ghostscript 10.07.1 in the worker image; a truthful worker entrypoint with health probe and graceful shutdown.
@@ -41,6 +41,17 @@ The following is implemented on `feat/phase-5-production-readiness` and verified
 - Unified Compose topology (profiles `app`, `edge`, `queue`) covering `api`, `nginx`, `redis`, `workers`, `clamd`, `cleanup`, and `monitor` with digest-form image variables.
 - R2 lifecycle policy gate: the approved two-rule contract (one-day `tmp/` expiration safety net and one-day incomplete-multipart abort) is verified by `python -m app.ops.r2_lifecycle --check deploy/r2-lifecycle.json` / `scripts/check-r2-lifecycle.sh`; applying the policy to the live bucket stays a separately authorized deploy-time action.
 - Operations entrypoints implemented but not yet active in production: `python -m app.ops.cleanup_loop` (bounded cleanup passes with graceful shutdown) and `python -m app.ops.monitor` (eight health checks: api readiness, redis, clamd, queue backlog, queue PEL, worker health, cleanup freshness, R2 ops probe) with stable exit codes 0/1/2.
+
+## In this feature branch: privacy, analytics, advertising, and support (P6, pending merge and deployment)
+
+The following Phase 6 work is implemented on the `feat/phase-6-privacy-analytics-support` branch and verified by 710 frontend tests across 47 files (statements 92.11%, branches 88.09%, functions 93.24%, lines 93.58%) and 1346 backend tests with ruff and mypy strict clean. It is not merged to `main` and not active in production.
+
+- **Analytics schema, redaction, and leakage tests (PT-01)** — a closed-field event schema (`frontend/src/lib/analytics-schema.ts`) enumerating allowed fields (page, locale, referrer, UTM, tool, mode, coarse size bands, funnel, timing, error categories, outcomes, web vitals, ad presence) and a forbidden list (filenames, object keys, signed URLs, passwords, contents, previews, raw error and message payloads, fingerprints). `frontend/src/lib/analytics.ts` provides a redaction pipeline (`redactPayload` strips non-allowed keys and coerces filename-like values), a closed `errorCategory` enum (raw errors are never sent), coarse size-band enforcement (never exact bytes), opt-out via DNT / Global Privacy Control / app flag, SSR-safe wrappers, and a `useAnalytics` hook. The leakage test suite (`frontend/src/__tests__/leakage.test.ts`, 36 tests) verifies the schema and redaction contracts.
+- **Advertising slots with placement guards (PT-02)** — an Adsterra native unit (300x250) configured once (`frontend/src/lib/ads.ts`, `frontend/src/components/ads/AdSlot.tsx`, `frontend/src/components/ads/placement.ts`). Reserved dimensions prevent layout shift; lazy client-side script injection triggers only after the slot scrolls into view; the slot renders only on the five tool pages and only after the primary task experience (after the result/download card, per FR/DEC-151, enforced by a DOM-order guard test), never beside the Download control, and never on status, legal, or support surfaces. Wired into all five tool pages.
+- **Contact form and result-problem report (PT-03)** — a trilingual (EN/ES/ID) categorized contact form (`frontend/src/app/[locale]/contact/page.tsx`, `frontend/src/components/support/ContactForm.tsx`, `frontend/src/lib/support.ts`) and a result-local problem report (`frontend/src/components/support/ResultProblemReport.tsx`) wired into all five tool pages. Minimal data model (closed-enum category, message ≤ 2000 characters, optional email, sanitized page/locale context; no names, phones, or attachments). Anti-spam: honeypot, client rate-limit, Cloudflare Turnstile (server-side siteverify on the backend endpoint). Redaction-safe errors, locale-matched confirmations, and delivery-monitoring counts only. Backend delivery: `POST /api/v1/support/contact` (`backend/app/routers/support.py`, `backend/app/services/contact_service.py`) validates server-side, rate-limits per origin, and delivers via the Cloudflare Email Sending REST API with server-side secrets, async best-effort semantics (202 accepted), counts-only metrics, and no message/email content in logs.
+- **Password handling verification (PT-04)** — memory-only password entry (`frontend/src/components/PasswordInput.tsx`, `frontend/src/lib/password.ts`) that appears only for encrypted inputs, validates each locked source independently for Merge, distinguishes wrong-password from corrupt/unsupported errors, and never writes password material to analytics, logs, URLs, or storage.
+
+Unit-test gating: frontend branch coverage raised from a pre-existing ~74% sub-80 baseline to 88.09% branches (statements 92.11%, functions 93.24%, lines 93.58%), meeting the 80% CI threshold; backend coverage and lint/type gates pass on the branch.
 
 ## Specified launch catalogue
 
@@ -58,6 +69,7 @@ Each tool is planned with browser-first capability detection, a transparent serv
 
 - Abuse controls, incident alerts, and recovery procedures beyond the branch's monitor and cleanup entrypoints.
 - Separately authorized production release and deployment of the branch topology (single Compose project, worker, scanner, cleanup, monitor), including the R2 lifecycle application and rollback drills.
+- Full legal, support, and status content and functionality beyond the route shells and the Phase 6 contact form, and the blog publishing programme.
 
 ## Changelog notes
 

@@ -232,22 +232,27 @@ describe("SH-05 Navbar — DOM interaction", () => {
   });
 
   describe("equivalent locale path", () => {
-    it("LanguageSwitcher links have correct locale-prefixed hrefs", () => {
+    it("LanguageSwitcher renders a native select with one option per locale", () => {
       container = render(<Navbar locale="en" />);
 
-      const langLinks = container.querySelectorAll("a[lang]");
-      const hrefs = Array.from(langLinks).map((a) => a.getAttribute("href"));
-      expect(hrefs).toContain("/en/compress-pdf");
-      expect(hrefs).toContain("/es/comprimir-pdf");
-      expect(hrefs).toContain("/id/kompres-pdf");
+      const select = container.querySelector("select");
+      expect(select).toBeTruthy();
+      const options = Array.from(select!.querySelectorAll("option"));
+      const langs = options.map((o) => o.getAttribute("lang"));
+      expect(langs).toContain("en");
+      expect(langs).toContain("es");
+      expect(langs).toContain("id");
     });
 
-    it("LanguageSwitcher marks current locale with aria-current", () => {
+    it("LanguageSwitcher marks current locale as the selected option", () => {
       container = render(<Navbar locale="es" />);
 
-      const currentLink = container.querySelector('a[aria-current="page"]');
-      expect(currentLink).toBeTruthy();
-      expect(currentLink!.textContent).toBe("Español");
+      const select = container.querySelector("select") as HTMLSelectElement;
+      expect(select).toBeTruthy();
+      expect(select.value).toBe("es");
+      const option = Array.from(select.options).find((o) => o.value === "es");
+      expect(option).toBeTruthy();
+      expect(option!.textContent).toBe("Español");
     });
 
     it("active tool link gets accent styling in dropdown", () => {

@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { use } from "react";
 
+import { ToolPageHeader } from "@/components/ToolPageHeader";
+import { PrivacyNotice } from "@/components/PrivacyNotice";
+import { AdSlot } from "@/components/ads/AdSlot";
+import OtherTools from "@/components/OtherTools";
+import { ResultProblemReport } from "@/components/support/ResultProblemReport";
 import type { Locale } from "@/lib/i18n";
 import { defaultLocale, isLocale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
@@ -103,9 +108,8 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
     return (
       <main className="min-h-screen bg-gray-50 p-8">
         <div className="mx-auto max-w-3xl">
-          <h1 className="mb-2 text-3xl font-bold">{copy.tools.jpgToPdf.title}</h1>
-          <p className="mb-6 text-slate-600">{copy.tools.jpgToPdf.description}</p>
-
+          <ToolPageHeader locale={locale} toolId="jpg-to-pdf" />
+          <PrivacyNotice locale={locale} model="hybrid" />
           <Dropzone
             files={files}
             onChange={setFiles}
@@ -115,7 +119,6 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
             disabled={phase === "uploading"}
             locale={locale}
           />
-
           <button
             type="button"
             onClick={() => void handleSubmit(files)}
@@ -131,6 +134,7 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
             <p className="text-xs text-slate-600">{copy.tools.jpgToPdf.paperNote}</p>
             <p className="text-xs text-slate-500">{copy.tools.jpgToPdf.metadataNote}</p>
           </div>
+          <OtherTools currentTool="jpg-to-pdf" locale={locale} />
         </div>
       </main>
     );
@@ -169,8 +173,12 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
   return (
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-3xl">
-        <h1 className="mb-6 text-3xl font-bold">{copy.tools.jpgToPdf.title}</h1>
+        <ToolPageHeader locale={locale} toolId="jpg-to-pdf" />
+        <PrivacyNotice locale={locale} model="hybrid" />
         {card}
+        <AdSlot pageSlug="jpg-to-pdf" phase={phase} />
+        <OtherTools currentTool="jpg-to-pdf" locale={locale} />
+        <ResultProblemReport locale={locale} page="/jpg-to-pdf" localeContext={locale} />
       </div>
     </main>
   );

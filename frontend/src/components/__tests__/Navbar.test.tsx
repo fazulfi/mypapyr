@@ -109,39 +109,49 @@ describe("SH-05 Navbar — structure and accessibility", () => {
     expect(markup).toContain('aria-label="Papyr"');
   });
 
-  it("renders desktop category buttons for Basic and Conversion", () => {
+  it("renders desktop category buttons for Basic, Security, Enhancement, and Conversion", () => {
     for (const locale of locales) {
       const copy = getMessages(locale);
       const markup = renderToStaticMarkup(<Navbar locale={locale} />);
       expect(markup).toContain(copy.nav.basic);
+      expect(markup).toContain(copy.nav.security);
+      expect(markup).toContain(copy.nav.enhancement);
       expect(markup).toContain(copy.nav.conversion);
     }
   });
 
-  it("renders exactly two category buttons", () => {
+  it("renders exactly four category buttons", () => {
     const markup = renderToStaticMarkup(<Navbar locale="en" />);
     const basicIdx = markup.indexOf(messages.en.nav.basic);
+    const securityIdx = markup.indexOf(messages.en.nav.security);
+    const enhancementIdx = markup.indexOf(messages.en.nav.enhancement);
     const conversionIdx = markup.indexOf(messages.en.nav.conversion);
     expect(basicIdx).toBeGreaterThan(0);
+    expect(securityIdx).toBeGreaterThan(0);
+    expect(enhancementIdx).toBeGreaterThan(0);
     expect(conversionIdx).toBeGreaterThan(0);
   });
 
-  it("exports getNavCategories with exactly five canonical tools across two categories", () => {
+  it("exports getNavCategories with the four canonical categories", () => {
     const categories = getNavCategories("en");
-    expect(categories).toHaveLength(2);
+    expect(categories).toHaveLength(4);
 
     const allTools = categories.flatMap((c) => c.tools.map((t) => t.id));
-    expect(allTools).toHaveLength(5);
+    expect(allTools).toHaveLength(9);
     expect(allTools).toEqual([
       "compress-pdf",
       "merge-pdf",
       "split-pdf",
+      "protect",
+      "unlock",
+      "watermark",
+      "sign",
       "jpg-to-pdf",
       "pdf-to-jpg",
     ]);
   });
 
-  it("groups Basic tools (compress, merge, split) and Convert tools (jpg-to-pdf, pdf-to-jpg)", () => {
+  it("groups tools into Basic, Security, Enhancement, and Conversion", () => {
     const categories = getNavCategories("en");
     expect(categories[0].label).toBe("Basic");
     expect(categories[0].tools.map((t) => t.id)).toEqual([
@@ -149,16 +159,34 @@ describe("SH-05 Navbar — structure and accessibility", () => {
       "merge-pdf",
       "split-pdf",
     ]);
-    expect(categories[1].label).toBe("Conversion");
-    expect(categories[1].tools.map((t) => t.id)).toEqual(["jpg-to-pdf", "pdf-to-jpg"]);
+    expect(categories[1].label).toBe("Security");
+    expect(categories[1].tools.map((t) => t.id)).toEqual(["protect", "unlock"]);
+    expect(categories[2].label).toBe("Enhancement");
+    expect(categories[2].tools.map((t) => t.id)).toEqual(["watermark", "sign"]);
+    expect(categories[3].label).toBe("Conversion");
+    expect(categories[3].tools.map((t) => t.id)).toEqual(["jpg-to-pdf", "pdf-to-jpg"]);
   });
 
-  it("provides localized category labels for every locale", () => {
+  it("legacy category tools link to the localized tool-unavailable route", () => {
+    for (const locale of locales) {
+      const categories = getNavCategories(locale);
+      const securityTools = categories[1].tools;
+      const enhancementTools = categories[2].tools;
+      for (const tool of [...securityTools, ...enhancementTools]) {
+        expect(tool.hrefs[locale]).toBe(`/${locale}/tool-unavailable?tool=${tool.id}`);
+      }
+    }
+  });
+
+  it("provides localized category labels for every locale across all four categories", () => {
     for (const locale of locales) {
       const copy = getMessages(locale);
       const categories = getNavCategories(locale);
+      expect(categories).toHaveLength(4);
       expect(categories[0].label).toBe(copy.nav.basic);
-      expect(categories[1].label).toBe(copy.nav.conversion);
+      expect(categories[1].label).toBe(copy.nav.security);
+      expect(categories[2].label).toBe(copy.nav.enhancement);
+      expect(categories[3].label).toBe(copy.nav.conversion);
     }
   });
 
@@ -222,6 +250,8 @@ describe("SH-05 Navbar — structure and accessibility", () => {
       const copy = getMessages(locale);
       const markup = renderToStaticMarkup(<Navbar locale={locale} />);
       expect(markup).toContain(copy.nav.basic);
+      expect(markup).toContain(copy.nav.security);
+      expect(markup).toContain(copy.nav.enhancement);
       expect(markup).toContain(copy.nav.conversion);
       expect(markup).toContain(copy.nav.cta);
       expect(markup).toContain(copy.a11y.navToggle);

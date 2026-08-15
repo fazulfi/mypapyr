@@ -1,3 +1,12 @@
+vi.mock("@vercel/analytics/next", () => ({
+  Analytics: vi.fn(() => null),
+}));
+vi.mock("@vercel/speed-insights/next", () => ({
+  SpeedInsights: vi.fn(() => null),
+}));
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+
 import { renderToStaticMarkup } from "react-dom/server";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -267,5 +276,17 @@ describe("SH-05/06 locale shell glue", () => {
     const markup = await renderShell("en");
     expect(markup.match(/<main/g)).toHaveLength(1);
     expect(markup).toContain('id="main-content"');
+  });
+});
+
+describe("T8 analytics instrumentation", () => {
+  it("mounts Vercel Analytics and Speed Insights when rendering the shell", async () => {
+    const analyticsMock = vi.mocked(Analytics);
+    const speedMock = vi.mocked(SpeedInsights);
+
+    await renderShell("en");
+
+    expect(analyticsMock).toHaveBeenCalled();
+    expect(speedMock).toHaveBeenCalled();
   });
 });

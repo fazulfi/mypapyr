@@ -23,7 +23,7 @@
 
 **Fast, private PDF tools.** Compress, merge, split, convert — five focused utilities that respect the user's time, files, and language. No accounts. No cloud history. Browser-first processing, with an explicit server path where native engines are required.
 
-Papyr is a specification-first platform. This repository is the tested engineering foundation for the product: a strict Next.js web application with a shared trilingual shell, a typed FastAPI service, deployment templates, and security-gated continuous integration. The shared trilingual shell is available: English, Spanish, and Indonesian locale routing, accessible navigation, supporting route shells, and a localized 404 are implemented and tested. The five PDF tool pages (compress, merge, split, JPG to PDF, PDF to JPG) are implemented in this feature branch and tested with localized routes; the backend service contracts including upload/enqueue endpoints, worker processing, threat scanning, R2 object lifecycle, cleanup coordination, and monitoring services are implemented and passing local gates. Production release requires merge to main and separate authorization—this branch implements the capability pending merge/deployment. Progress is tracked on the [roadmap](docs/roadmap.md).
+Papyr is a specification-first platform. This repository is the tested engineering foundation for the product: a strict Next.js web application with a shared trilingual shell, a typed FastAPI service, deployment templates, and security-gated continuous integration. The shared trilingual shell is available: English, Spanish, and Indonesian locale routing, accessible navigation, supporting route shells, and a localized 404 are implemented and tested. The five PDF tool workflows (compress, merge, split, JPG to PDF, PDF to JPG) are implemented and tested in this feature branch with localized routes; the backend service contracts including upload/enqueue endpoints, worker processing, threat scanning, R2 object lifecycle, cleanup coordination, and monitoring services are implemented and passing local gates. Production release requires merge to main and separate authorization — this branch implements the capability pending merge/deployment. Progress is tracked on the [roadmap](docs/roadmap.md).
 
 **Start here:** [Product specification](docs/specifications/product.md) · [Technical architecture specification](docs/specifications/architecture.md)
 
@@ -33,7 +33,7 @@ Papyr exists to complete a common document task in seconds — without a general
 
 - **Fast and focused.** One clear primary action per page. Five tools with consistent upload, progress, and download experiences.
 - **Private by default.** Anonymous use is a specified property of the catalogue: no account, no cloud history. Documents that can be processed locally never leave the device; server work is disclosed before upload and deleted no later than one hour after upload receipt.
-- **Trilingual surface.** English, Spanish, and Indonesian are specified across every essential surface. The shared product shell that delivers them — locale routing, navigation, and supporting pages — is implemented and tested; localization across the five tool pages is also implemented in this feature branch and pending merge/deployment.
+- **Trilingual surface.** English, Spanish, and Indonesian are specified across every essential surface. The shared product shell that delivers them — locale routing, navigation, and supporting pages — is implemented and tested; localization across the five tool pages is implemented in this feature branch.
 
 ## The five specified tools
 
@@ -45,7 +45,7 @@ Papyr exists to complete a common document task in seconds — without a general
 | **JPG to PDF** | Predictable page fitting with orientation respected; PNG and WebP as launch candidates. | `/en/jpg-to-pdf`, `/es/jpg-a-pdf`, `/id/gambar-ke-pdf` |
 | **PDF to JPG** | Every requested page rendered at one documented quality profile. | `/en/pdf-to-jpg`, `/es/pdf-a-jpg`, `/id/pdf-ke-gambar` |
 
-Each tool follows the shared workflow and state model defined in the product specification, and is browser-first where practical, with an explicit, disclosed server path where native engines or stronger isolation are required. Full behavioural contracts are published in the [product specification](docs/specifications/product.md). The three localized slugs above correspond to EN (English), ES (Spanish), and ID (Indonesian) routes currently implemented in this feature branch.
+Each tool follows the shared workflow and state model defined in the product specification, and is browser-first where practical, with an explicit, disclosed server path where native engines or stronger isolation are required. Full behavioural contracts are published in the [product specification](docs/specifications/product.md). The three localized slugs above correspond to EN (English), ES (Spanish), and ID (Indonesian) routes implemented in this feature branch.
 
 ## Capability status
 
@@ -77,6 +77,11 @@ Papyr labels every claim so the repository can be read honestly: the source tree
 | Upload/enqueue endpoints, five-tool executors, worker dispatch, ClamAV threat scanning, cleanup coordination, and monitoring | In branch |
 | Shared upload, progress, error, and download experience | Planned |
 | Full legal, support, and status content and functionality | Planned |
+| Privacy-reviewed analytics schema with redaction and leakage tests (PT-01) | In branch |
+| Reserved-dimension Adsterra ad placement with layout/placement guards (PT-02) | In branch |
+| Categorized contact form and result-problem report with anti-spam (PT-03) | In branch |
+| Memory-only encrypted-PDF password handling (PT-04) | In branch |
+| Backend contact delivery endpoint with server-side validation, rate limiting, Turnstile siteverify, and Cloudflare Email Sending (PT-03) | In branch |
 | Blog publishing programme | Planned |
 | Redis queue and bounded worker processing | Available now |
 | Privacy-safe structured logging and minimal-metadata task records | Available now |
@@ -118,6 +123,8 @@ Papyr is designed around a "documents stay yours" model. The following behaviour
 - **No document data in telemetry.** Filenames, contents, passwords, extracted text, and signed URLs are excluded from logs, analytics, and alerts.
 - **Fail-closed errors.** Invalid, expired, unsupported, or unsafe work returns stable public error categories — never stack traces, engine details, or provider credentials.
 - **Hardened delivery.** CI runs format, lint, coverage, a production build, Playwright E2E, Trivy (critical and high severity), full-history gitleaks, dependency and package audits, and repository QA checks across action pins, Dockerfiles, Compose, YAML, markdown, and shell. Third-party actions are pinned to immutable commit SHAs, jobs use read-only permissions, and CI never deploys.
+
+The Phase 6 privacy, analytics, advertising, and support work extends the "no document data in telemetry" commitment to the client side: a closed-field analytics schema with a redaction pipeline and leakage tests, memory-only password handling for encrypted PDFs, and an Adsterra ad slot that never appears beside the Download control or on status/legal/support surfaces.
 
 See the [security policy](SECURITY.md) for reporting guidance and the full control inventory.
 
@@ -178,14 +185,14 @@ The unified Compose topology (`deploy/docker-compose.yml`) declares `api` (profi
 Papyr deploys in two parts, and CI is never the deployment mechanism.
 
 - **Frontend — Vercel.** The Next.js application is built and served from Vercel. The client always issues **same-origin** `/api/v1/*` requests; `frontend/next.config.ts` rewrites them to the backend origin from the build-time `NEXT_PUBLIC_API_BASE_URL` variable (default `https://api.mypapyr.com`). No CORS is needed in production because requests never leave the frontend origin.
-- **Backend — a VPS behind Nginx.** The FastAPI service runs on a VPS via Docker Compose with immutable digest images. The Compose topology (`deploy/docker-compose.yml`) declares `api` (profile `app`), `nginx` (profile `edge`), and `redis`, `workers`, `clamd`, `cleanup`, `monitor` (profile `queue`). Nginx terminates the public `api.mypapyr.com` origin and proxies to FastAPI on port 3000. Images are supplied at deploy time as immutable digest-form references (`PAPYR_API_IMAGE`, `PAPYR_WORKERS_IMAGE`, `PAPYR_CLAMD_IMAGE`); no digest is stored in source.
+- **Backend — a VPS behind Nginx.** The FastAPI service runs on a VPS via Docker Compose with immutable digest images. Nginx terminates the public `api.mypapyr.com` origin and proxies to FastAPI on port 3000. Images are supplied at deploy time as immutable digest-form references (`PAPYR_API_IMAGE`, `PAPYR_WORKERS_IMAGE`, `PAPYR_CLAMD_IMAGE`); no digest is stored in source.
 - **Rollback.** A rollout is a pointer move: redeploy the previous digest for the affected service. No database migration is involved in the current topology.
 
 Operators start at [deploy/runbook-vps.md](deploy/runbook-vps.md) (authoritative VPS deployment, environment provisioning, and rollout/rollback), with [docs/environment-variables.md](docs/environment-variables.md) for the required/optional variable contract, [docs/upgrade.md](docs/upgrade.md) for version upgrades, and [docs/ops-runbook.md](docs/ops-runbook.md) for day-to-day operations.
 
 ## Roadmap
 
-The [roadmap](docs/roadmap.md) tracks the path from this foundation, through the delivered shared trilingual shell and the remaining tool-page work, into the five-tool launch catalogue and the platform services — queue, workers, object lifecycle, and release procedures. It is directional, not a release commitment.
+The [roadmap](docs/roadmap.md) tracks the path from this foundation, through the delivered shared trilingual shell and the five-tool tool-page work, into the launch catalogue and the remaining platform services — queue, workers, object lifecycle, release procedures, and the Phase 6 privacy, analytics, advertising, and support work. It is directional, not a release commitment.
 
 **Want to shape the product?** Contributions are welcome. Start with the [contribution guide](CONTRIBUTING.md), then pick up a specification issue.
 

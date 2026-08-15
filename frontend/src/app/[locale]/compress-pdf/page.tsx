@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { use } from "react";
 
+import { ToolPageHeader } from "@/components/ToolPageHeader";
+import { AdSlot } from "@/components/ads/AdSlot";
+import { PrivacyNotice } from "@/components/PrivacyNotice";
+import OtherTools from "@/components/OtherTools";
+import { ResultProblemReport } from "@/components/support/ResultProblemReport";
 import type { Locale } from "@/lib/i18n";
 import { defaultLocale, isLocale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
@@ -102,8 +107,8 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
     return (
       <main className="min-h-screen bg-gray-50 p-8">
         <div className="mx-auto max-w-3xl">
-          <h1 className="mb-2 text-3xl font-bold">{copy.tools.compress.title}</h1>
-          <p className="mb-6 text-slate-600">{copy.tools.compress.description}</p>
+          <ToolPageHeader locale={locale} toolId="compress-pdf" />
+          <PrivacyNotice locale={locale} model="server" />
           <Dropzone
             files={files}
             onChange={setFiles}
@@ -123,6 +128,7 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
               ? copy.tools.compress.actions.uploading
               : copy.tools.compress.actions.compress}
           </button>
+          <OtherTools currentTool="compress-pdf" locale={locale} />
         </div>
       </main>
     );
@@ -161,8 +167,12 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
   return (
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-3xl">
-        <h1 className="mb-6 text-3xl font-bold">{copy.tools.compress.title}</h1>
+        <ToolPageHeader locale={locale} toolId="compress-pdf" />
+        <PrivacyNotice locale={locale} model="server" />
+        <OtherTools currentTool="compress-pdf" locale={locale} />
         {card}
+        <AdSlot pageSlug="compress-pdf" phase={phase} />
+        <ResultProblemReport locale={locale} page="/compress-pdf" localeContext={locale} />
       </div>
     </main>
   );

@@ -387,3 +387,93 @@ describe("SH-07 homepage sections copy", () => {
     }
   });
 });
+
+describe("T3 rich copy keys (Task 3 frontend foundation)", () => {
+  it("defines hero pill, split hero lines, and trust badges in every locale", () => {
+    for (const locale of locales) {
+      const h = messages[locale].home;
+      expect(h.heroPill.trim()).not.toBe("");
+      expect(h.heroLine1.trim()).not.toBe("");
+      expect(h.heroLine2.trim()).not.toBe("");
+      expect(h.trustBadges).toHaveLength(3);
+      for (const badge of h.trustBadges) {
+        expect(badge.trim()).not.toBe("");
+      }
+    }
+  });
+
+  it("localizes hero pill and hero lines per locale", () => {
+    const enPill = messages.en.home.heroPill;
+    const enLine1 = messages.en.home.heroLine1;
+    const enLine2 = messages.en.home.heroLine2;
+    expect(messages.es.home.heroPill).not.toBe(enPill);
+    expect(messages.id.home.heroPill).not.toBe(enPill);
+    expect(messages.es.home.heroLine1).not.toBe(enLine1);
+    expect(messages.id.home.heroLine1).not.toBe(enLine1);
+    expect(messages.es.home.heroLine2).not.toBe(enLine2);
+    expect(messages.id.home.heroLine2).not.toBe(enLine2);
+  });
+
+  it("localizes each trust badge per locale", () => {
+    for (let i = 0; i < 3; i++) {
+      const en = messages.en.home.trustBadges[i];
+      expect(messages.es.home.trustBadges[i]).not.toBe(en);
+      expect(messages.id.home.trustBadges[i]).not.toBe(en);
+    }
+  });
+
+  it("defines tools eyebrow, card CTA, and privacy eyebrow in every locale", () => {
+    for (const locale of locales) {
+      const h = messages[locale].home;
+      expect(h.toolsEyebrow.trim()).not.toBe("");
+      expect(h.cardCta.trim()).not.toBe("");
+      expect(h.privacyEyebrow.trim()).not.toBe("");
+    }
+  });
+
+  it("localizes tools eyebrow, card CTA, and privacy eyebrow per locale", () => {
+    expect(messages.es.home.toolsEyebrow).not.toBe(messages.en.home.toolsEyebrow);
+    expect(messages.id.home.toolsEyebrow).not.toBe(messages.en.home.toolsEyebrow);
+    expect(messages.es.home.cardCta).not.toBe(messages.en.home.cardCta);
+    expect(messages.id.home.cardCta).not.toBe(messages.en.home.cardCta);
+    expect(messages.es.home.privacyEyebrow).not.toBe(messages.en.home.privacyEyebrow);
+    expect(messages.id.home.privacyEyebrow).not.toBe(messages.en.home.privacyEyebrow);
+  });
+
+  it("defines three privacy cards with title and desc in every locale", () => {
+    for (const locale of locales) {
+      const cards = messages[locale].home.privacyCards;
+      expect(cards).toHaveLength(3);
+      for (const card of cards) {
+        expect(card.title.trim()).not.toBe("");
+        expect(card.desc.trim()).not.toBe("");
+      }
+    }
+  });
+
+  it("localizes each privacy card title and desc per locale", () => {
+    for (let i = 0; i < 3; i++) {
+      const enTitle = messages.en.home.privacyCards[i].title;
+      const enDesc = messages.en.home.privacyCards[i].desc;
+      expect(messages.es.home.privacyCards[i].title).not.toBe(enTitle);
+      expect(messages.id.home.privacyCards[i].title).not.toBe(enTitle);
+      expect(messages.es.home.privacyCards[i].desc).not.toBe(enDesc);
+      expect(messages.id.home.privacyCards[i].desc).not.toBe(enDesc);
+    }
+  });
+
+  it("defines security and enhancement nav category labels in every locale", () => {
+    for (const locale of locales) {
+      expect(messages[locale].nav.security.trim()).not.toBe("");
+      expect(messages[locale].nav.enhancement.trim()).not.toBe("");
+    }
+  });
+
+  it("localizes security and enhancement nav labels per locale", () => {
+    expect(messages.es.nav.security).not.toBe(messages.en.nav.security);
+    expect(messages.id.nav.security).not.toBe(messages.en.nav.security);
+    expect(messages.es.nav.enhancement).not.toBe(messages.en.nav.enhancement);
+    // Reference keeps id nav.enhancement as the English "Enhancement" verbatim.
+    expect(messages.id.nav.enhancement).toBe(messages.en.nav.enhancement);
+  });
+});

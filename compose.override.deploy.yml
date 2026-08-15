@@ -1,0 +1,30 @@
+# Production deployment override for papyr app+queue activation.
+# Augments the immutable release docker-compose.yml without modifying it.
+#
+# Operational adjustments (documented; not credential changes):
+#   1. api: publish loopback port 3016 for host health verification.
+#   2. clamd: add minimal capabilities required by the official ClamAV image
+#      /init entrypoint (chown /var/lib/clamav, create /run/clamav) which the
+#      committed cap_drop: [ALL] posture otherwise blocks.
+#   3. cleanup/monitor: disable the inherited API-image HTTP healthcheck; these
+#      are loop processes (not HTTP servers), so that probe is inapplicable and
+#      would report a perpetual false-unhealthy. Crash recovery uses restart policy.
+#
+# The credential env file (.env) is IMMUTABLE and is never written here.
+services:
+  api:
+    ports:
+      - "127.0.0.1:3016:3000"
+  clamd:
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - FOWNER
+      - DAC_OVERRIDE
+  cleanup:
+    healthcheck:
+      disable: true
+  monitor:
+    healthcheck:
+      disable: true

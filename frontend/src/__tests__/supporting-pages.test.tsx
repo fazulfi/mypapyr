@@ -1,3 +1,9 @@
+vi.mock("@vercel/analytics/next", () => ({
+  Analytics: () => null,
+}));
+vi.mock("@vercel/speed-insights/next", () => ({
+  SpeedInsights: () => null,
+}));
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -24,7 +30,6 @@ import LocaleLayout from "../app/[locale]/layout";
 import BlogPage from "../app/[locale]/blog/page";
 import ContactPage from "../app/[locale]/contact/page";
 import CookiesAdvertisingPage from "../app/[locale]/cookies-advertising/page";
-import PrivacyPage from "../app/[locale]/privacy/page";
 import RoadmapPage from "../app/[locale]/roadmap/page";
 import StatusPage from "../app/[locale]/status/page";
 import TermsPage from "../app/[locale]/terms/page";
@@ -33,7 +38,6 @@ import { locales } from "../lib/i18n";
 import { getMessages, messages } from "../lib/messages";
 
 const supportingPages = [
-  { route: "privacy", key: "privacy", Component: PrivacyPage },
   { route: "terms", key: "terms", Component: TermsPage },
   { route: "cookies-advertising", key: "cookiesAdvertising", Component: CookiesAdvertisingPage },
   { route: "contact", key: "contact", Component: ContactPage },
@@ -57,7 +61,17 @@ describe("SH-08 supporting surface shells", () => {
       for (const locale of locales) {
         const markup = await renderPage(Component, locale);
         const title = getMessages(locale).pages[key].title;
-        expect(markup).toContain(renderToStaticMarkup(createElement("h1", null, title)));
+        // renderToStaticMarkup escapes HTML entities, so match the escaped version.
+        const escapedTitle = title
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+        // Contact is a rich page and renders the title inside a classed h1;
+        // assert the heading text is present in the first h1 rather than
+        // relying on the byte-exact shell markup.
+        const h1 = markup.match(/<h1[^>]*>([^<]*)<\/h1>/);
+        expect(h1).not.toBeNull();
+        expect(h1![1]).toContain(escapedTitle);
       }
     }
   });
@@ -146,8 +160,9 @@ describe("SH-08 supporting surface shells", () => {
 });
 
 describe("SH-08 shared supporting-page contract", () => {
-  it("renders every route byte-identically to the shared SupportingPageContent renderer", async () => {
+  it("renders every route (except contact) byte-identically to the shared SupportingPageContent renderer", async () => {
     for (const { Component, key } of supportingPages) {
+      if (key === "contact") continue; // Contact is a rich page with form, not a thin shell
       for (const locale of locales) {
         const pageMarkup = await renderPage(Component, locale);
         const sharedMarkup = renderToStaticMarkup(

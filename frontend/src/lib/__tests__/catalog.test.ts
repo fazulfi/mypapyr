@@ -3,7 +3,14 @@ import { describe, expect, it } from "vitest";
 import { locales, type Locale } from "../i18n";
 import { productStatus } from "../product-status";
 import { TOOL_IDS } from "../tool-ids";
-import { getAllTools, getToolById, getToolHrefs, toolCatalog, type CatalogTool } from "../catalog";
+import {
+  getAllTools,
+  getLegacyTools,
+  getToolById,
+  getToolHrefs,
+  toolCatalog,
+  type CatalogTool,
+} from "../catalog";
 
 // SH-04 contract, grounded in read-only canonical sources at f4b792c (R-15 slug
 // table; product UX §8.2/§12 EN identities; legacy ALL_TOOLS §9.3 ID labels).
@@ -238,5 +245,96 @@ describe("single authoritative identity (SH-04 review fixes)", () => {
     const first: CatalogTool = toolCatalog[0];
     const hrefs: Record<Locale, string> = first.hrefs;
     expect(hrefs.en).toBe("/en/compress-pdf");
+  });
+});
+
+// T3 (Task 3 frontend foundation): the eight deferred legacy tools (DEC-194)
+// are catalogued for 410 disposition but must never surface as active tools.
+const LEGACY_TOOL_IDS = [
+  "rotate",
+  "protect",
+  "unlock",
+  "watermark",
+  "sign",
+  "pdf-to-word",
+  "ocr",
+  "pdf-to-excel",
+] as const;
+
+describe("legacy tool catalog (T3, DEC-194)", () => {
+  it("exposes exactly the eight legacy tools, each flagged legacy: true", () => {
+    const legacy = getLegacyTools();
+    expect(legacy).toHaveLength(8);
+    expect(legacy.map((t) => t.id)).toEqual([...LEGACY_TOOL_IDS]);
+    for (const tool of legacy) {
+      expect(tool.legacy).toBe(true);
+    }
+  });
+
+  it("keeps every legacy tool out of the active catalog and getAllTools", () => {
+    const activeIds = getAllTools().map((t) => t.id);
+    expect(activeIds).toHaveLength(5);
+    for (const id of LEGACY_TOOL_IDS) {
+      expect(activeIds).not.toContain(id);
+    }
+  });
+
+  it("carries the full catalog shape per legacy tool (hrefs, labels, description, icon)", () => {
+    for (const tool of getLegacyTools()) {
+      expect(tool.hrefs).toEqual(
+        expect.objectContaining({
+          en: expect.any(String),
+          es: expect.any(String),
+          id: expect.any(String),
+        }),
+      );
+      expect(tool.shortLabel).toEqual(
+        expect.objectContaining({
+          en: expect.any(String),
+          es: expect.any(String),
+          id: expect.any(String),
+        }),
+      );
+      expect(tool.fullLabel).toEqual(
+        expect.objectContaining({
+          en: expect.any(String),
+          es: expect.any(String),
+          id: expect.any(String),
+        }),
+      );
+      expect(tool.localizedLabels).toEqual(
+        expect.objectContaining({
+          en: expect.any(String),
+          es: expect.any(String),
+          id: expect.any(String),
+        }),
+      );
+      expect(tool.description.length).toBeGreaterThan(0);
+      expect(tool.icon.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("routes every legacy tool to a locale-prefixed 410-eligible path", () => {
+    for (const tool of getLegacyTools()) {
+      for (const locale of locales) {
+        expect(tool.hrefs[locale]).toMatch(new RegExp(`^/${locale}/`));
+        expect(tool.hrefs[locale]).not.toMatch(/#|javascript:|^\/$/);
+      }
+    }
+  });
+
+  it("keeps all 24 legacy hrefs unique across locales", () => {
+    const allHrefs = getLegacyTools().flatMap((t) => [t.hrefs.en, t.hrefs.es, t.hrefs.id]);
+    expect(allHrefs).toHaveLength(24);
+    expect(new Set(allHrefs).size).toBe(24);
+  });
+
+  it("never treats a legacy tool as active via getToolById", () => {
+    for (const id of LEGACY_TOOL_IDS) {
+      const tool = getToolById(id);
+      if (tool !== undefined) {
+        expect(tool.legacy).toBe(true);
+      }
+    }
   });
 });

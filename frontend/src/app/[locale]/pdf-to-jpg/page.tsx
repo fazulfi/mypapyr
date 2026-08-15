@@ -1,8 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { use } from "react";
+import { use, useState } from "react";
 
+import { ToolPageHeader } from "@/components/ToolPageHeader";
+import { PrivacyNotice } from "@/components/PrivacyNotice";
+import { AdSlot } from "@/components/ads/AdSlot";
+import OtherTools from "@/components/OtherTools";
+import { ResultProblemReport } from "@/components/support/ResultProblemReport";
 import type { Locale } from "@/lib/i18n";
 import { defaultLocale, isLocale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
@@ -91,9 +95,8 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
     return (
       <main className="min-h-screen bg-gray-50 p-8">
         <div className="mx-auto max-w-3xl">
-          <h1 className="mb-2 text-3xl font-bold">{copy.tools.pdfToJpg.title}</h1>
-          <p className="mb-6 text-slate-600">{copy.tools.pdfToJpg.description}</p>
-
+          <ToolPageHeader locale={locale} toolId="pdf-to-jpg" />
+          <PrivacyNotice locale={locale} model="server" />
           <Dropzone
             files={files}
             onChange={setFiles}
@@ -103,7 +106,6 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
             disabled={phase === "uploading"}
             locale={locale}
           />
-
           <button
             type="button"
             onClick={() => void handleSubmit(files)}
@@ -119,6 +121,7 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
             <p className="text-xs text-slate-600">{copy.tools.pdfToJpg.qualityNote}</p>
             <p className="text-xs text-slate-500">{copy.tools.pdfToJpg.resolutionNote}</p>
           </div>
+          <OtherTools currentTool="pdf-to-jpg" locale={locale} />
         </div>
       </main>
     );
@@ -159,8 +162,12 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
   return (
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-3xl">
-        <h1 className="mb-6 text-3xl font-bold">{copy.tools.pdfToJpg.title}</h1>
+        <ToolPageHeader locale={locale} toolId="pdf-to-jpg" />
+        <PrivacyNotice locale={locale} model="server" />
         {card}
+        <AdSlot pageSlug="pdf-to-jpg" phase={phase} />
+        <OtherTools currentTool="pdf-to-jpg" locale={locale} />
+        <ResultProblemReport locale={locale} page="/pdf-to-jpg" localeContext={locale} />
       </div>
     </main>
   );

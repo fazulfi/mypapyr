@@ -41,6 +41,8 @@ from app.routers.merge import router as merge_router
 from app.routers.pdf_to_jpg import router as pdf_to_jpg_router
 from app.routers.split import router as split_router
 from app.routers.status import router as status_router
+from app.routers.support import ContactValidationError, contact_validation_handler
+from app.routers.support import router as support_router
 from app.security import add_security_middleware
 from app.utils.logging import setup_logging
 
@@ -109,6 +111,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(merge_router)
     application.include_router(pdf_to_jpg_router)
     application.include_router(split_router)
+    application.include_router(support_router)
     application.include_router(download_router)
 
     application.state.settings = settings
@@ -121,9 +124,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # headers using the injected settings.
     add_security_middleware(application, settings)
     # Every response carries an X-Request-ID correlation header, and
-    # failures use the stable machine-readable error envelope.
     add_request_id_middleware(application)
     register_error_handlers(application)
+    # PT-03: the contact endpoint maps invalid payloads to the
+    # ``support.invalidRequest`` messageKey via a dedicated HTTPException
+    # subclass — registered after the global handlers so the exact-class
+    # lookup wins while all other statuses keep the locked envelope.
+    application.add_exception_handler(ContactValidationError, contact_validation_handler)
     return application
 
 
