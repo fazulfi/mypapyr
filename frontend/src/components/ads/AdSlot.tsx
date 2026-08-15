@@ -67,18 +67,40 @@ export function AdSlot({ pageSlug, phase }: AdSlotProps): React.ReactElement | n
   useEffect(() => {
     if (!enabled || !allowed || !visible) return;
 
-    const script = document.createElement("script");
-    script.id = SCRIPT_ID;
-    script.type = "text/javascript";
-    script.async = true;
-    script.dataset.papyrAdSlot = "true";
-    script.src = `${ADSTERRA_HOST}/lib/${ADSTERRA_KEY}.js`;
-    document.head.appendChild(script);
+    // Owner-approved PT-02 unit code: define the global `atOptions`
+    // configuration, then load the zone's invoke.js. Without `atOptions`
+    // the script cannot render the 300x250 unit.
+    const existing = document.getElementById(SCRIPT_ID);
+    if (existing !== null) return;
+
+    const atOptionsScript = document.createElement("script");
+    atOptionsScript.dataset.papyrAtoptions = "true";
+    atOptionsScript.text =
+      "atOptions = {'key': '" +
+      ADSTERRA_KEY +
+      "','format': 'iframe','height': " +
+      AD_SLOT_DIMENSIONS.height +
+      ",'width': " +
+      AD_SLOT_DIMENSIONS.width +
+      ",'params': {}};";
+    const invokeScript = document.createElement("script");
+    invokeScript.id = SCRIPT_ID;
+    invokeScript.type = "text/javascript";
+    invokeScript.async = true;
+    invokeScript.src = `${ADSTERRA_HOST}/${ADSTERRA_KEY}/invoke.js`;
+    invokeScript.dataset.papyrAdSlot = "true";
+
+    document.head.appendChild(atOptionsScript);
+    document.head.appendChild(invokeScript);
 
     return () => {
-      const existing = document.getElementById(SCRIPT_ID);
-      if (existing !== null && existing.parentNode !== null) {
-        existing.parentNode.removeChild(existing);
+      const atOptionsNode = document.head.querySelector('script[data-papyr-atoptions="true"]');
+      if (atOptionsNode !== null && atOptionsNode.parentNode !== null) {
+        atOptionsNode.parentNode.removeChild(atOptionsNode);
+      }
+      const existingInvoke = document.getElementById(SCRIPT_ID);
+      if (existingInvoke !== null && existingInvoke.parentNode !== null) {
+        existingInvoke.parentNode.removeChild(existingInvoke);
       }
     };
   }, [enabled, allowed, visible]);
