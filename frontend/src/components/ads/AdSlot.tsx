@@ -69,8 +69,11 @@ export function AdSlot({
 
     const slotNode = slotRef.current;
     if (slotNode === null) return;
+    // One ad per slot div: if any container already exists (e.g. the
+    // responsive leaderboard swapped units after matchMedia), never inject
+    // a second one.
+    if (slotNode.querySelector("[id^='atContainer-']") !== null) return;
     const containerId = `atContainer-${selected.key}`;
-    if (slotNode.querySelector(`[id="${containerId}"]`) !== null) return;
 
     // Official Adsterra multi-placement pattern (root cause fix 2026-08-15):
     // invoke.js consumes a SINGLE global window.atOptions and deletes it
