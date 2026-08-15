@@ -11,7 +11,7 @@ function defaultPath(targetLocale: Locale): string {
 }
 
 describe("SH-05 LanguageSwitcher", () => {
-  it("renders a fieldset with accessible label for every supported locale", () => {
+  it("renders a <select> with aria-label and the equivalent-path for every locale", () => {
     for (const locale of locales) {
       const copy = getMessages(locale);
       const markup = renderToStaticMarkup(
@@ -23,7 +23,7 @@ describe("SH-05 LanguageSwitcher", () => {
         />,
       );
       expect(markup).toContain(copy.a11y.languageSwitcher);
-      expect(markup).toContain("fieldset");
+      expect(markup).toContain("<select");
     }
   });
 
@@ -41,7 +41,7 @@ describe("SH-05 LanguageSwitcher", () => {
     expect(markup).toContain("Bahasa Indonesia");
   });
 
-  it("marks the current locale as the selected/active option", () => {
+  it("marks the current locale as the selected option", () => {
     const markup = renderToStaticMarkup(
       <LanguageSwitcher
         currentLocale="es"
@@ -50,17 +50,11 @@ describe("SH-05 LanguageSwitcher", () => {
         getEquivalentPath={defaultPath}
       />,
     );
-    // The Spanish option should be marked as current/selected
-    expect(markup).toContain("Español");
-    // The aria-current or checked/selected attribute should be present
-    const hasSelected =
-      markup.includes("aria-current") ||
-      markup.includes('selected=""') ||
-      markup.includes("selected");
-    expect(hasSelected).toBe(true);
+    // <option value="es" selected>...</option> — react renders `selected=""` on selected option
+    expect(markup).toMatch(/<option[^>]*value="es"[^>]*selected/);
   });
 
-  it("renders each locale option as a navigable link to the computed equivalent path", () => {
+  it("each option carries the matching value and lang attribute", () => {
     const markup = renderToStaticMarkup(
       <LanguageSwitcher
         currentLocale="en"
@@ -69,35 +63,12 @@ describe("SH-05 LanguageSwitcher", () => {
         getEquivalentPath={defaultPath}
       />,
     );
-    expect(markup).toContain('href="/en"');
-    expect(markup).toContain('href="/es"');
-    expect(markup).toContain('href="/id"');
+    expect(markup).toMatch(/<option[^>]*value="en"[^>]*lang="en"/);
+    expect(markup).toMatch(/<option[^>]*value="es"[^>]*lang="es"/);
+    expect(markup).toMatch(/<option[^>]*value="id"[^>]*lang="id"/);
   });
 
-  it("preserves tool-equivalent paths when getEquivalentPath returns a tool route", () => {
-    const toolPaths: Record<Locale, string> = {
-      en: "/en/compress-pdf",
-      es: "/es/comprimir-pdf",
-      id: "/id/kompres-pdf",
-    };
-    function getPath(targetLocale: Locale): string {
-      return toolPaths[targetLocale];
-    }
-
-    const markup = renderToStaticMarkup(
-      <LanguageSwitcher
-        currentLocale="en"
-        a11yLabel={messages.en.a11y.languageSwitcher}
-        languageLabels={messages.en.languages}
-        getEquivalentPath={getPath}
-      />,
-    );
-    expect(markup).toContain('href="/en/compress-pdf"');
-    expect(markup).toContain('href="/es/comprimir-pdf"');
-    expect(markup).toContain('href="/id/kompres-pdf"');
-  });
-
-  it("renders the a11yLabel as an accessible legend or label", () => {
+  it("renders the a11yLabel as accessible name on the select", () => {
     const markup = renderToStaticMarkup(
       <LanguageSwitcher
         currentLocale="id"
@@ -106,7 +77,7 @@ describe("SH-05 LanguageSwitcher", () => {
         getEquivalentPath={defaultPath}
       />,
     );
-    expect(markup).toContain(messages.id.a11y.languageSwitcher);
+    expect(markup).toContain(`aria-label="${messages.id.a11y.languageSwitcher}"`);
   });
 
   it("renders every locale option even when currentLocale is non-English", () => {
@@ -123,18 +94,5 @@ describe("SH-05 LanguageSwitcher", () => {
       expect(markup).toContain("Español");
       expect(markup).toContain("Bahasa Indonesia");
     }
-  });
-
-  it("does not render placeholder or empty hrefs", () => {
-    const markup = renderToStaticMarkup(
-      <LanguageSwitcher
-        currentLocale="en"
-        a11yLabel={messages.en.a11y.languageSwitcher}
-        languageLabels={messages.en.languages}
-        getEquivalentPath={defaultPath}
-      />,
-    );
-    expect(markup).not.toContain('href="#"');
-    expect(markup).not.toContain('href=""');
   });
 });

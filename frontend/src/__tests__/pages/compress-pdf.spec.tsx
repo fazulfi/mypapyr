@@ -198,7 +198,9 @@ describe("CompressPdfTool polling / result states", () => {
     expect(adSlot).toBeTruthy();
     // The ad placeholder must come after the primary download control in DOM
     // order so it never precedes or wraps the result/download experience.
-    expect(download.compareDocumentPosition(adSlot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      download.compareDocumentPosition(adSlot) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("renders the localized error card with the stable message key on failure", async () => {
