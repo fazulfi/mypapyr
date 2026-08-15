@@ -4,6 +4,7 @@ import { use, useState } from "react";
 
 import { isLocale, type Locale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
+import { AdSlot } from "@/components/ads/AdSlot";
 
 /* ── Inline SVG Icons ── */
 
@@ -119,6 +120,10 @@ export function FAQContent({ locale }: { locale: string }): React.ReactElement {
         >
           {copy.faqPage.ctaEmail}
         </a>
+      </div>
+      <div className="mt-10 flex flex-col items-center gap-6" aria-label="Advertisement">
+        <AdSlot pageSlug="faq" immediate unit="banner-468x60" />
+        <AdSlot pageSlug="faq" immediate unit="half-page-160x300" />
       </div>
     </div>
   );

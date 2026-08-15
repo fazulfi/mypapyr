@@ -194,7 +194,7 @@ describe("CompressPdfTool polling / result states", () => {
 
     const copy = getMessages("en");
     const download = await screen.findByRole("button", { name: copy.states.download });
-    const adSlot = await waitFor(() => document.getElementById("papyr-adsterra-slot"));
+    const adSlot = await waitFor(() => document.querySelector('div[data-testid="papyr-ad-slot"]'));
     expect(adSlot).toBeTruthy();
     // The ad placeholder must come after the primary download control in DOM
     // order so it never precedes or wraps the result/download experience.

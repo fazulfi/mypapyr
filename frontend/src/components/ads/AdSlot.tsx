@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { AD_SLOT_DIMENSIONS, ADSTERRA_HOST, ADSTERRA_KEY, isAdEnabled } from "@/lib/ads";
+import { ADSTERRA_HOST, AD_UNITS, isAdEnabled, type AdUnit, type AdUnitId } from "@/lib/ads";
 
 import { isAfterPrimaryExperience, shouldRenderAd } from "./placement";
 
@@ -10,33 +10,47 @@ interface AdSlotProps {
   /** Route slug of the page rendering the slot (e.g. "compress-pdf"). */
   pageSlug: string;
   /**
-   * Current tool interaction phase. When provided, the slot only renders
-   * after the primary tool experience (done/error/finalizing). Omit to
-   * always render (suitable for non-tool surfaces if needed, though ads
-   * are page-gated by `allowedAdPages`).
+   * Current tool interaction phase. When provided AND `immediate` is not
+   * set, the slot only renders after the primary tool experience
+   * completes (done/error/finalizing), per the original FR/DEC-151
+   * placement. Pages using `immediate` render the placeholder right away.
    */
   phase?: string;
+  /**
+   * Render immediately on page load (owner decision 2026-08-15) instead
+   * of waiting for a tool result phase. The script still loads lazily
+   * once the slot enters the viewport.
+   */
+  immediate?: boolean;
+  /** Which Adsterra unit to render (defaults to the 300x250 box). */
+  unit?: AdUnitId;
+  /** Accessible label for the slot (localized copy from messages.ads.label). */
+  label?: string;
 }
 
-const SCRIPT_ID = "papyr-adsterra-script";
-const PLACEHOLDER_ID = "papyr-adsterra-slot";
-
 /**
- * Adsterra native ad unit (300x250).
+ * Adsterra ad slot (reserved dimensions, lazy client-side injection).
  *
  * - SSR renders only the reserved placeholder so no layout shift occurs.
- * - The Adsterra script is injected lazily, on the client, only after the
- *   placeholder becomes visible in the viewport (IntersectionObserver).
- * - The injected script node is removed on unmount.
- * - Never renders on non-allowed pages or when ads are disabled.
- * - When `phase` is provided, the slot waits for the primary tool
- *   experience to complete before rendering.
+ * - The Adsterra snippet (atOptions + invoke.js) is injected into the
+ *   slot div — invoke.js renders the iframe at the script's position —
+ *   and only after the placeholder becomes visible in the viewport.
+ * - The injected nodes are removed on unmount.
+ * - Never renders on non-allowed pages or when ads are disabled (DNT/GPC).
  */
-export function AdSlot({ pageSlug, phase }: AdSlotProps): React.ReactElement | null {
+export function AdSlot({
+  pageSlug,
+  phase,
+  immediate = false,
+  unit,
+  label = "Advertisement",
+}: AdSlotProps): React.ReactElement | null {
   const slotRef = useRef<HTMLDivElement | null>(null);
   const [enabled] = useState<boolean>(() => isAdEnabled());
+  const selected: AdUnit = unit !== undefined ? AD_UNITS[unit] : AD_UNITS["box-300x250"];
   const allowed =
-    shouldRenderAd(pageSlug) && (phase === undefined || isAfterPrimaryExperience(phase));
+    shouldRenderAd(pageSlug) &&
+    (immediate || phase === undefined || isAfterPrimaryExperience(phase));
 
   // Initialize visible to true when IntersectionObserver is unavailable
   // (jsdom, older browsers, SSR before hydration). This avoids a
@@ -67,34 +81,31 @@ export function AdSlot({ pageSlug, phase }: AdSlotProps): React.ReactElement | n
   useEffect(() => {
     if (!enabled || !allowed || !visible) return;
 
-    // Owner-approved PT-02 unit code: define the global `atOptions`
-    // configuration, then load the zone's invoke.js. Without `atOptions`
-    // the script cannot render the 300x250 unit.
-    const existing = document.getElementById(SCRIPT_ID);
-    if (existing !== null) return;
+    // Owner-approved unit code: define the zone's `atOptions`
+    // configuration, then load its invoke.js — both inside the slot div,
+    // because invoke.js renders the iframe at the script's own position.
+    const slotNode = slotRef.current;
+    if (slotNode === null) return;
+    if (slotNode.querySelector("script[data-papyr-ad-slot='true']") !== null) return;
 
     const atOptionsScript = document.createElement("script");
     atOptionsScript.dataset.papyrAtoptions = "true";
     atOptionsScript.text =
       "atOptions = {'key': '" +
-      ADSTERRA_KEY +
+      selected.key +
       "','format': 'iframe','height': " +
-      AD_SLOT_DIMENSIONS.height +
+      selected.height +
       ",'width': " +
-      AD_SLOT_DIMENSIONS.width +
+      selected.width +
       ",'params': {}};";
+
     const invokeScript = document.createElement("script");
-    invokeScript.id = SCRIPT_ID;
+    invokeScript.dataset.papyrAdSlot = "true";
+    invokeScript.dataset.papyrUnit = selected.id;
     invokeScript.type = "text/javascript";
     invokeScript.async = true;
-    invokeScript.src = `${ADSTERRA_HOST}/${ADSTERRA_KEY}/invoke.js`;
-    invokeScript.dataset.papyrAdSlot = "true";
+    invokeScript.src = `${ADSTERRA_HOST}/${selected.key}/invoke.js`;
 
-    // Adsterra's invoke.js renders the ad at the script's own position —
-    // the snippet must live inside the slot div (like the official embed),
-    // never in <head>, or the iframe lands invisible in the head.
-    const slotNode = slotRef.current;
-    if (slotNode === null) return;
     slotNode.innerHTML = "";
     slotNode.appendChild(atOptionsScript);
     slotNode.appendChild(invokeScript);
@@ -102,18 +113,19 @@ export function AdSlot({ pageSlug, phase }: AdSlotProps): React.ReactElement | n
     return () => {
       slotNode.innerHTML = "";
     };
-  }, [enabled, allowed, visible]);
+  }, [enabled, allowed, visible, selected]);
 
   if (!enabled || !allowed) return null;
 
   return (
     <div
       ref={slotRef}
-      id={PLACEHOLDER_ID}
-      aria-label="Advertisement"
+      data-testid="papyr-ad-slot"
+      aria-label={label}
       style={{
-        width: AD_SLOT_DIMENSIONS.width,
-        height: AD_SLOT_DIMENSIONS.height,
+        width: selected.width,
+        height: selected.height,
+        margin: "0 auto",
       }}
     />
   );

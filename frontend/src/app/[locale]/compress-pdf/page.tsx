@@ -109,6 +109,7 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
         <div className="mx-auto max-w-3xl">
           <ToolPageHeader locale={locale} toolId="compress-pdf" />
           <PrivacyNotice locale={locale} model="server" />
+          <AdSlot pageSlug="compress-pdf" immediate unit="leaderboard-728x90" />
           <Dropzone
             files={files}
             onChange={setFiles}
@@ -173,6 +174,7 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
         {card}
         <AdSlot pageSlug="compress-pdf" phase={phase} />
         <ResultProblemReport locale={locale} page="/compress-pdf" localeContext={locale} />
+        <AdSlot pageSlug="compress-pdf" immediate unit="skyscraper-160x600" />
       </div>
     </main>
   );

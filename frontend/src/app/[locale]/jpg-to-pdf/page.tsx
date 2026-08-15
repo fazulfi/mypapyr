@@ -110,6 +110,7 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
         <div className="mx-auto max-w-3xl">
           <ToolPageHeader locale={locale} toolId="jpg-to-pdf" />
           <PrivacyNotice locale={locale} model="hybrid" />
+          <AdSlot pageSlug="jpg-to-pdf" immediate unit="leaderboard-728x90" />
           <Dropzone
             files={files}
             onChange={setFiles}
@@ -179,6 +180,7 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
         <AdSlot pageSlug="jpg-to-pdf" phase={phase} />
         <OtherTools currentTool="jpg-to-pdf" locale={locale} />
         <ResultProblemReport locale={locale} page="/jpg-to-pdf" localeContext={locale} />
+        <AdSlot pageSlug="jpg-to-pdf" immediate unit="skyscraper-160x600" />
       </div>
     </main>
   );

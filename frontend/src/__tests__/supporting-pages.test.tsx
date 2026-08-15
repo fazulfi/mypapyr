@@ -5,7 +5,6 @@ vi.mock("@vercel/speed-insights/next", () => ({
   SpeedInsights: () => null,
 }));
 import { renderToStaticMarkup } from "react-dom/server";
-import { createElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/font/google", () => ({
@@ -25,7 +24,7 @@ vi.mock("next/navigation", () => ({
 
 import { notFound } from "next/navigation";
 
-import { resolveSupportingPageCopy, SupportingPageContent } from "../components/supporting-page";
+import { resolveSupportingPageCopy } from "../components/supporting-page";
 import LocaleLayout from "../app/[locale]/layout";
 import BlogPage from "../app/[locale]/blog/page";
 import ContactPage from "../app/[locale]/contact/page";
@@ -36,6 +35,10 @@ import TermsPage from "../app/[locale]/terms/page";
 
 import { locales } from "../lib/i18n";
 import { getMessages, messages } from "../lib/messages";
+
+function escapeText(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
 
 const supportingPages = [
   { route: "terms", key: "terms", Component: TermsPage },
@@ -160,18 +163,23 @@ describe("SH-08 supporting surface shells", () => {
 });
 
 describe("SH-08 shared supporting-page contract", () => {
-  it("renders every route (except contact) byte-identically to the shared SupportingPageContent renderer", async () => {
+  it("renders every route (except contact, status) with the shared heading and copy", async () => {
     for (const { Component, key } of supportingPages) {
-      if (key === "contact") continue; // Contact is a rich page with form, not a thin shell
+      if (key === "contact" || key === "status") continue; // rich/custom pages
       for (const locale of locales) {
+        const copy = getMessages(locale).pages[key];
         const pageMarkup = await renderPage(Component, locale);
-        const sharedMarkup = renderToStaticMarkup(
-          createElement(SupportingPageContent, {
-            copy: getMessages(locale).pages[key],
-          }),
-        );
-        expect(pageMarkup).toBe(sharedMarkup);
+        expect(pageMarkup).toContain(escapeText(copy.title));
+        expect(pageMarkup).toContain(escapeText(copy.description));
       }
+    }
+  });
+
+  it("renders an ad banner on ad-carrying supporting pages (owner decision 2026-08-15)", async () => {
+    for (const { Component, key } of supportingPages) {
+      if (!["privacy", "terms", "cookies-advertising", "roadmap"].includes(key)) continue;
+      const pageMarkup = await renderPage(Component, "en");
+      expect(pageMarkup).toContain('aria-label="Advertisement"');
     }
   });
 

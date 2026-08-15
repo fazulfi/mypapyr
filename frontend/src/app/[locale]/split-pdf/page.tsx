@@ -131,6 +131,7 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
         <div className="mx-auto max-w-3xl">
           <ToolPageHeader locale={locale} toolId="split-pdf" />
           <PrivacyNotice locale={locale} model="client" />
+          <AdSlot pageSlug="split-pdf" immediate unit="leaderboard-728x90" />
           <Dropzone
             files={files}
             onChange={setFiles}
@@ -271,6 +272,7 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
         <AdSlot pageSlug="split-pdf" phase={phase} />
         <OtherTools currentTool="split-pdf" locale={locale} />
         <ResultProblemReport locale={locale} page="/split-pdf" localeContext={locale} />
+        <AdSlot pageSlug="split-pdf" immediate unit="skyscraper-160x600" />
       </div>
     </main>
   );

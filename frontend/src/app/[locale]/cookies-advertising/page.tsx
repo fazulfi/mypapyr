@@ -8,5 +8,5 @@ export default async function CookiesAdvertisingPage({
   params,
 }: SupportingPageProps): Promise<React.ReactElement> {
   const copy = await resolveSupportingPageCopy(params, "cookiesAdvertising");
-  return <SupportingPageContent copy={copy} />;
+  return <SupportingPageContent copy={copy} pageSlug="cookies-advertising" />;
 }

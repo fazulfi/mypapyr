@@ -113,6 +113,7 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
         <div className="mx-auto max-w-3xl">
           <ToolPageHeader locale={locale} toolId="merge-pdf" />
           <PrivacyNotice locale={locale} model="client" />
+          <AdSlot pageSlug="merge-pdf" immediate unit="leaderboard-728x90" />
           <Dropzone
             files={files}
             onChange={setFiles}
@@ -178,6 +179,7 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
         <AdSlot pageSlug="merge-pdf" phase={phase} />
         <OtherTools currentTool="merge-pdf" locale={locale} />
         <ResultProblemReport locale={locale} page="/merge-pdf" localeContext={locale} />
+        <AdSlot pageSlug="merge-pdf" immediate unit="skyscraper-160x600" />
       </div>
     </main>
   );

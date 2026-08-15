@@ -1,5 +1,6 @@
 import { resolveSupportingPageCopy, type SupportingPageProps } from "@/components/supporting-page";
 import { ContactForm } from "@/components/support/ContactForm";
+import { AdSlot } from "@/components/ads/AdSlot";
 
 /**
  * PT-03 Contact page.
@@ -20,6 +21,10 @@ export default async function ContactPage({
       <p className="mt-3 text-[15px] text-slate-500">{copy.description}</p>
       <div className="mt-8">
         <ContactForm locale={locale} context={{ page: "/contact", locale }} />
+      </div>
+      <div className="mt-10 flex flex-col items-center gap-6" aria-label="Advertisement">
+        <AdSlot pageSlug="contact" immediate unit="banner-468x60" />
+        <AdSlot pageSlug="contact" immediate unit="half-page-160x300" />
       </div>
     </div>
   );

@@ -316,7 +316,9 @@ describe("PdfToJpgTool AdSlot rendering", () => {
     stubFetch();
     await submitPdf("en");
 
-    await waitFor(() => expect(screen.getByLabelText("Advertisement")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getAllByLabelText("Advertisement").length).toBeGreaterThan(0),
+    );
   });
 
   it("renders the AdSlot on the error phase", async () => {
@@ -330,27 +332,27 @@ describe("PdfToJpgTool AdSlot rendering", () => {
     await submitPdf("en");
 
     await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
-    expect(screen.getByLabelText("Advertisement")).toBeTruthy();
+    expect(screen.getAllByLabelText("Advertisement").length).toBeGreaterThan(0);
   });
 
-  it("does not render the AdSlot on the idle phase", () => {
+  it("renders the immediate leaderboard AdSlot on the idle phase (owner decision 2026-08-15)", () => {
     render(<PdfToJpgTool locale="en" />);
-    expect(screen.queryByLabelText("Advertisement")).toBeNull();
+    expect(screen.getAllByLabelText("Advertisement").length).toBeGreaterThan(0);
   });
 
-  it("does not render the AdSlot on the queued phase", async () => {
+  it("renders the immediate AdSlot on the queued phase", async () => {
     pollingWithStatus({ state: "queued", messageKey: null, retryable: false, outputCount: 1 });
     stubFetch();
     await submitPdf("en");
     await waitFor(() => expect(screen.getByText(getMessages("en").states.queued)).toBeTruthy());
-    expect(screen.queryByLabelText("Advertisement")).toBeNull();
+    expect(screen.getAllByLabelText("Advertisement").length).toBeGreaterThan(0);
   });
 
-  it("does not render the AdSlot on the processing phase", async () => {
+  it("renders the immediate AdSlot on the processing phase", async () => {
     pollingWithStatus({ state: "processing", messageKey: null, retryable: false, outputCount: 1 });
     stubFetch();
     await submitPdf("en");
     await waitFor(() => expect(screen.getByText(getMessages("en").states.processing)).toBeTruthy());
-    expect(screen.queryByLabelText("Advertisement")).toBeNull();
+    expect(screen.getAllByLabelText("Advertisement").length).toBeGreaterThan(0);
   });
 });
