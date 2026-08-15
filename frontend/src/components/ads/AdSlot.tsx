@@ -57,34 +57,15 @@ export function AdSlot({
     shouldRenderAd(pageSlug) &&
     (immediate || phase === undefined || isAfterPrimaryExperience(phase));
 
-  // Initialize visible to true when IntersectionObserver is unavailable
-  // (jsdom, older browsers, SSR before hydration). This avoids a
-  // synchronous setState inside the effect body which would violate
-  // react-hooks/set-state-in-effect.
-  const [visible, setVisible] = useState<boolean>(
-    () => typeof window !== "undefined" && typeof IntersectionObserver === "undefined",
-  );
+  // Reserved-dimension placeholder renders server-side; the ad loads
+  // client-side immediately after mount (no IntersectionObserver gating —
+  // the reserved box already prevents layout shift, and deferring the load
+  // introduced a failure point where the slot never hydrated on some
+  // browsers). DNT/GPC + page allow-list gating is unchanged.
+  // No extra state: the container div itself is the dedup marker.
 
   useEffect(() => {
-    if (!enabled || !allowed || visible) return;
-    const node = slotRef.current;
-    if (node === null) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "200px" },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [enabled, allowed, visible]);
-
-  useEffect(() => {
-    if (!enabled || !allowed || !visible) return;
+    if (!enabled || !allowed) return;
 
     const slotNode = slotRef.current;
     if (slotNode === null) return;
@@ -121,11 +102,7 @@ export function AdSlot({
     invokeScript.async = true;
     invokeScript.src = `${ADSTERRA_HOST}/${selected.key}/invoke.js`;
     document.head.appendChild(invokeScript);
-
-    return () => {
-      slotNode.innerHTML = "";
-    };
-  }, [enabled, allowed, visible, selected]);
+  }, [enabled, allowed, selected]);
 
   if (!enabled || !allowed) return null;
 
