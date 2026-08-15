@@ -6,6 +6,7 @@ useDefault = true
 # <script> markup). They grant access to no Papyr system, account, or
 # document. All six zone keys live in frontend/src/lib/ads.ts and are
 # allowlisted by file+pattern so the secret-scan gate reflects reality.
+# The ad tests assert the same public keys verbatim, so they are covered too.
 [allowlist]
 description = "Adsterra publisher ad-unit keys in the ad registry (public client-side by design)"
-paths = ['''frontend/src/lib/ads\.ts''']
+paths = ['''frontend/src/lib/ads\.ts|frontend/src/__tests__/ad-placement\.test\.ts''']
