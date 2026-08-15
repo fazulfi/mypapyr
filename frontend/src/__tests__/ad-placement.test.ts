@@ -378,9 +378,10 @@ describe("AdSlot lazy script injection", () => {
     expect(script?.dataset.papyrAdSlot).toBe("true");
     // The owner-approved unit code defines the global atOptions config
     // (key, iframe format, 300x250 dimensions) before invoke.js loads.
-    const atOptions = document.head.querySelector(
-      'script[data-papyr-atoptions="true"]',
-    ) as HTMLScriptElement | null;
+    const atOptions =
+      document
+        .getElementById("papyr-adsterra-slot")
+        ?.querySelector('script[data-papyr-atoptions="true"]') ?? null;
     expect(atOptions).not.toBeNull();
     expect(atOptions?.textContent).toContain("'key'");
     expect(atOptions?.textContent).toContain("b552110bd65e7690ed89a04a1d654898");
