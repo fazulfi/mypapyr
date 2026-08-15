@@ -17,9 +17,7 @@ interface AdSlotProps {
    */
   phase?: string;
   /**
-   * Render immediately on page load (owner decision 2026-08-15) instead
-   * of waiting for a tool result phase. The script still loads lazily
-   * once the slot enters the viewport.
+   * Render immediately on page load (owner decision 2026-08-15).
    */
   immediate?: boolean;
   /** Which Adsterra unit to render (defaults to the 300x250 box). */
@@ -29,13 +27,16 @@ interface AdSlotProps {
 }
 
 /**
- * Adsterra ad slot (reserved dimensions, lazy client-side injection).
+ * Adsterra ad slot (reserved dimensions, client-side injection).
  *
  * - SSR renders only the reserved placeholder so no layout shift occurs.
- * - The Adsterra snippet (atOptions + invoke.js) is injected into the
- *   slot div — invoke.js renders the iframe at the script's position —
- *   and only after the placeholder becomes visible in the viewport.
- * - The injected nodes are removed on unmount.
+ * - The owner-approved unit code is injected client-side: the zone's
+ *   `atOptions` (format 'iframe', reserved width/height) followed by its
+ *   invoke.js, both appended inside the slot div because invoke.js renders
+ *   the ad at the script's own position. This exact pattern was verified
+ *   displaying ads in production on 2026-08-15 (release 5fe86e6, single
+ *   300x250 slot).
+ * - Injected nodes are removed on unmount.
  * - Never renders on non-allowed pages or when ads are disabled (DNT/GPC).
  */
 const FALLBACK_LABEL = "Advertisement";
@@ -48,8 +49,6 @@ export function AdSlot({
   label,
 }: AdSlotProps): React.ReactElement | null {
   const slotRef = useRef<HTMLDivElement | null>(null);
-  // Resolve the accessible label once at mount: explicit prop wins, else the
-  // <html lang> from the hydration document, else the neutral fallback.
   const resolvedLabel = label ?? FALLBACK_LABEL;
   const [enabled] = useState<boolean>(() => isAdEnabled());
   const selected: AdUnit = unit !== undefined ? AD_UNITS[unit] : AD_UNITS["box-300x250"];
@@ -57,54 +56,46 @@ export function AdSlot({
     shouldRenderAd(pageSlug) &&
     (immediate || phase === undefined || isAfterPrimaryExperience(phase));
 
-  // Reserved-dimension placeholder renders server-side; the ad loads
-  // client-side immediately after mount (no IntersectionObserver gating —
-  // the reserved box already prevents layout shift, and deferring the load
-  // introduced a failure point where the slot never hydrated on some
-  // browsers). DNT/GPC + page allow-list gating is unchanged.
-  // No extra state: the container div itself is the dedup marker.
-
+  // The owner-approved embed renders immediately on the client; no
+  // IntersectionObserver gating (it left slots unhydrated on some
+  // browsers). Reserved dimensions prevent layout shift. The injected
+  // script nodes are the dedup marker — no extra state, because a setState
+  // re-render would run this effect's cleanup and wipe the slot.
   useEffect(() => {
     if (!enabled || !allowed) return;
 
     const slotNode = slotRef.current;
     if (slotNode === null) return;
-    // One ad per slot div: if any container already exists (e.g. the
-    // responsive leaderboard swapped units after matchMedia), never inject
-    // a second one.
-    if (slotNode.querySelector("[id^='atContainer-']") !== null) return;
-    const containerId = `atContainer-${selected.key}`;
+    if (slotNode.querySelector("script[data-papyr-ad-slot='true']") !== null) return;
 
-    // Official Adsterra multi-placement pattern (root cause fix 2026-08-15):
-    // invoke.js consumes a SINGLE global window.atOptions and deletes it
-    // after the first placement (`m1(window.atOptions, Qt), delete
-    // window.atOptions`), so a second invoke.js on the same page renders
-    // nothing. The supported way to place multiple units on one page is the
-    // atAsyncOptions queue: each slot pushes its own config
-    // {key, format:'js', async:true, container:<id>}, renders a <div> with
-    // that container id, and loads its own invoke.js. Verified against live
-    // working multi-slot Adsterra sites (format 'js' + container div).
-    const win = window as Window & {
-      atAsyncOptions?: Array<Record<string, unknown>>;
-    };
-    if (!Array.isArray(win.atAsyncOptions)) win.atAsyncOptions = [];
-    win.atAsyncOptions.push({
-      key: selected.key,
-      format: "js",
-      async: true,
-      container: containerId,
-      params: {},
-    });
-
-    const container = document.createElement("div");
-    container.id = containerId;
-    slotNode.appendChild(container);
+    // Owner-approved unit code (PT-02): atOptions defines the zone config,
+    // invoke.js renders the iframe at the script's own position — both must
+    // live inside the slot div, never in <head> (the iframe would land
+    // invisible in the head).
+    const atOptionsScript = document.createElement("script");
+    atOptionsScript.dataset.papyrAtoptions = "true";
+    atOptionsScript.text =
+      "atOptions = {'key': '" +
+      selected.key +
+      "','format': 'iframe','height': " +
+      selected.height +
+      ",'width': " +
+      selected.width +
+      ",'params': {}};";
 
     const invokeScript = document.createElement("script");
+    invokeScript.dataset.papyrAdSlot = "true";
+    invokeScript.dataset.papyrUnit = selected.id;
     invokeScript.type = "text/javascript";
     invokeScript.async = true;
     invokeScript.src = `${ADSTERRA_HOST}/${selected.key}/invoke.js`;
-    document.head.appendChild(invokeScript);
+
+    slotNode.appendChild(atOptionsScript);
+    slotNode.appendChild(invokeScript);
+
+    return () => {
+      slotNode.innerHTML = "";
+    };
   }, [enabled, allowed, selected]);
 
   if (!enabled || !allowed) return null;
@@ -113,7 +104,7 @@ export function AdSlot({
     <div
       ref={slotRef}
       data-testid="papyr-ad-slot"
-      aria-label={resolvedLabel ?? FALLBACK_LABEL}
+      aria-label={resolvedLabel}
       style={{
         width: selected.width,
         height: selected.height,
