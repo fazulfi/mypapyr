@@ -90,18 +90,17 @@ export function AdSlot({ pageSlug, phase }: AdSlotProps): React.ReactElement | n
     invokeScript.src = `${ADSTERRA_HOST}/${ADSTERRA_KEY}/invoke.js`;
     invokeScript.dataset.papyrAdSlot = "true";
 
-    document.head.appendChild(atOptionsScript);
-    document.head.appendChild(invokeScript);
+    // Adsterra's invoke.js renders the ad at the script's own position —
+    // the snippet must live inside the slot div (like the official embed),
+    // never in <head>, or the iframe lands invisible in the head.
+    const slotNode = slotRef.current;
+    if (slotNode === null) return;
+    slotNode.innerHTML = "";
+    slotNode.appendChild(atOptionsScript);
+    slotNode.appendChild(invokeScript);
 
     return () => {
-      const atOptionsNode = document.head.querySelector('script[data-papyr-atoptions="true"]');
-      if (atOptionsNode !== null && atOptionsNode.parentNode !== null) {
-        atOptionsNode.parentNode.removeChild(atOptionsNode);
-      }
-      const existingInvoke = document.getElementById(SCRIPT_ID);
-      if (existingInvoke !== null && existingInvoke.parentNode !== null) {
-        existingInvoke.parentNode.removeChild(existingInvoke);
-      }
+      slotNode.innerHTML = "";
     };
   }, [enabled, allowed, visible]);
 
