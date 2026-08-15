@@ -184,17 +184,20 @@ describe("PdfToJpgTool polling / result states", () => {
     await waitFor(() => expect(screen.getByText(getMessages("en").states.processing)).toBeTruthy());
   });
 
-  it("auto-fetches the download grant when the task completes and offers download plus reset", async () => {
+  it("fetches the download grant on download and offers download plus reset", async () => {
     pollingWithStatus({ state: "done", messageKey: null, retryable: false, outputCount: 1 });
     const fetchMock = stubFetch("task-p2j-9");
     await submitPdf("en");
+
+    const copy = getMessages("en");
+    await waitFor(() => screen.getByRole("button", { name: copy.states.download }));
+    fireEvent.click(screen.getByRole("button", { name: copy.states.download }));
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/v1/tools/pdf-to-jpg/tasks/task-p2j-9/download/0",
       ),
     );
-    const copy = getMessages("en");
     expect(screen.getByRole("button", { name: copy.states.download })).toBeTruthy();
     expect(screen.getByRole("button", { name: copy.reset.processAnother })).toBeTruthy();
   });
@@ -248,15 +251,15 @@ describe("PdfToJpgTool polling / result states", () => {
     await submitPdf("en");
 
     const copy = getMessages("en");
+    await waitFor(() => screen.getByRole("button", { name: copy.states.download }));
+    fireEvent.click(screen.getByRole("button", { name: copy.states.download }));
+
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/v1/tools/pdf-to-jpg/tasks/task-p2j-dl/download/0",
       ),
     );
-    await waitFor(() => screen.getByRole("button", { name: copy.states.download }));
-    fireEvent.click(screen.getByRole("button", { name: copy.states.download }));
-
-    expect(window.location.href).toBe("https://cdn.example/output.zip");
+    await waitFor(() => expect(window.location.href).toBe("https://cdn.example/output.zip"));
   });
 
   it("leaves the page unchanged when download is clicked without a granted URL", async () => {

@@ -12,6 +12,12 @@ timeout 180 s), R-07 per-worker bounds (2 GiB memory, 1.5 CPU), R-09 Redis
 (maxmemory ~384 MiB, ``noeviction``), plus the logging level and the R2
 endpoint/region consumed by BE-03. Optional knobs never enter
 ``REQUIRED_ENV_VARS``: the five-variable CI contract is unchanged.
+
+PT-03 (support contact) adds the Cloudflare Email Sending credentials
+(token, account id), the recipient/from-domain pair, and the Turnstile
+site secret behind opt-in environment variables. Account id is optional
+and falls back to ``R2_ACCOUNT_ID`` at delivery time. Secrets enter
+``_REDACTED_FIELDS`` so repr/str never leak them.
 """
 
 from __future__ import annotations
@@ -55,12 +61,20 @@ DEFAULT_CLAMD_HOST = "localhost"
 DEFAULT_CLAMD_PORT = 3310
 DEFAULT_SCANNER_TIMEOUT_SECONDS = 10
 MAX_SCANNER_TIMEOUT_SECONDS = 3600
+# --- PT-03 support settings (contact endpoint) ---
+# Owner-approved defaults; the email provider token and Turnstile secret are
+# optional and never required at boot.
+DEFAULT_CONTACT_RECIPIENT = "privacy@mypapyr.com"
+DEFAULT_CONTACT_FROM_DOMAIN = "mypapyr.com"
 
 _SECRET_FIELD = "r2_secret_access_key"
 _REDACTED = "**********"
 # redis_url may embed credentials (redis://user:password@host) and is
-# therefore redacted from repr/str like the R2 secret.
-_REDACTED_FIELDS: frozenset[str] = frozenset({_SECRET_FIELD, "redis_url"})
+# therefore redacted from repr/str like the R2 secret. PT-03: the Cloudflare
+# email API token and the Turnstile site secret are the same class of secret.
+_REDACTED_FIELDS: frozenset[str] = frozenset(
+    {_SECRET_FIELD, "redis_url", "cf_email_api_token", "turnstile_site_secret"}
+)
 
 
 class MissingEnvVarError(RuntimeError):
@@ -183,6 +197,11 @@ class Settings:
     clamd_host: str = DEFAULT_CLAMD_HOST
     clamd_port: int = DEFAULT_CLAMD_PORT
     scanner_timeout_seconds: int = DEFAULT_SCANNER_TIMEOUT_SECONDS
+    cf_email_api_token: str | None = None
+    cf_email_account_id: str | None = None
+    contact_recipient: str = DEFAULT_CONTACT_RECIPIENT
+    contact_from_domain: str = DEFAULT_CONTACT_FROM_DOMAIN
+    turnstile_site_secret: str | None = None
     scanner_enabled: bool = True
 
     @classmethod
@@ -231,6 +250,13 @@ class Settings:
                 DEFAULT_SCANNER_TIMEOUT_SECONDS,
                 MAX_SCANNER_TIMEOUT_SECONDS,
             ),
+            cf_email_api_token=_optional_str_or_none(source, "CF_EMAIL_API_TOKEN"),
+            cf_email_account_id=_optional_str_or_none(source, "CF_EMAIL_ACCOUNT_ID"),
+            contact_recipient=_optional_str(source, "CONTACT_RECIPIENT", DEFAULT_CONTACT_RECIPIENT),
+            contact_from_domain=_optional_str(
+                source, "CONTACT_FROM_DOMAIN", DEFAULT_CONTACT_FROM_DOMAIN
+            ),
+            turnstile_site_secret=_optional_str_or_none(source, "TURNSTILE_SITE_SECRET"),
             scanner_enabled=_optional_bool(source, "SCANNER_ENABLED", True),
         )
 

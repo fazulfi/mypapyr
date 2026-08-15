@@ -177,7 +177,7 @@ describe("JpgToPdfTool upload / admission", () => {
     expect(url).toBe("/api/v1/tools/jpg-to-pdf/tasks");
     expect(init.method).toBe("POST");
     const body = init.body as FormData;
-    const names = body.getAll("file").map((entry) => (entry as File).name);
+    const names = body.getAll("files").map((entry) => (entry as File).name);
     expect(names).toEqual(["photo.jpg", "scan.jpg"]);
   });
 

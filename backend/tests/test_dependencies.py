@@ -134,6 +134,7 @@ def test_runtime_pins_are_exact() -> None:
         "Pillow": "12.3.0",
         "pypdfium2": "5.12.1",
         "python-multipart": "0.0.31",
+        "httpx": "0.28.1",
     }
 
 
