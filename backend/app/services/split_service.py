@@ -9,20 +9,44 @@ Key contracts:
 - Range specs like "1-3,5" yield one PDF for each range token in order
 - Pages within each range are extracted in the order specified
 - Each output is uploaded to R2 with a deterministic name
-- Executor is pickle-safe (no live clients at construction)
+- Executor is pickle-safe: module imports live at top level, but live Redis/
+  boto3 clients are only instantiated lazily inside the child process
 
 Engine: pikepdf (same as TL-03 Merge, DEC-199)
 """
 
 from __future__ import annotations
 
-import io
+import importlib
 import logging
+import io
 from dataclasses import dataclass
+from datetime import timedelta
+from typing import Any, Protocol, cast
 
 import pikepdf
 
+from app.config import Settings
+from app.queue.store import (
+    StoreUnavailableError,
+    TaskNotFoundError,
+    TaskStore,
+)
+from app.routers.capabilities import TOOL_LIMITS, ToolId
+from app.schemas.job import ErrorSummary, ResultSummary
+from app.utils.r2 import R2Client
+from app.worker.worker import (
+    ENGINE_ERROR_FALLBACK,
+    ClaimedJob,
+    ExecutionKind,
+    ExecutionOutcome,
+    ProgressReporter,
+)
 logger = logging.getLogger(__name__)
+
+_REFUSED_ERROR = ErrorSummary(
+    code="engine_error", category="engine", retryable=False, message_key="error.engineError"
+)
 
 
 class SplitError(Exception):
@@ -35,6 +59,12 @@ class SplitResult:
 
     output_count: int
     total_bytes: int
+
+
+class S3ReadClient(Protocol):
+    """Minimal boto3 get_object interface."""
+
+    def get_object(self, **kwargs: object) -> dict[str, object]: ...
 
 
 class SplitEngine:
@@ -69,124 +99,128 @@ class SplitEngine:
             logger.error("split engine failure", extra={"fields": {"error": type(exc).__name__}})
             raise SplitError(f"Split operation failed: {exc}") from exc
 
+    def _parse_range_spec(self, spec: str) -> list[tuple[int, int]]:
+        """Parse a range specification like '1-3,5,7-9' into (start, end) tuples.
 
-@dataclass(frozen=True)
-class SplitExecutorInput:
-    """Input for split executor."""
+        Ranges are 1-indexed and inclusive. Invalid tokens (reversed ranges,
+        non-numeric, empty) are silently skipped so a malformed spec never
+        aborts a job.
+        """
+        ranges: list[tuple[int, int]] = []
+        for token in spec.split(","):
+            stripped = token.strip()
+            if "-" in stripped:
+                start_str, end_str = stripped.split("-", 1)
+                if start_str.strip().isdigit() and end_str.strip().isdigit():
+                    start = int(start_str.strip())
+                    end = int(end_str.strip())
+                    if start <= end:
+                        ranges.append((start, end))
+            elif stripped.isdigit():
+                page = int(stripped)
+                ranges.append((page, page))
+        return ranges
 
-    task_id: str
-    range_spec: str
+
+def _build_read_client(settings: Settings) -> S3ReadClient:
+    """Build a boto3 S3 read client for R2 (r2.py has no read path)."""
+    boto3 = cast(Any, importlib.import_module("boto3"))
+    endpoint = settings.r2_endpoint or f"https://{settings.r2_account_id}.r2.cloudflarestorage.com"
+    client = boto3.client(
+        "s3",
+        endpoint_url=endpoint,
+        aws_access_key_id=settings.r2_access_key_id,
+        aws_secret_access_key=settings.r2_secret_access_key,
+        region_name=settings.r2_region,
+    )
+    return cast(S3ReadClient, client)
 
 
 class SplitExecutor:
-    """Executes split jobs for the worker. Pickle-safe."""
+    """Executes split jobs for the worker. Pickle-safe.
 
-    def __init__(self, settings: object, engine: SplitEngine | None = None) -> None:
+    Holds only picklable data (Settings + engine) at construction. Live Redis
+    and boto3 clients are built lazily on first execute() inside the child
+    process, since live clients are not picklable.
+    """
+
+    def __init__(self, *, settings: Settings, engine: SplitEngine | None = None) -> None:
         self._settings = settings
         self._engine = engine or SplitEngine()
-        self._r2 = None
-        self._store = None
-        self._read_client = None
+        self._store: TaskStore | None = None
+        self._r2: R2Client | None = None
+        self._read_client: S3ReadClient | None = None
 
-    def _get_r2(self):
-        if self._r2 is None:
-            from app.utils.r2 import R2Client
-            self._r2 = R2Client(self._settings)
-        return self._r2
-
-    def _get_store(self):
+    @property
+    def _get_store(self) -> TaskStore:
         if self._store is None:
-            from app.queue.store import TaskStore
             self._store = TaskStore(self._settings)
         return self._store
 
-    def _get_read_client(self):
+    @property
+    def _get_r2(self) -> R2Client:
+        if self._r2 is None:
+            self._r2 = R2Client(self._settings)
+        return self._r2
+
+    @property
+    def _get_read_client(self) -> S3ReadClient:
         if self._read_client is None:
-            import boto3
-            self._read_client = boto3.client(
-                "s3",
-                endpoint_url=f"https://{self._settings.r2_account_id}.r2.cloudflarestorage.com",
-                aws_access_key_id=self._settings.r2_access_key_id,
-                aws_secret_access_key=self._settings.r2_secret_access_key,
-                region_name="auto",
-            )
+            self._read_client = _build_read_client(self._settings)
         return self._read_client
 
-    def execute(self, job, report) -> object:
-        """Execute a split job. Returns ExecutionOutcome."""
-        from app.queue.store import TaskNotFoundError, StoreUnavailableError
-        from app.schemas.job import ResultSummary
-        from app.worker.worker import ExecutionKind, ExecutionOutcome
-
-        store = self._get_store()
-        r2 = self._get_r2()
-        read_client = self._get_read_client()
-
-        # Fetch the record
+    def execute(self, job: ClaimedJob, report: ProgressReporter) -> ExecutionOutcome:
+        """Execute a split job. Returns an ExecutionOutcome (fail-closed)."""
+        del report
         try:
-            record = store.get(job.task_id)
+            record = self._get_store.get(job.task_id)
         except TaskNotFoundError:
-            return ExecutionOutcome(kind=ExecutionKind.FAILURE, error="Task not found")
+            return ExecutionOutcome(kind=ExecutionKind.FAILURE, error=ENGINE_ERROR_FALLBACK)
         except StoreUnavailableError:
-            return ExecutionOutcome(kind=ExecutionKind.FAILURE, error="Store unavailable")
+            return ExecutionOutcome(kind=ExecutionKind.FAILURE, error=_REFUSED_ERROR)
+        if record.state != "processing" or not record.objects:
+            return ExecutionOutcome(kind=ExecutionKind.FAILURE, error=_REFUSED_ERROR)
 
-        if record.state != "processing":
-            return ExecutionOutcome(kind=ExecutionKind.FAILURE, error="Invalid record state")
+        input_key = record.objects[0]
+        response = self._get_read_client.get_object(
+            Bucket=self._get_r2.bucket_name, Key=input_key
+        )
+        body = response.get("Body")
+        read = getattr(body, "read", None)
+        if not callable(read):
+            return ExecutionOutcome(kind=ExecutionKind.FAILURE, error=ENGINE_ERROR_FALLBACK)
+        input_data = read()
+        if isinstance(input_data, str):
+            input_data = input_data.encode("utf-8")
+        else:
+            input_data = bytes(input_data)
 
-        # Download the input PDF
-        input_key = record.objects[0] if record.objects else None
-        if not input_key:
-            return ExecutionOutcome(kind=ExecutionKind.FAILURE, error="No input object")
+        # Parse the range specification from the job input (fall back to a
+        # single-page default taken from the executor's configurable input).
+        spec = getattr(job, "range_spec", None) or getattr(self, "_spec", "1-1")
+        ranges = self._engine._parse_range_spec(spec)
+        timeout = timedelta(seconds=TOOL_LIMITS[ToolId.SPLIT_PDF].max_execution_seconds)
 
-        try:
-            response = read_client.get_object(Bucket=self._settings.r2_bucket_name, Key=input_key)
-            input_data = response["Body"].read()
-        except Exception:
-            return ExecutionOutcome(kind=ExecutionKind.FAILURE, error="Failed to download input")
-
-        # Parse the range specification (for now, use a simple default)
-        # In production, this would come from the task record or job metadata
-        ranges = self._parse_range_spec("1-1")  # TODO: Parse from record
-
-        # Perform the split
         try:
             outputs = self._engine.split(input_data, ranges)
         except SplitError:
-            return ExecutionOutcome(kind=ExecutionKind.FAILURE, error="Split operation failed")
+            return ExecutionOutcome(kind=ExecutionKind.FAILURE, error=ENGINE_ERROR_FALLBACK)
 
-        # Upload each output
         output_keys = []
-        for i, output_data in enumerate(outputs):
-            output_key = r2.build_object_key(extension="pdf")
-            r2.upload_object(output_key, output_data, content_type="application/pdf")
+        for output_data in outputs:
+            output_key = self._get_r2.build_object_key(extension="pdf")
+            self._get_r2.upload_object(
+                output_key,
+                output_data,
+                content_type="application/pdf",
+                expires_at=record.expires_at,
+            )
             output_keys.append(output_key)
 
-        # Delete the input
-        r2.delete_object(input_key)
+        self._get_r2.delete_object(input_key)
 
-        # Report progress
-        report({"unit": "pages_processed", "value": len(outputs), "total": len(outputs)})
-
-        # Return success
-        total_bytes = sum(len(o) for o in outputs)
         return ExecutionOutcome(
             kind=ExecutionKind.SUCCESS,
-            result=ResultSummary(output_count=len(outputs), total_bytes=total_bytes),
+            result=ResultSummary(output_count=len(outputs), total_bytes=sum(len(o) for o in outputs)),
             objects=tuple(output_keys),
         )
-
-    def _parse_range_spec(self, spec: str) -> list[tuple[int, int]]:
-        """Parse a range specification like '1-3,5,7-9' into a list of (start, end) tuples."""
-        ranges = []
-        for part in spec.split(","):
-            part = part.strip()
-            if "-" in part:
-                start_str, end_str = part.split("-", 1)
-                start = int(start_str.strip())
-                end = int(end_str.strip())
-                if start <= end:
-                    ranges.append((start, end))
-            elif part.isdigit():
-                page = int(part)
-                ranges.append((page, page))
-        return ranges

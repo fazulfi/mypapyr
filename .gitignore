@@ -71,3 +71,11 @@ Thumbs.db
 ## Developer/temp files
 tdd/
 audit-outputs/
+
+# ===== Local scratch / agent working files =====
+/.omp/
+/.playwright-mcp/
+/nul
+/tier3-write-test.txt
+/scout-configs.md
+/snapshot-*.md

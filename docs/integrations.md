@@ -10,7 +10,7 @@ This public inventory lists the target external services and dependencies withou
 | Cloudflare R2 | Target temporary object storage for server-processed documents | Implemented in repository: client, signed downloads, cleanup, and lifecycle template |
 | VPS and Nginx | Target API, Redis, and bounded worker hosting | Public-safe templates only |
 | Redis | Target durable queue and minimal task-state store | Implemented in repository: Streams queue, task store, and one-worker processing |
-| Ghostscript | Planned Compress PDF engine, invoked as an official unmodified subprocess | Approved architecture dependency; workflow not implemented |
+| Ghostscript | Compress PDF engine, invoked as an official unmodified subprocess | Implemented in branch: pinned build in the worker image; pending merge and deployment |
 | AI gateway | Planned model gateway for explicitly specified server features | Environment contract only |
 | Sentry | Planned sanitized application error reporting | Environment contract only |
 | Telegram | Planned operational incident alerts | Environment contract only |
@@ -28,7 +28,7 @@ This public inventory lists the target external services and dependencies withou
 
 ## Ghostscript
 
-The planned compression workflow uses the official, unmodified Ghostscript distribution. Papyr invokes it as a separate hardened server-side subprocess with pinned versions and bounded execution. The project does not fork, modify, vendor, or link Ghostscript source into its application code.
+The compression workflow uses the official, unmodified Ghostscript distribution, implemented in this feature branch. Papyr invokes it as a separate hardened server-side subprocess with pinned versions and bounded execution. The project does not fork, modify, vendor, or link Ghostscript source into its application code.
 
 ## Redis
 

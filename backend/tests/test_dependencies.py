@@ -125,12 +125,15 @@ def test_runtime_pins_are_exact() -> None:
     pins = _parse_pins(RUNTIME_REQUIREMENTS)
     assert pins == {
         "fastapi": "0.141.1",
+        "img2pdf": "0.6.3",
+        "Pillow": "12.3.0",
+        "pikepdf": "10.11.0",
+        "pypdfium2": "5.12.1",
+        "python-multipart": "0.0.20",
         "starlette": "1.3.1",
-        "uvicorn[standard]": "0.39.0",
         "redis": "8.1.0",
         "boto3": "1.43.62",
-        "pikepdf": "10.11.0",
-        "python-multipart": "0.0.20",
+        "uvicorn[standard]": "0.39.0",
     }
 
 

@@ -34,11 +34,11 @@ The product specifications require:
 - Fail-closed behaviour for unsupported, unsafe, expired, or unauthorized work.
 - Network-restricted workers and a minimal runtime attack surface.
 
-The current codebase is an engineering foundation. These product-level controls become enforceable as the corresponding workflows are implemented.
+The current codebase is an engineering foundation, and this feature branch adds the product-level controls for the five-tool server path: strict admission validation, a fail-closed threat-classification matrix, a PDF sanitizer that refuses unsanitizable input, bounded worker execution, and deterministic cleanup. These controls are implemented in the branch and become enforceable in production after merge and separately authorized deployment.
 
 ## Dependency posture
 
-Third-party libraries and executables are consumed as pinned upstream dependencies. The planned compression path invokes the official, unmodified Ghostscript distribution as a separate hardened subprocess; its source is not vendored, forked, modified, or linked into the application.
+Third-party libraries and executables are consumed as pinned upstream dependencies. The compression path invokes the official, unmodified Ghostscript distribution as a separate hardened subprocess; its source is not vendored, forked, modified, or linked into the application.
 
 ## Scope and limitations
 

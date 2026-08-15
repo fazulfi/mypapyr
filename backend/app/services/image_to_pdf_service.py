@@ -43,5 +43,7 @@ def images_to_pdf(req: ImageToPdfRequest, *, timeout: float | None = None) -> by
         images[0].save(output, format="PDF", save_all=True, append_images=images[1:])
         return output.getvalue()
     kwargs: dict[str, object] = {}
-    kwargs["pagesize"] = img2pdf.papersizes.LETTER if req.paper is PaperStandard.LETTER else img2pdf.papersizes.A4
+    kwargs["pagesize"] = (
+        img2pdf.papersizes["letter"] if req.paper is PaperStandard.LETTER else img2pdf.papersizes["a4"]
+    )
     return img2pdf.convert(normalised, **kwargs)

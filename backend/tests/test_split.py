@@ -18,5 +18,5 @@ def test_router_tag():
 
 
 def test_tasks_endpoint_exists():
-    routes = [r for r in router.routes if hasattr(r, "path") and r.path == "/tasks"]
+    routes = [r for r in router.routes if hasattr(r, "path") and r.path == "/api/v1/tools/split-pdf/tasks"]
     assert len(routes) == 1
