@@ -194,10 +194,18 @@ describe("CompressPdfTool polling / result states", () => {
 
     const copy = getMessages("en");
     const download = await screen.findByRole("button", { name: copy.states.download });
-    const adSlot = await waitFor(() => document.querySelector('div[data-testid="papyr-ad-slot"]'));
+    // Multiple slots exist (leaderboard + result box + skyscraper). FR/DEC-151
+    // requires the result-area box to follow the download control; pick the
+    // first slot that is document-following the download button.
+    const adSlot = await waitFor(() => {
+      const slots = Array.from(document.querySelectorAll('div[data-testid="papyr-ad-slot"]'));
+      const following = slots.find(
+        (slot) => (download.compareDocumentPosition(slot) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+      );
+      if (!following) throw new Error("no ad slot after download");
+      return following;
+    });
     expect(adSlot).toBeTruthy();
-    // The ad placeholder must come after the primary download control in DOM
-    // order so it never precedes or wraps the result/download experience.
     expect(
       download.compareDocumentPosition(adSlot) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
