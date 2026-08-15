@@ -1,161 +1,188 @@
 "use client";
 
-import { use, useState } from "react";
+import { useEffect, useState } from "react";
+import { use } from "react";
 
 import type { Locale } from "@/lib/i18n";
-import { isLocale, defaultLocale } from "@/lib/i18n";
-import { AdSlot } from "@/components/ads/AdSlot";
+import { defaultLocale, isLocale } from "@/lib/i18n";
+import { getMessages } from "@/lib/messages";
 import { ToolPageHeader } from "@/components/ToolPageHeader";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
+import { AdSlot } from "@/components/ads/AdSlot";
 import OtherTools from "@/components/OtherTools";
-import { getMessages } from "@/lib/messages";
 import { Dropzone } from "@/components/uploader/Dropzone";
+import { PreparingCard } from "@/components/states/PreparingCard";
 import { QueuedCard } from "@/components/states/QueuedCard";
-import { PreparingCard as _PreparingCard } from "@/components/states/PreparingCard";
 import { ProcessingCard } from "@/components/states/ProcessingCard";
 import { DoneCard } from "@/components/states/DoneCard";
 import { ErrorCard } from "@/components/states/ErrorCard";
+import type { ToolState } from "@/lib/toolState";
 import { useTaskPolling } from "@/hooks/useTaskPolling";
 
+const MAX_FILES = 20;
+const MIN_FILES = 2;
+const MAX_SIZE_BYTES = 104857600; // 100 MiB per file
+
+function derivePhase(
+  status: ReturnType<typeof useTaskPolling>["status"],
+  hasTaskId: boolean,
+): ToolState {
+  if (!hasTaskId || status === null) return "queued";
+  if (status.state === "queued") return "queued";
+  if (status.state === "processing") return "processing";
+  if (status.state === "done") return "done";
+  return "error";
+}
+
 export function MergePdfTool({ locale }: { locale: Locale }) {
-  const messages = getMessages(locale);
+  const copy = getMessages(locale);
   const [files, setFiles] = useState<File[]>([]);
   const [taskId, setTaskId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [uploadPhase, setUploadPhase] = useState<"idle" | "uploading" | "error">("idle");
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
 
-  const {
-    status,
-    refresh: _refresh,
-    stop,
-  } = useTaskPolling({
+  const { status } = useTaskPolling({
     toolId: "merge-pdf",
     taskId: taskId ?? "",
     enabled: taskId !== null,
   });
 
-  const handleFileChange = (selectedFiles: File[]) => {
-    setFiles(selectedFiles);
-    setError(null);
-    setTaskId(null);
-  };
+  // Fetch download grant when task completes successfully (only once)
+  useEffect(() => {
+    if (taskId === null || status === null || status.state !== "done") return;
+    if (downloadUrl !== null) return;
+    let cancelled = false;
+    void fetch("/api/v1/tools/merge-pdf/tasks/" + taskId + "/download/0")
+      .then(async (response) => {
+        if (!response.ok) return;
+        const grant = (await response.json()) as { url: string };
+        if (!cancelled) setDownloadUrl(grant.url);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [taskId, status, downloadUrl]);
 
-  const handleMergeClick = async () => {
-    if (files.length < 2) {
-      setError(messages.tools.merge.errors.needAtLeastTwo);
-      return;
-    }
-
-    setError(null);
-    setTaskId(null);
-
-    const formData = new FormData();
-    files.forEach((file) => {
-      formData.append("files", file);
-    });
-
+  async function handleSubmit(selected: File[]): Promise<void> {
+    if (selected.length < MIN_FILES) return;
+    setUploadPhase("uploading");
     try {
+      const form = new FormData();
+      for (const file of selected) form.append("files", file);
       const response = await fetch("/api/v1/tools/merge-pdf/tasks", {
         method: "POST",
-        body: formData,
+        body: form,
       });
-
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.status}`);
-      }
-
-      const data = (await response.json()) as { task_id: string };
-      setTaskId(data.task_id);
+      if (!response.ok) throw new Error("Upload failed: " + response.status);
+      const body = (await response.json()) as { task_id: string };
+      setTaskId(body.task_id);
+      setUploadPhase("idle");
     } catch {
-      setError(messages.tools.merge.errors.uploadFailed);
+      setUploadPhase("error");
     }
-  };
+  }
 
-  const handleDownload = async () => {
-    if (!status || !status.outputCount || status.outputCount === 0) return;
-
-    try {
-      const response = await fetch(`/api/v1/tools/merge-pdf/tasks/${taskId}/download/0`);
-      if (!response.ok) throw new Error("Download grant failed");
-
-      const grant = (await response.json()) as { url: string };
-      window.location.href = grant.url;
-    } catch {
-      setError(messages.tools.merge.errors.downloadFailed);
-    }
-  };
-
-  const handleReset = () => {
-    stop();
+  function handleReset(): void {
     setFiles([]);
     setTaskId(null);
-    setError(null);
-  };
+    setDownloadUrl(null);
+    setUploadPhase("idle");
+  }
 
-  const mergePhase =
+  function handleDownload(): void {
+    if (downloadUrl !== null) window.location.href = downloadUrl;
+  }
+
+  const canSubmit = files.length >= MIN_FILES;
+
+  const phase: ToolState =
     taskId === null
-      ? "idle"
-      : status?.state === "failed"
-        ? "error"
-        : status?.state === "done"
-          ? "done"
-          : "processing";
+      ? uploadPhase === "uploading"
+        ? "uploading"
+        : uploadPhase === "error"
+          ? "error"
+          : "idle"
+      : derivePhase(status, true);
 
-  return (
-    <main className="container mx-auto px-4 py-8">
-      <ToolPageHeader locale={locale} toolId="merge-pdf" />
-      <PrivacyNotice locale={locale} model="client" />
-
-      {!taskId ? (
-        <>
+  // Idle / ready / uploading phase: show dropzone + submit button
+  if (phase === "idle" || phase === "ready" || phase === "uploading") {
+    return (
+      <main className="min-h-screen bg-gray-50 p-8">
+        <div className="mx-auto max-w-3xl">
+          <ToolPageHeader locale={locale} toolId="merge-pdf" />
+          <PrivacyNotice locale={locale} model="client" />
           <Dropzone
             files={files}
-            onChange={handleFileChange}
+            onChange={setFiles}
             accept={["application/pdf"]}
-            maxFiles={20}
+            maxFiles={MAX_FILES}
+            maxSizeBytes={MAX_SIZE_BYTES}
+            disabled={phase === "uploading"}
             locale={locale}
           />
 
-          {error && (
-            <div className="mt-4 rounded border border-red-200 bg-red-50 p-4">
-              <p className="text-red-800" role="alert">
-                {error}
-              </p>
-            </div>
-          )}
-
           <button
-            onClick={() => void handleMergeClick()}
-            disabled={files.length < 2}
-            className="mt-6 rounded-lg bg-blue-600 px-6 py-3 text-white hover:bg-blue-700 disabled:opacity-50"
+            type="button"
+            onClick={() => void handleSubmit(files)}
+            disabled={!canSubmit || phase === "uploading"}
+            className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {messages.tools.merge.actions.merge}
+            {phase === "uploading"
+              ? copy.tools.merge.actions.uploading
+              : copy.tools.merge.actions.merge}
           </button>
-        </>
-      ) : (
-        <div className="mx-auto max-w-md">
-          {status?.state === "queued" && <QueuedCard locale={locale} />}
-          {status?.state === "processing" && <ProcessingCard locale={locale} />}
-          {status?.state === "done" && (
-            <DoneCard locale={locale} onDownload={handleDownload} onReset={handleReset} />
-          )}
-          {status?.state === "failed" && (
-            <ErrorCard
-              locale={locale}
-              messageKey={status.errorCategory}
-              retryable={false}
-              onReset={handleReset}
-            />
-          )}
+          <OtherTools currentTool="merge-pdf" locale={locale} />
         </div>
-      )}
-      <AdSlot pageSlug="merge-pdf" phase={mergePhase} />
-      <OtherTools currentTool="merge-pdf" locale={locale} />
+      </main>
+    );
+  }
+
+  // Card for queued/processing/done/error phases
+  let card: React.ReactNode;
+  switch (phase) {
+    case "preparing":
+      card = <PreparingCard locale={locale} />;
+      break;
+    case "queued":
+      card = <QueuedCard locale={locale} />;
+      break;
+    case "processing":
+    case "finalizing":
+      card = <ProcessingCard locale={locale} />;
+      break;
+    case "done":
+      card = <DoneCard locale={locale} onDownload={handleDownload} onReset={handleReset} />;
+      break;
+    case "error":
+      card = (
+        <ErrorCard
+          locale={locale}
+          messageKey={status?.messageKey ?? null}
+          retryable={status?.retryable ?? false}
+          onReset={handleReset}
+        />
+      );
+      break;
+    default:
+      card = null;
+  }
+
+  return (
+    <main className="min-h-screen bg-gray-50 p-8">
+      <div className="mx-auto max-w-3xl">
+        <ToolPageHeader locale={locale} toolId="merge-pdf" />
+        <PrivacyNotice locale={locale} model="client" />
+        <AdSlot pageSlug="merge-pdf" phase={phase} />
+        {card}
+        <OtherTools currentTool="merge-pdf" locale={locale} />
+      </div>
     </main>
   );
 }
 
 export default function MergePdfPage({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = use(params);
-  const validLocale: Locale = isLocale(locale) ? locale : defaultLocale;
-  return <MergePdfTool locale={validLocale} />;
+  const { locale: rawLocale } = use(params);
+  const locale: Locale = isLocale(rawLocale) ? rawLocale : defaultLocale;
+  return <MergePdfTool locale={locale} />;
 }

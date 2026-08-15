@@ -24,12 +24,11 @@ that payload, not against this document's examples.
 
 ## Hosts & request path
 
-The browser issues **same-origin** `/api/v1/*` requests. In this branch the
-client talks to the FastAPI service directly at its published origin; a
-build-time Next.js rewrite and the frontend→backend origin variable
-(`NEXT_PUBLIC_API_BASE_URL`) land with the production networking task. The
-target path traverses Cloudflare DNS/TLS → nginx → FastAPI on the internal
-service DNS `api:3000` (`deploy/runbook-vps.md`; `deploy/docker-compose.yml`).
+The browser issues **same-origin** `/api/v1/*` requests. A build-time Next.js
+rewrite (`frontend/next.config.ts`) forwards them unchanged to
+`NEXT_PUBLIC_API_BASE_URL` (default `https://api.mypapyr.com`). The path then
+traverses Cloudflare DNS/TLS → nginx → FastAPI on the internal service DNS
+`api:3000` (`deploy/runbook-vps.md`; `deploy/docker-compose.yml`).
 
 ```text
 Browser ── /api/v1/* (same-origin) ──> Next.js rewrite (next.config.ts)
@@ -105,7 +104,9 @@ submission routers (e.g. `compress.py`) raise `HTTPException` with only a
 `messageKey` detail — never rendered directly (validation normalization) —
 and map store/queue failures to the fail-closed 503/409 generic envelope.
 
-**Scanner/threat gate** is specified but the concrete scanner remains behind the defined protocol seam on this branch. The classification matrix is implemented: blocking verdicts (when a scanner is present) map to `MALICIOUS`/`ACTIVE_CONTENT` → 403, `INDETERMINATE` → 500, `SCANNER_UNAVAILABLE`/`SANITIZATION_UNAVAILABLE` → 429. Admission currently enforces validation, sanitization, and the fail-closed classification matrix.
+**Scanner/threat gate** (admission, `health.py:47-57`) maps blocking verdicts
+to statuses: `MALICIOUS`/`ACTIVE_CONTENT` → 403, `INDETERMINATE` → 500,
+`SCANNER_UNAVAILABLE`/`SANITIZATION_UNAVAILABLE` → 429.
 
 ## Failure code table (19)
 
@@ -292,8 +293,8 @@ the failure-code table above.
 
 `tool` ∈ `{compress-pdf, merge-pdf, split-pdf, jpg-to-pdf, pdf-to-jpg}`.
 
-- Server runs, in order: **validation** → **security sanitize** → **R2 upload (sanitized bytes)** → **enqueue** → **admission response** (see `compress.py:88-160`). A concrete threat scanner behind the classification seam is a later phase; admission currently enforces validation, sanitization, and the fail-closed classification matrix.
-
+- Multipart `file` upload. `compress-pdf` accepts one PDF; `merge-pdf`/`jpg-to-pdf` accept multiple files; `split-pdf` adds a `ranges` **form field** (default `""` = one output per page; grammar admits only `[0-9,\- ]*`, validated at admission, `schemas/job.py:72-85`, `routers/split.py:116-121`).
+- Server runs, in order: **validation** → **security sanitize** → **scanner gate** → **R2 upload (sanitized bytes)** → **enqueue** → **admission response** (see `compress.py:88-160`).
 - Success returns **`202 Accepted`**:
 
 ```json

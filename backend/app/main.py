@@ -40,6 +40,10 @@ from app.routers.merge import router as merge_router
 from app.routers.pdf_to_jpg import router as pdf_to_jpg_router
 from app.routers.split import router as split_router
 from app.routers.download import router as download_router
+from app.routers.image_to_pdf import router as image_to_pdf_router
+from app.routers.merge import router as merge_router
+from app.routers.pdf_to_jpg import router as pdf_to_jpg_router
+from app.routers.split import router as split_router
 from app.routers.status import router as status_router
 from app.security import add_security_middleware
 from app.utils.logging import setup_logging
@@ -81,6 +85,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         title="papyr-backend",
         version="0.1.0",
         lifespan=_lifespan,
+        # Hardening (SEC-02): the API surface is admission/status/download only.
+        # Auto-generated interactive docs and the raw OpenAPI schema are
+        # disabled so no schema reference is served from production.
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
     )
 
     @application.get("/health")

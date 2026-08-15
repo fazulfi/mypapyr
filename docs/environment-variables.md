@@ -2,7 +2,7 @@
 
 This is the authoritative contract for every environment variable used by Papyr. It lists each variable, whether it is **required** or **optional**, its source (which process reads it), the approved default, and the reference.
 
-The frontend build-time variable is `NEXT_PUBLIC_API_URL`, consumed as a CI dummy value only at this branch state — the client issues same-origin `/api/v1/*` requests and `frontend/next.config.ts` does not yet carry a rewrite. When a rewrite is introduced, keep the variable name in sync across `.github/workflows/ci.yml` and `frontend/next.config.ts`.
+Two bugs are recorded here because they were real: **CI once set `NEXT_PUBLIC_API_URL` while the code reads `NEXT_PUBLIC_API_BASE_URL`** — the dummy value never reached the rewrite. Both are now aligned on `NEXT_PUBLIC_API_BASE_URL`. Keep the name in sync across `.github/workflows/ci.yml` and `frontend/next.config.ts` when you touch either.
 
 ## Boot-required (backend fail-fast)
 
@@ -40,7 +40,11 @@ Read by `backend/app/config.py`. When unset or empty the approved default applie
 
 ## Frontend (build-time)
 
-The frontend client issues same-origin `/api/v1/*` requests. No build-time backend-origin rewrite exists in this branch; `NEXT_PUBLIC_API_URL` appears in CI as a dummy value only. A rewrite and its variable contract land with the production networking task.
+| Variable | Required | Default | Read by |
+| --- | --- | --- | --- |
+| `NEXT_PUBLIC_API_BASE_URL` | no | `https://api.mypapyr.com` | `frontend/next.config.ts` (rewrites `/api/v1/*` to this origin) |
+
+The client issues same-origin `/api/v1/*` requests; the Next.js rewrite forwards them to this backend origin. Set it at **build** time to a non-default origin. See `deploy/runbook-vps.md` → "Frontend connectivity".
 
 ## Repository / CI (template-only, `__SET_ME__`)
 

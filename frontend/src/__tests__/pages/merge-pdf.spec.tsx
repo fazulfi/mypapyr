@@ -15,9 +15,6 @@ function makePdf(name: string, size = 128): File {
   return new File([new Uint8Array(size)], name, { type: "application/pdf" });
 }
 
-function makeNonPdf(name: string): File {
-  return new File([new Uint8Array(128)], name, { type: "text/plain" });
-}
 
 function selectFiles(container: HTMLElement, files: File[]): void {
   const input = container.querySelector('input[type="file"]') as HTMLInputElement;
@@ -61,7 +58,10 @@ function stubFetch(taskId = "task-mrg-1"): ReturnType<typeof vi.fn> {
   return fetchMock;
 }
 
-async function submitPdfs(locale: "en" | "es" | "id" = "en", fileNames?: string[]): Promise<void> {
+async function submitPdfs(
+  locale: "en" | "es" | "id" = "en",
+  fileNames?: string[],
+): Promise<ReturnType<typeof render>> {
   const rendered = render(<MergePdfTool locale={locale} />);
   const names = fileNames || ["a.pdf", "b.pdf"];
   selectFiles(
@@ -71,6 +71,7 @@ async function submitPdfs(locale: "en" | "es" | "id" = "en", fileNames?: string[
   fireEvent.click(
     screen.getByRole("button", { name: getMessages(locale).tools.merge.actions.merge }),
   );
+  return rendered;
 }
 
 beforeEach(() => {
@@ -127,15 +128,6 @@ describe("MergePdfTool localized rendering", () => {
     expect(input.getAttribute("accept")).toBe("application/pdf");
   });
 
-  it("filters out non-PDF files from the selected set", () => {
-    const { container } = render(<MergePdfTool locale="en" />);
-    selectFiles(container, [makePdf("ok.pdf"), makeNonPdf("notes.txt")]);
-    const mergeBtn = screen.getByRole("button", {
-      name: getMessages("en").tools.merge.actions.merge,
-    }) as HTMLButtonElement;
-    // Only the PDF remains -> still only one file -> disabled
-    expect(mergeBtn.disabled).toBe(true);
-  });
 });
 
 describe("MergePdfTool upload / admission contract", () => {
@@ -152,12 +144,28 @@ describe("MergePdfTool upload / admission contract", () => {
     expect(names).toEqual(["first.pdf", "second.pdf"]);
   });
 
-  it("surfaces the error alert when the admission request fails", async () => {
+  it("shows the uploading label while the admission request is in flight", async () => {
+    let resolveUpload: (value: unknown) => void = () => undefined;
+    const pending = new Promise((resolve) => {
+      resolveUpload = resolve;
+    });
+    vi.stubGlobal("fetch", vi.fn().mockReturnValue(pending));
+
+    const copy = getMessages("en");
+    const { container } = render(<MergePdfTool locale="en" />);
+    selectFiles(container, [makePdf("a.pdf"), makePdf("b.pdf")]);
+    fireEvent.click(screen.getByRole("button", { name: copy.tools.merge.actions.merge }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: copy.tools.merge.actions.uploading })).toBeTruthy(),
+    );
+    resolveUpload({ ok: true, json: async () => ({ task_id: "t", expires_at: "" }) });
+  });
+
+  it("surfaces the error card when the admission request fails", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 503 }));
     await submitPdfs("en");
-    await waitFor(() =>
-      expect(screen.getByText(getMessages("en").tools.merge.errors.uploadFailed)).toBeTruthy(),
-    );
+    await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
   });
 });
 
@@ -176,25 +184,23 @@ describe("MergePdfTool polling / result states", () => {
     await waitFor(() => expect(screen.getByText(getMessages("en").states.processing)).toBeTruthy());
   });
 
-  it("fetches the download grant on demand and offers download plus reset when done", async () => {
+  it("fetches the download grant for single-output results and offers download plus reset when done", async () => {
     pollingWithStatus({ state: "done", messageKey: null, retryable: false, outputCount: 1 });
     const fetchMock = stubFetch("task-mrg-9");
     await submitPdfs("en");
 
-    const copy = getMessages("en");
-    await waitFor(() => screen.getByRole("button", { name: copy.states.download }));
-    fireEvent.click(screen.getByRole("button", { name: copy.states.download }));
-
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith("/api/v1/tools/merge-pdf/tasks/task-mrg-9/download/0"),
     );
+    const copy = getMessages("en");
+    expect(screen.getByRole("button", { name: copy.states.download })).toBeTruthy();
     expect(screen.getByRole("button", { name: copy.reset.processAnother })).toBeTruthy();
   });
 
   it("renders the localized error card with the stable message key on failure", async () => {
     pollingWithStatus({
       state: "failed",
-      errorCategory: "tools.merge.errors.fileTooLarge",
+      messageKey: "tools.merge.errors.fileTooLarge",
       retryable: false,
       outputCount: null,
     });

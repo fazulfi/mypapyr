@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { use } from "react";
 
 import { ToolPageHeader } from "@/components/ToolPageHeader";
-import { AdSlot } from "@/components/ads/AdSlot";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
+import { AdSlot } from "@/components/ads/AdSlot";
 import OtherTools from "@/components/OtherTools";
 import type { Locale } from "@/lib/i18n";
 import { defaultLocale, isLocale } from "@/lib/i18n";
@@ -18,6 +18,7 @@ import { DoneCard } from "@/components/states/DoneCard";
 import { ErrorCard } from "@/components/states/ErrorCard";
 import type { ToolState } from "@/lib/toolState";
 import { useTaskPolling } from "@/hooks/useTaskPolling";
+import { downloadTaskResult } from "@/lib/taskDownloads";
 
 const MAX_SIZE_BYTES = 104857600; // 100 MiB
 
@@ -37,30 +38,12 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
   const [files, setFiles] = useState<File[]>([]);
   const [taskId, setTaskId] = useState<string | null>(null);
   const [uploadPhase, setUploadPhase] = useState<"idle" | "uploading" | "error">("idle");
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
 
   const { status } = useTaskPolling({
     toolId: "pdf-to-jpg",
     taskId: taskId ?? "",
     enabled: taskId !== null,
   });
-
-  // Fetch download grant when task completes successfully (only once)
-  useEffect(() => {
-    if (taskId === null || status === null || status.state !== "done") return;
-    if (downloadUrl !== null) return;
-    let cancelled = false;
-    void fetch("/api/v1/tools/pdf-to-jpg/tasks/" + taskId + "/download/0")
-      .then(async (response) => {
-        if (!response.ok) return;
-        const grant = (await response.json()) as { url: string };
-        if (!cancelled) setDownloadUrl(grant.url);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [taskId, status, downloadUrl]);
 
   async function handleSubmit(selected: File[]): Promise<void> {
     if (selected.length === 0) return;
@@ -84,12 +67,18 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
   function handleReset(): void {
     setFiles([]);
     setTaskId(null);
-    setDownloadUrl(null);
     setUploadPhase("idle");
   }
 
-  function handleDownload(): void {
-    if (downloadUrl !== null) window.location.href = downloadUrl;
+  async function handleDownload(): Promise<void> {
+    if (taskId === null || status === null) return;
+    await downloadTaskResult({
+      toolId: "pdf-to-jpg",
+      taskId,
+      outputCount: status.outputCount ?? 0,
+      entryName: (index) => "page-" + (index + 1) + ".jpg",
+      zipFilename: "pdf-to-jpg.zip",
+    });
   }
 
   const phase: ToolState =
@@ -127,6 +116,12 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
               ? copy.tools.pdfToJpg.actions.uploading
               : copy.tools.pdfToJpg.actions.convert}
           </button>
+
+          <div className="mt-6 space-y-1">
+            <p className="text-xs text-slate-600">{copy.tools.pdfToJpg.qualityNote}</p>
+            <p className="text-xs text-slate-500">{copy.tools.pdfToJpg.resolutionNote}</p>
+          </div>
+          <OtherTools currentTool="pdf-to-jpg" locale={locale} />
         </div>
       </main>
     );
@@ -146,7 +141,9 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
       card = <ProcessingCard locale={locale} />;
       break;
     case "done":
-      card = <DoneCard locale={locale} onDownload={handleDownload} onReset={handleReset} />;
+      card = (
+        <DoneCard locale={locale} onDownload={() => void handleDownload()} onReset={handleReset} />
+      );
       break;
     case "error":
       card = (

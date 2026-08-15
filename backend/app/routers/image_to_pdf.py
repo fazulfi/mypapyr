@@ -21,6 +21,7 @@ from typing import cast
 from fastapi import APIRouter, FastAPI, Header, HTTPException, Request, UploadFile, status
 
 from app.config import Settings, load
+from app.health import enforce_scan_gate
 from app.queue.queue import JobQueue
 from app.queue.store import (
     StoreUnavailableError,
@@ -31,7 +32,6 @@ from app.queue.store import (
 )
 from app.routers.capabilities import TOOL_LIMITS, ToolId
 from app.schemas.job import TaskAdmission
-from app.security.validation import ValidationRejection, validate_image
 from app.security.validation import ValidationRejection, validate_image
 from app.services.paper_policy import select_paper
 from app.tasks.state_machine import JobState
@@ -74,6 +74,18 @@ def _resolve_queue(request: Request, settings: Settings, store: TaskStore) -> Jo
     return JobQueue(settings, store)
 
 
+def _delete_orphan_inputs(r2: R2Client, input_keys: list[str]) -> None:
+    """Best-effort cleanup of uploaded inputs when enqueue fails (I4)."""
+    for input_key in input_keys:
+        try:
+            r2.delete_object(input_key)
+        except Exception as exc:
+            logger.error(
+                "jpg-to-pdf orphan input delete failed",
+                extra={"fields": {"error": type(exc).__name__}},
+            )
+
+
 @router.post("/tasks", response_model=TaskAdmission, status_code=status.HTTP_202_ACCEPTED)
 async def jpg_to_pdf_admit(
     request: Request,
@@ -87,8 +99,11 @@ async def jpg_to_pdf_admit(
     r2 = _resolve_r2(request, settings)
     queue = _resolve_queue(request, settings, store)
 
-    # Select paper standard based on edge country header
-    paper = select_paper(cf_ipcountry or vercel_country)
+    # Select paper standard from the edge country header (DEC-077). The result
+    # is consumed by the rendering executor, not by admission validation; it is
+    # computed here to keep the header contract exercised and assigned to ``_``
+    # because admission does not branch on it.
+    _ = select_paper(cf_ipcountry or vercel_country)
 
     # Validate each file independently
     limit = TOOL_LIMITS[ToolId.JPG_TO_PDF]
@@ -109,6 +124,9 @@ async def jpg_to_pdf_admit(
                 extra={"fields": {"error": type(exc).__name__}},
             )
             raise HTTPException(status_code=400, detail={"messageKey": "error.badRequest"}) from exc
+
+        # SEC-01 scanner gate (U-SEC): fail-closed admission per-file
+        enforce_scan_gate(request, data)
 
         # Images are not executable; skip sanitization
         sanitized = data
@@ -137,18 +155,21 @@ async def jpg_to_pdf_admit(
             "jpg-to-pdf enqueue store unavailable",
             extra={"fields": {"error": type(exc).__name__}},
         )
+        _delete_orphan_inputs(r2, input_keys)
         raise HTTPException(status_code=503, detail={"messageKey": "error.internalError"}) from exc
     except TaskConflictError as exc:
         logger.error(
             "jpg-to-pdf enqueue conflict",
             extra={"fields": {"error": type(exc).__name__}},
         )
+        _delete_orphan_inputs(r2, input_keys)
         raise HTTPException(status_code=409, detail={"messageKey": "error.internalError"}) from exc
     except Exception as exc:
         logger.error(
             "jpg-to-pdf enqueue failed",
             extra={"fields": {"error": type(exc).__name__}},
         )
+        _delete_orphan_inputs(r2, input_keys)
         raise HTTPException(status_code=503, detail={"messageKey": "error.internalError"}) from exc
 
     return TaskAdmission(task_id=enqueued.task_id, expires_at=enqueued.expires_at)

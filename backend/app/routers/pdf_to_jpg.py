@@ -19,6 +19,7 @@ from typing import cast
 from fastapi import APIRouter, FastAPI, HTTPException, Request, UploadFile, status
 
 from app.config import Settings, load
+from app.health import enforce_scan_gate
 from app.queue.queue import JobQueue
 from app.queue.store import (
     StoreUnavailableError,
@@ -71,6 +72,17 @@ def _resolve_queue(request: Request, settings: Settings, store: TaskStore) -> Jo
     return JobQueue(settings, store)
 
 
+def _delete_orphan_input(r2: R2Client, input_key: str) -> None:
+    """Best-effort cleanup of an uploaded input when enqueue fails (I4)."""
+    try:
+        r2.delete_object(input_key)
+    except Exception as exc:
+        logger.error(
+            "pdf-to-jpg orphan input delete failed",
+            extra={"fields": {"error": type(exc).__name__}},
+        )
+
+
 @router.post("/tasks", response_model=TaskAdmission, status_code=status.HTTP_202_ACCEPTED)
 async def pdf_to_jpg_admit(request: Request, file: UploadFile) -> TaskAdmission:
     """Admit a sanitized pdf-to-jpg upload; returns 202 TaskAdmission."""
@@ -96,6 +108,9 @@ async def pdf_to_jpg_admit(request: Request, file: UploadFile) -> TaskAdmission:
             extra={"fields": {"error": type(exc).__name__}},
         )
         raise HTTPException(status_code=400, detail={"messageKey": "error.badRequest"}) from exc
+
+    # SEC-01 scanner gate (U-SEC): fail-closed admission
+    enforce_scan_gate(request, data)
 
     sanitizer = PdfSanitizer()
     sanitizer.sanitize(data)
@@ -127,18 +142,21 @@ async def pdf_to_jpg_admit(request: Request, file: UploadFile) -> TaskAdmission:
             "pdf-to-jpg enqueue store unavailable",
             extra={"fields": {"error": type(exc).__name__}},
         )
+        _delete_orphan_input(r2, input_key)
         raise HTTPException(status_code=503, detail={"messageKey": "error.internalError"}) from exc
     except TaskConflictError as exc:
         logger.error(
             "pdf-to-jpg enqueue conflict",
             extra={"fields": {"error": type(exc).__name__}},
         )
+        _delete_orphan_input(r2, input_key)
         raise HTTPException(status_code=409, detail={"messageKey": "error.internalError"}) from exc
     except Exception as exc:
         logger.error(
             "pdf-to-jpg enqueue failed",
             extra={"fields": {"error": type(exc).__name__}},
         )
+        _delete_orphan_input(r2, input_key)
         raise HTTPException(status_code=503, detail={"messageKey": "error.internalError"}) from exc
 
     return TaskAdmission(task_id=enqueued.task_id, expires_at=enqueued.expires_at)

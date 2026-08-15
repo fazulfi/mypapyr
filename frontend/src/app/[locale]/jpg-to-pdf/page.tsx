@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { use } from "react";
 
 import { ToolPageHeader } from "@/components/ToolPageHeader";
-import { AdSlot } from "@/components/ads/AdSlot";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
+import { AdSlot } from "@/components/ads/AdSlot";
 import OtherTools from "@/components/OtherTools";
 import type { Locale } from "@/lib/i18n";
 import { defaultLocale, isLocale } from "@/lib/i18n";
@@ -19,7 +19,8 @@ import { ErrorCard } from "@/components/states/ErrorCard";
 import type { ToolState } from "@/lib/toolState";
 import { useTaskPolling } from "@/hooks/useTaskPolling";
 
-const MAX_SIZE_BYTES = 104857600; // 100 MiB
+const MAX_FILES = 50;
+const MAX_SIZE_BYTES = 20971520; // 20 MiB per file
 
 function derivePhase(
   status: ReturnType<typeof useTaskPolling>["status"],
@@ -67,7 +68,7 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
     setUploadPhase("uploading");
     try {
       const form = new FormData();
-      for (const file of selected) form.append("file", file);
+      for (const file of selected) form.append("files", file);
       const response = await fetch("/api/v1/tools/jpg-to-pdf/tasks", {
         method: "POST",
         body: form,
@@ -111,8 +112,8 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
           <Dropzone
             files={files}
             onChange={setFiles}
-            accept={["image/jpeg", "image/png", "image/webp"]}
-            maxFiles={50}
+            accept={["image/jpeg"]}
+            maxFiles={MAX_FILES}
             maxSizeBytes={MAX_SIZE_BYTES}
             disabled={phase === "uploading"}
             locale={locale}
@@ -127,6 +128,12 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
               ? copy.tools.jpgToPdf.actions.uploading
               : copy.tools.jpgToPdf.actions.convert}
           </button>
+
+          <div className="mt-6 space-y-1">
+            <p className="text-xs text-slate-600">{copy.tools.jpgToPdf.paperNote}</p>
+            <p className="text-xs text-slate-500">{copy.tools.jpgToPdf.metadataNote}</p>
+          </div>
+          <OtherTools currentTool="jpg-to-pdf" locale={locale} />
         </div>
       </main>
     );

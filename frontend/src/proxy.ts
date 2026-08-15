@@ -7,6 +7,7 @@ import {
   isLocale,
   resolveLocale,
 } from "./lib/i18n";
+import { resolveRouteAlias } from "./lib/route-aliases";
 
 export const config = {
   matcher: [
@@ -35,6 +36,14 @@ export function proxy(request: NextRequest): NextResponse {
 
   const firstSegment = pathname.split("/")[1];
   if (firstSegment !== undefined && isLocale(firstSegment)) {
+    // Canonical localized URL stays in the browser; rewrite translated slugs
+    // (ES/ID) internally to the EN-slug route directory that renders them.
+    const aliased = resolveRouteAlias(pathname);
+    if (aliased !== null && aliased !== pathname) {
+      const rewritten = request.nextUrl.clone();
+      rewritten.pathname = aliased;
+      return NextResponse.rewrite(rewritten);
+    }
     return NextResponse.next();
   }
 
@@ -60,3 +69,5 @@ export function proxy(request: NextRequest): NextResponse {
   });
   return response;
 }
+
+export default proxy;

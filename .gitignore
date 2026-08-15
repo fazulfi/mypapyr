@@ -29,6 +29,12 @@ trufflehog-report.json
 /.public-rewrite-work/
 /papyr-reference/
 
+# ===== Internal planning records (not public) =====
+/docs/superpowers/
+
+# Windows device artifact (accidental `type nul > file`); never commit
+nul
+
 # ===== Frontend / Node =====
 node_modules/
 .next/

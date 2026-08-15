@@ -2,6 +2,8 @@
 
 This roadmap distinguishes code available in the repository from intended product capability. It is directional, not a release commitment.
 
+Status note: the work described under "In this feature branch" below is implemented on the phase-5 and phase-6 feature branches, not yet merged to `main`, and not deployed. Production still runs the prior Phase 4 release, whose readiness probe reports unavailable until the Phase 5 topology (single Compose project, worker, scanner, cleanup, monitor) is deployed under separate authorization. The Phase 6 privacy, analytics, advertising, and support work is frontend-side and verified by unit + coverage gates on its branch.
+
 ## Available foundation
 
 - Minimal Next.js application and strict TypeScript configuration.
@@ -31,14 +33,25 @@ The shared trilingual shell that lands the locale routing, accessibility navigat
 
 ## In this feature branch: five tools end to end (pending merge and deployment)
 
-The following is implemented on this feature branch and verified by unit, integration, and E2E gates. It is not merged to `main` and not active in production.
+The following is implemented on the phase-5 feature branch and verified by the branch's unit, integration, and E2E gates. It is not merged to `main` and not active in production.
 
-- Five backend tool executors (compress-pdf, merge-pdf, split-pdf, jpg-to-pdf, pdf-to-jpg) dispatching worker jobs with pinned engines and Ghostscript in the worker image; a one-worker processing loop with truthful health probe and graceful shutdown.
-- Upload and enqueue admission on all five tool routers, with the five-tool executor registry dispatching worker jobs and pinned conversion engines.
-- Localized tool page routes for compress, merge, and split; localized catalog entries, tool-ids, and trilingual (EN/ES/ID) message keys across all five tools.
-- HTTP E2E coverage of the five-tool admission-poll-download lifecycle.
-- Hardened Nginx server block with rate limiting, security headers, bot/path blocking, and a fail-closed default server.
-- R2 lifecycle policy gate: the approved two-rule contract (one-day `tmp/` expiration safety net and one-day incomplete-multipart abort) is verified by `scripts/check-r2-lifecycle.sh`; applying the policy to the live bucket stays a separately authorized deploy-time action.
+- Five localized tool pages (English, Spanish, Indonesian) with localized slugs — `/en/compress-pdf` (`/es/comprimir-pdf`, `/id/kompres-pdf`), `/en/merge-pdf` (`/es/combinar-pdf`, `/id/gabungkan-pdf`), `/en/split-pdf` (`/es/dividir-pdf`, `/id/pisahkan-pdf`), `/en/jpg-to-pdf` (`/es/jpg-a-pdf`, `/id/gambar-ke-pdf`), `/en/pdf-to-jpg` (`/es/pdf-a-jpg`, `/id/pdf-ke-gambar`) — plus canonical EN route aliases for translated slugs, a shared task download helper, and Playwright E2E coverage of the five tools.
+- Upload and enqueue admission on all five tool routers, with the five-tool executor registry (`compress-pdf`, `merge-pdf`, `split-pdf`, `jpg-to-pdf`, `pdf-to-jpg`) dispatching worker jobs; pinned conversion engines and Ghostscript 10.07.1 in the worker image; a truthful worker entrypoint with health probe and graceful shutdown.
+- Concrete ClamAV threat scanning wired into all five admission paths with fail-closed semantics, plus canonical hostile-PDF acceptance fixtures.
+- Unified Compose topology (profiles `app`, `edge`, `queue`) covering `api`, `nginx`, `redis`, `workers`, `clamd`, `cleanup`, and `monitor` with digest-form image variables.
+- R2 lifecycle policy gate: the approved two-rule contract (one-day `tmp/` expiration safety net and one-day incomplete-multipart abort) is verified by `python -m app.ops.r2_lifecycle --check deploy/r2-lifecycle.json` / `scripts/check-r2-lifecycle.sh`; applying the policy to the live bucket stays a separately authorized deploy-time action.
+- Operations entrypoints implemented but not yet active in production: `python -m app.ops.cleanup_loop` (bounded cleanup passes with graceful shutdown) and `python -m app.ops.monitor` (eight health checks: api readiness, redis, clamd, queue backlog, queue PEL, worker health, cleanup freshness, R2 ops probe) with stable exit codes 0/1/2.
+
+## In this feature branch: privacy, analytics, advertising, and support (P6, pending merge and deployment)
+
+The following Phase 6 work is implemented on the `feat/phase-6-privacy-analytics-support` branch and verified by frontend unit + coverage gates (43 test files, 638 tests, branch coverage 88.3%). It is not merged to `main` and not active in production.
+
+- **Analytics schema, redaction, and leakage tests (PT-01)** — a closed-field event schema (`frontend/src/lib/analytics-schema.ts`) enumerating allowed fields (page, locale, referrer, UTM, tool, mode, coarse size bands, funnel, timing, error categories, outcomes, web vitals, ad presence) and a forbidden list (filenames, object keys, signed URLs, passwords, contents, previews, raw error and message payloads, fingerprints). `frontend/src/lib/analytics.ts` provides a redaction pipeline (`redactPayload` strips non-allowed keys and coerces filename-like values), a closed `errorCategory` enum (raw errors are never sent), coarse size-band enforcement (never exact bytes), opt-out via DNT / Global Privacy Control / app flag, SSR-safe wrappers, and a `useAnalytics` hook. The leakage test suite (`frontend/src/__tests__/leakage.test.ts`, 36 tests) verifies the schema and redaction contracts.
+- **Advertising slots with placement guards (PT-02)** — an Adsterra native unit (300x250) configured once (`frontend/src/lib/ads.ts`, `frontend/src/components/ads/AdSlot.tsx`, `frontend/src/components/ads/placement.ts`). Reserved dimensions prevent layout shift; lazy client-side script injection triggers only after the slot scrolls into view; the slot renders only on the five tool pages and only after the primary task experience (after result/download), never beside the Download control, and never on status, legal, or support surfaces. Wired into the four tool pages that reach result states (compress, merge, jpg-to-pdf, pdf-to-jpg).
+- **Contact form and result-problem report (PT-03)** — a trilingual (EN/ES/ID) categorized contact form (`frontend/src/app/[locale]/contact/page.tsx`, `frontend/src/components/support/ContactForm.tsx`, `frontend/src/lib/support.ts`) and a result-local problem report (`frontend/src/components/support/ResultProblemReport.tsx`). Minimal data model (closed-enum category, message ≤ 2000 characters, optional email, sanitized page/locale context; no names, phones, or attachments). Anti-spam: honeypot, client rate-limit (3 / 10 min via `localStorage`), and a Cloudflare Turnstile placeholder gated by `NEXT_PUBLIC_TURNSTILE_SITE_KEY`. Redaction-safe errors, locale-matched confirmations, and delivery-monitoring counts only.
+- **Password handling verification (PT-04)** — memory-only password entry (`frontend/src/components/PasswordInput.tsx`, `frontend/src/lib/password.ts`) that appears only for encrypted inputs, validates each locked source independently for Merge, distinguishes wrong-password from corrupt/unsupported errors, and never writes password material to analytics, logs, URLs, or storage.
+
+Unit-test gating: branch coverage raised from a pre-existing ~74% sub-80 baseline to 88.3% (lines 92.7%, statements 91.5%, functions 92.7%), meeting the 80% CI threshold.
 
 ## Specified launch catalogue
 
@@ -52,17 +65,15 @@ The five-tool catalogue below is specified in the product specification and impl
 
 Each tool is planned with browser-first capability detection, a transparent server fallback where needed, explicit limits, accessible states, and consistent retention rules.
 
+## Planned platform services
 
-## In this feature branch: privacy, analytics, advertising, and support (P6, pending merge and deployment)
+- Abuse controls, incident alerts, and recovery procedures beyond the branch's monitor and cleanup entrypoints.
+- Separately authorized production release and deployment of the branch topology (single Compose project, worker, scanner, cleanup, monitor), including the R2 lifecycle application and rollback drills.
+- Full legal, support, and status content and functionality beyond the route shells and the Phase 6 contact form, and the blog publishing programme.
 
-The following Phase 6 work is implemented on the `feat/phase-6-privacy-analytics-support` branch and verified by frontend unit + coverage gates (43 test files, 638 tests, branch coverage 88.3%). It is not merged to `main` and not active in production.
+## Changelog notes
 
-- **Analytics schema, redaction, and leakage tests (PT-01)** — a closed-field event schema (`frontend/src/lib/analytics-schema.ts`) enumerating allowed fields (page, locale, referrer, UTM, tool, mode, coarse size bands, funnel, timing, error categories, outcomes, web vitals, ad presence) and a forbidden list (filenames, object keys, signed URLs, passwords, contents, previews, raw error and message payloads, fingerprints). `frontend/src/lib/analytics.ts` provides a redaction pipeline (`redactPayload` strips non-allowed keys and coerces filename-like values), a closed `errorCategory` enum (raw errors are never sent), coarse size-band enforcement (never exact bytes), opt-out via DNT / Global Privacy Control / app flag, SSR-safe wrappers, and a `useAnalytics(locale, toolId?)` hook. The leakage test suite (`src/__tests__/leakage.test.ts`) asserts every guard.
-- **Advertising slots with placement guards (PT-02)** — an Adsterra native unit (300x250) configured once (`frontend/src/lib/ads.ts`, `frontend/src/components/ads/AdSlot.tsx`, `frontend/src/components/ads/placement.ts`). Reserved dimensions prevent layout shift; lazy client-side script injection triggers only after the slot scrolls into view; the slot renders only on the five tool pages and only after the primary task experience (after result/download), never beside the Download control, and never on status, legal, or support surfaces. Wired into the four tool pages that reach result states (compress, merge, jpg-to-pdf, pdf-to-jpg).
-- **Contact form and result-problem report (PT-03)** — a trilingual (EN/ES/ID) categorized contact form (`frontend/src/app/[locale]/contact/page.tsx`, `frontend/src/components/support/ContactForm.tsx`, `frontend/src/lib/support.ts`) and a result-local problem report (`frontend/src/components/support/ResultProblemReport.tsx`). Minimal data model (closed-enum category, message ≤ 2000 characters, optional email, sanitized page/locale context; no names, phones, or attachments). Anti-spam: honeypot, client rate-limit (3 / 10 min via `localStorage`), and a Cloudflare Turnstile placeholder gated by `NEXT_PUBLIC_TURNSTILE_SITE_KEY`. Redaction-safe errors, locale-matched confirmations, and delivery-monitoring counts only.
-- **Password handling verification (PT-04)** — memory-only password entry (`frontend/src/components/PasswordInput.tsx`, `frontend/src/lib/password.ts`) that appears only for encrypted inputs, validates each locked source independently for Merge, distinguishes wrong-password from corrupt/unsupported errors, and never writes password material to analytics, logs, URLs, or storage.
-
-Unit-test gating: branch coverage raised from a pre-existing ~74% sub-80 baseline to 88.3% (lines 92.7%, statements 91.5%, functions 92.7%), meeting the 80% CI threshold.
+- The squash merge of Phase 4 (`dabfbbd`) carries the misspelling `pdfToJag` in its message; the correct identifier is `pdfToJpg`. Public history is intentionally not rewritten; the correction is recorded here.
 
 ## Later opportunities
 

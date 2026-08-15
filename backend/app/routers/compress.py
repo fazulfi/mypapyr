@@ -32,6 +32,7 @@ from typing import cast
 from fastapi import APIRouter, FastAPI, HTTPException, Request, UploadFile, status
 
 from app.config import Settings, load
+from app.health import enforce_scan_gate
 from app.queue.queue import JobQueue
 from app.queue.store import (
     StoreUnavailableError,
@@ -84,6 +85,24 @@ def _resolve_queue(request: Request, settings: Settings, store: TaskStore) -> Jo
     return JobQueue(settings, store)
 
 
+def _delete_orphan_input(r2: R2Client, input_key: str) -> None:
+    """Best-effort cleanup of an uploaded input when enqueue fails (I4).
+
+    The upload happens before enqueue; if enqueue rejects the job the object
+    would otherwise be orphaned with no task record (cleanup cannot reclaim
+    it). Deleting here is best-effort — a delete failure is logged and the
+    original enqueue error still propagates (the 1-day R2 lifecycle rule is
+    the safety net).
+    """
+    try:
+        r2.delete_object(input_key)
+    except Exception as exc:
+        logger.error(
+            "compress orphan input delete failed",
+            extra={"fields": {"error": type(exc).__name__}},
+        )
+
+
 @router.post("/tasks", response_model=TaskAdmission, status_code=status.HTTP_202_ACCEPTED)
 async def compress_pdf_admit(request: Request, file: UploadFile) -> TaskAdmission:
     """Admit a sanitized compress-pdf upload; returns 202 TaskAdmission."""
@@ -109,6 +128,8 @@ async def compress_pdf_admit(request: Request, file: UploadFile) -> TaskAdmissio
             extra={"fields": {"error": type(exc).__name__}},
         )
         raise HTTPException(status_code=400, detail={"messageKey": "error.badRequest"}) from exc
+
+    enforce_scan_gate(request, data)
 
     sanitizer = PdfSanitizer()
     sanitizer.sanitize(data)
@@ -140,18 +161,21 @@ async def compress_pdf_admit(request: Request, file: UploadFile) -> TaskAdmissio
             "compress enqueue store unavailable",
             extra={"fields": {"error": type(exc).__name__}},
         )
+        _delete_orphan_input(r2, input_key)
         raise HTTPException(status_code=503, detail={"messageKey": "error.internalError"}) from exc
     except TaskConflictError as exc:
         logger.error(
             "compress enqueue conflict",
             extra={"fields": {"error": type(exc).__name__}},
         )
+        _delete_orphan_input(r2, input_key)
         raise HTTPException(status_code=409, detail={"messageKey": "error.internalError"}) from exc
     except Exception as exc:
         logger.error(
             "compress enqueue failed",
             extra={"fields": {"error": type(exc).__name__}},
         )
+        _delete_orphan_input(r2, input_key)
         raise HTTPException(status_code=503, detail={"messageKey": "error.internalError"}) from exc
 
     return TaskAdmission(task_id=enqueued.task_id, expires_at=enqueued.expires_at)

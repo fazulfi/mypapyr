@@ -96,7 +96,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: https://api.example.com
+          NEXT_PUBLIC_API_BASE_URL: https://api.example.com
           NEXT_PUBLIC_SITE_URL: https://mypapyr.com
 
   frontend-e2e:
@@ -129,7 +129,7 @@ jobs:
       - name: Build Next.js app
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: https://api.example.com
+          NEXT_PUBLIC_API_BASE_URL: https://api.example.com
           NEXT_PUBLIC_SITE_URL: https://mypapyr.com
 
       - name: Run E2E tests
@@ -496,6 +496,8 @@ jobs:
         run: |
           set -euo pipefail
           PAPYR_API_IMAGE=papyr-api@sha256:0000000000000000000000000000000000000000000000000000000000000000 \
+          PAPYR_WORKERS_IMAGE=example.invalid/papyr-workers@sha256:0000000000000000000000000000000000000000000000000000000000000000 \
+          PAPYR_CLAMD_IMAGE=example.invalid/clamd@sha256:0000000000000000000000000000000000000000000000000000000000000000 \
           PAPYR_ENV_FILE="$PAPYR_COMPOSE_DIR/.env.test" \
           docker compose \
             --project-directory "$PAPYR_COMPOSE_DIR" \

@@ -2,16 +2,14 @@
 
 from fastapi.testclient import TestClient
 
+from app.routers.image_to_pdf import router
 
-def test_router_prefix():
-    from app.routers.image_to_pdf import router
 
+def test_router_prefix() -> None:
     assert router.prefix == "/api/v1/tools/jpg-to-pdf"
 
 
-def test_router_tag():
-    from app.routers.image_to_pdf import router
-
+def test_router_tag() -> None:
     assert router.tags == ["jpg-to-pdf"]
 
 

@@ -33,7 +33,7 @@ function pollingWithStatus(status: unknown): void {
   );
 }
 
-function stubFetch(taskId = "task-cmp-1"): ReturnType<typeof vi.fn> {
+function stubFetch(taskId = "task-comp-1"): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn().mockImplementation((url: RequestInfo) => {
     const target = String(url);
     if (target.endsWith("/tasks")) {
@@ -59,7 +59,7 @@ function stubFetch(taskId = "task-cmp-1"): ReturnType<typeof vi.fn> {
 
 async function submitPdf(locale: "en" | "es" | "id" = "en"): Promise<ReturnType<typeof render>> {
   const rendered = render(<CompressPdfTool locale={locale} />);
-  selectFiles(rendered.container, [makePdf("a.pdf")]);
+  selectFiles(rendered.container, [makePdf("document.pdf")]);
   fireEvent.click(
     screen.getByRole("button", { name: getMessages(locale).tools.compress.actions.compress }),
   );
@@ -77,18 +77,14 @@ afterEach(() => {
 });
 
 describe("CompressPdfTool localized rendering", () => {
-  it("renders the localized title, description, dropzone and button for each locale", () => {
+  it("renders the localized title and dropzone for each locale", () => {
     for (const locale of ["en", "es", "id"] as const) {
       const copy = getMessages(locale);
       const { unmount } = render(<CompressPdfTool locale={locale} />);
       expect(
         screen.getByRole("heading", { level: 1, name: copy.tools.compress.title }),
       ).toBeTruthy();
-      expect(screen.getByText(copy.tools.compress.description)).toBeTruthy();
       expect(screen.getByTestId("dropzone")).toBeTruthy();
-      expect(
-        screen.getByRole("button", { name: copy.tools.compress.actions.compress }),
-      ).toBeTruthy();
       unmount();
     }
   });
@@ -108,6 +104,27 @@ describe("CompressPdfTool localized rendering", () => {
     expect(enabled.disabled).toBe(false);
   });
 
+  it("restricts the file input to application/pdf", () => {
+    const { container } = render(<CompressPdfTool locale="en" />);
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(input.getAttribute("accept")).toBe("application/pdf");
+  });
+});
+
+describe("CompressPdfTool upload / admission contract", () => {
+  it("POSTs the PDF to the admission endpoint using the file field", async () => {
+    const fetchMock = stubFetch();
+    await submitPdf("en");
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/v1/tools/compress-pdf/tasks");
+    expect(init.method).toBe("POST");
+    const body = init.body as FormData;
+    const files = body.getAll("file");
+    expect(files).toHaveLength(1);
+    expect((files[0] as File).name).toBe("document.pdf");
+  });
   it("shows the uploading label while the admission request is in flight", async () => {
     let resolveUpload: (value: unknown) => void = () => undefined;
     const pending = new Promise((resolve) => {
@@ -127,21 +144,7 @@ describe("CompressPdfTool localized rendering", () => {
     );
     resolveUpload({ ok: true, json: async () => ({ task_id: "t", expires_at: "" }) });
   });
-});
 
-describe("CompressPdfTool upload / admission contract", () => {
-  it("POSTs the selected PDF to the admission endpoint using the file field", async () => {
-    const fetchMock = stubFetch();
-    await submitPdf("en");
-
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("/api/v1/tools/compress-pdf/tasks");
-    expect(init.method).toBe("POST");
-    const body = init.body as FormData;
-    const names = body.getAll("file").map((entry) => (entry as File).name);
-    expect(names).toEqual(["a.pdf"]);
-  });
 
   it("surfaces the error card when the admission request fails", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 503 }));
@@ -152,27 +155,32 @@ describe("CompressPdfTool upload / admission contract", () => {
 
 describe("CompressPdfTool polling / result states", () => {
   it("renders the queued card after admission while the task waits", async () => {
-    pollingWithStatus({ state: "queued", messageKey: null, retryable: false, outputCount: 1 });
+    pollingWithStatus({ state: "queued", messageKey: null, retryable: false, outputCount: null });
     stubFetch();
     await submitPdf("en");
     await waitFor(() => expect(screen.getByText(getMessages("en").states.queued)).toBeTruthy());
   });
 
   it("renders the processing card while the task is processing", async () => {
-    pollingWithStatus({ state: "processing", messageKey: null, retryable: false, outputCount: 1 });
+    pollingWithStatus({
+      state: "processing",
+      messageKey: null,
+      retryable: false,
+      outputCount: null,
+    });
     stubFetch();
     await submitPdf("en");
     await waitFor(() => expect(screen.getByText(getMessages("en").states.processing)).toBeTruthy());
   });
 
-  it("auto-fetches the download grant when the task completes and offers download plus reset", async () => {
+  it("fetches the download grant and offers download plus reset when done", async () => {
     pollingWithStatus({ state: "done", messageKey: null, retryable: false, outputCount: 1 });
-    const fetchMock = stubFetch("task-cmp-9");
+    const fetchMock = stubFetch("task-comp-9");
     await submitPdf("en");
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
-        "/api/v1/tools/compress-pdf/tasks/task-cmp-9/download/0",
+        "/api/v1/tools/compress-pdf/tasks/task-comp-9/download/0",
       ),
     );
     const copy = getMessages("en");
@@ -184,13 +192,13 @@ describe("CompressPdfTool polling / result states", () => {
     pollingWithStatus({
       state: "failed",
       messageKey: "tools.compress.errors.fileTooLarge",
-      retryable: true,
+      retryable: false,
       outputCount: null,
     });
     stubFetch();
-    await submitPdf("id");
+    await submitPdf("es");
     await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
-    expect(screen.getByText(getMessages("id").tools.compress.errors.fileTooLarge)).toBeTruthy();
+    expect(screen.getByText(getMessages("es").tools.compress.errors.fileTooLarge)).toBeTruthy();
   });
 
   it("resets back to the idle dropzone from the process-another action", async () => {

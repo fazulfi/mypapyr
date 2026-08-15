@@ -15,6 +15,7 @@ behavior under real network latency.
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 import uuid
@@ -45,7 +46,7 @@ from app.queue.store import (
     TaskStore,
     TransitionPayload,
 )
-from app.schemas.job import ErrorSummary, Progress, ResultSummary
+from app.schemas.job import ErrorSummary, Progress, ResultSummary, SplitOptions
 from app.tasks.state_machine import JobEvent, JobState
 
 T0 = datetime(2026, 8, 3, 12, 0, 0, tzinfo=UTC)
@@ -72,6 +73,7 @@ OPTIONAL_FIELDS = frozenset(
         "result",
         "error",
         "objects",
+        "options",
     }
 )
 ALL_FIELDS = REQUIRED_FIELDS | OPTIONAL_FIELDS
@@ -273,11 +275,13 @@ def short_ttl_store(client_a: RedisLike, clock: FakeClock) -> TaskStore:
 
 def test_create_and_get_round_trips_all_fields(store: TaskStore, clock: FakeClock) -> None:
     progress = Progress(unit="engine_progress", value=5, total=10)
+    options = SplitOptions(ranges="2-5,7")
     record = replace(
         make_record(clock, task_id="full"),
         queued_at=clock(),
         progress=progress,
         objects=(_FIXTURE_OBJECT,),
+        options=options,
     )
     created = store.create(record)
     assert created == record
@@ -286,6 +290,7 @@ def test_create_and_get_round_trips_all_fields(store: TaskStore, clock: FakeCloc
     assert fetched == record
     assert fetched.progress == progress
     assert fetched.objects == (_FIXTURE_OBJECT,)
+    assert fetched.options == options
     assert fetched.state is JobState.QUEUED
 
 
@@ -299,6 +304,109 @@ def test_minimal_record_round_trip(store: TaskStore, clock: FakeClock) -> None:
     assert fetched.result is None
     assert fetched.error is None
     assert fetched.objects == ()
+    assert fetched.options is None
+
+
+def test_split_options_serialization_round_trip(
+    store: TaskStore, raw_client: fakeredis.FakeRedis, clock: FakeClock
+) -> None:
+    record = make_record(clock, task_id="split")
+    options = SplitOptions(ranges="2-5,7")
+    record_with_options = replace(record, tool="split-pdf", options=options)
+    created = store.create(record_with_options)
+    assert created.options == options
+    fetched = store.get(record.task_id)
+    assert fetched.options == options
+    # Verify it round-trips through JSON with correct structure
+    expected_range_spec = json.dumps({"ranges": "2-5,7"}, sort_keys=True, separators=(",", ":"))
+    raw = raw_client.hgetall(_TASK_KEY.format(task_id=record.task_id))
+    assert raw[b"options"] == expected_range_spec.encode()
+
+
+def test_split_options_backward_compat_missing_field(
+    store: TaskStore, raw_client: fakeredis.FakeRedis, clock: FakeClock
+) -> None:
+    """Old records without an options field deserialize as options=None."""
+    task_id = uuid.uuid4().hex
+    raw_client.hset(
+        _TASK_KEY.format(task_id=task_id),
+        mapping={
+            "task_id": task_id,
+            "state": JobState.QUEUED.value,
+            "tool": "split-pdf",
+            "created_at": T0.isoformat(timespec="microseconds"),
+            "accepted_at": T0.isoformat(timespec="microseconds"),
+            "updated_at": T0.isoformat(timespec="microseconds"),
+            "expires_at": (T0 + timedelta(hours=1)).isoformat(timespec="microseconds"),
+        },
+    )
+    fetched = store.get(task_id)
+    assert fetched.state is JobState.QUEUED
+    assert fetched.tool == "split-pdf"
+    assert fetched.options is None
+
+
+def test_corrupt_options_json_fails_closed_as_corrupt_record(
+    store: TaskStore, raw_client: fakeredis.FakeRedis, clock: FakeClock
+) -> None:
+    """Invalid JSON for the options field raises CorruptRecordError."""
+    task_id = uuid.uuid4().hex
+    raw_client.hset(
+        _TASK_KEY.format(task_id=task_id),
+        mapping={
+            "task_id": task_id,
+            "state": JobState.QUEUED.value,
+            "tool": "split-pdf",
+            "created_at": T0.isoformat(timespec="microseconds"),
+            "accepted_at": T0.isoformat(timespec="microseconds"),
+            "updated_at": T0.isoformat(timespec="microseconds"),
+            "expires_at": (T0 + timedelta(hours=1)).isoformat(timespec="microseconds"),
+            "options": "not-json",
+        },
+    )
+    with pytest.raises(CorruptRecordError):
+        store.get(task_id)
+
+
+def test_transition_preserves_split_options(store: TaskStore, clock: FakeClock) -> None:
+    """Worker claim transitions preserve options intact."""
+    record = make_record(clock, task_id="preserve")
+    options = SplitOptions(ranges="1-3,5")
+    record_with_opts = replace(record, tool="split-pdf", options=options)
+    created = store.create(record_with_opts)
+    assert created.options == options
+    claimed = store.transition_state(
+        created.task_id,
+        JobEvent.WORKER_CLAIMED,
+        expected_state=JobState.QUEUED,
+    )
+    assert claimed.options == options
+    assert claimed.started_at is not None
+
+
+def test_terminal_transitions_preserve_split_options(store: TaskStore, clock: FakeClock) -> None:
+    """Done transitions preserve options on the terminal record."""
+    result = ResultSummary(output_count=3, total_bytes=1024)
+    objects = ("tmp/out1.pdf", "tmp/out2.pdf", "tmp/out3.pdf")
+
+    record = make_record(clock, task_id="terminal")
+    options = SplitOptions(ranges="4-6")
+    record_with_opts = replace(record, tool="split-pdf", options=options)
+    created = store.create(record_with_opts)
+    claimed = store.transition_state(
+        created.task_id, JobEvent.WORKER_CLAIMED, expected_state=JobState.QUEUED
+    )
+    assert claimed.options == options
+
+    uploaded = store.transition_state(
+        created.task_id,
+        JobEvent.RESULT_UPLOADED,
+        expected_state=JobState.PROCESSING,
+        payload=TransitionPayload(result=result, objects=tuple(objects)),
+    )
+    assert uploaded.result == result
+    assert uploaded.options == options
+    assert uploaded.state is JobState.DONE
 
 
 def test_get_unknown_id_raises_not_found(store: TaskStore) -> None:
@@ -855,6 +963,7 @@ def test_full_record_writes_exact_field_vocabulary(
         make_record(clock),
         progress=Progress(unit="engine_progress", value=1, total=10),
         objects=(_FIXTURE_OBJECT,),
+        options=SplitOptions(ranges="1-3"),
     )
     store.create(record)
     stored = raw_client.hgetall(_TASK_KEY.format(task_id=record.task_id))
