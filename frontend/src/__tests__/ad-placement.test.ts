@@ -409,25 +409,16 @@ describe("AdSlot component", () => {
 // ---------------------------------------------------------------------------
 
 describe("AdSlot lazy script injection", () => {
-  it("registers the slot in atAsyncOptions with a container div after IntersectionObserver fires", () => {
-    const { fire } = installIntersectionObserver();
-
+  it("registers the slot in atAsyncOptions with a container div on mount", () => {
     const { container } = render(React.createElement(AdSlot, { pageSlug: "jpg-to-pdf" }));
 
-    // Before observer fires: no container div injected.
-    expect(container.querySelector('[id^="atContainer-"]')).toBeNull();
-
+    // The placeholder renders with reserved dimensions.
     const placeholder = container.querySelector('[aria-label="Advertisement"]');
     expect(placeholder).not.toBeNull();
 
-    // Fire the observer callback — the slot is now visible.
-    act(() => {
-      fire(true);
-    });
-
-    // After observer fires: the slot registers in the official
-    // atAsyncOptions queue and renders its container div (multi-placement
-    // pattern). No single-consumption global atOptions.
+    // The slot registers in the official atAsyncOptions queue and renders
+    // its container div immediately (no observer gating). No
+    // single-consumption global atOptions.
     const win = window as Window & { atAsyncOptions?: Array<Record<string, unknown>> };
     expect(win.atAsyncOptions).toBeDefined();
     const entry = (win.atAsyncOptions ?? []).find(
@@ -445,17 +436,9 @@ describe("AdSlot lazy script injection", () => {
     expect((window as Window & { atOptions?: unknown }).atOptions).toBeUndefined();
   });
 
-  it("removes the container div and script on unmount", () => {
-    const { fire } = installIntersectionObserver();
-
+  it("removes the container div on unmount", () => {
     const { unmount, container } = render(React.createElement(AdSlot, { pageSlug: "split-pdf" }));
     expect(container.querySelector('[aria-label="Advertisement"]')).not.toBeNull();
-
-    // Fire observer to trigger injection.
-    act(() => {
-      fire(true);
-    });
-
     expect(container.querySelector('[id^="atContainer-"]')).not.toBeNull();
 
     unmount();
@@ -570,7 +553,6 @@ describe("LeaderboardAdSlot (responsive)", () => {
 
 describe("AdSlot multi-placement (official atAsyncOptions pattern)", () => {
   it("registers each slot in window.atAsyncOptions with its own container div", () => {
-    const { fireAll } = installIntersectionObserver();
     const { container } = render(
       React.createElement("div", null, [
         React.createElement(AdSlot, {
@@ -588,11 +570,7 @@ describe("AdSlot multi-placement (official atAsyncOptions pattern)", () => {
       ]),
     );
 
-    act(() => {
-      fireAll(true);
-    });
-
-    // Each slot must register its own entry in the official atAsyncOptions
+    // Each slot registers its own entry in the official atAsyncOptions
     // queue (the pattern used by working Adsterra multi-placement sites).
     const win = window as Window & { atAsyncOptions?: Array<Record<string, unknown>> };
     expect(win.atAsyncOptions).toBeDefined();
@@ -601,8 +579,6 @@ describe("AdSlot multi-placement (official atAsyncOptions pattern)", () => {
     expect(keys).toContain("d78b74f28dcbbde269d55fe72b8a96a3");
     expect(keys).toContain("b552110bd65e7690ed89a04a1d654898");
 
-    // Each entry carries the official fields: format 'js', async, and a
-    // container id the slot div renders as.
     for (const entry of queue) {
       expect(entry.format).toBe("js");
       expect(entry.async).toBe(true);
@@ -610,16 +586,19 @@ describe("AdSlot multi-placement (official atAsyncOptions pattern)", () => {
       expect(entry.container).toMatch(/^atContainer-/);
     }
 
-    // Each slot div renders its own container div for the ad.
     const containers = container.querySelectorAll('[id^="atContainer-"]');
     expect(containers.length).toBe(2);
+    // Both slots render container divs inside their reserved slot divs.
+    const slotDivs = container.querySelectorAll('[data-testid="papyr-ad-slot"]');
+    expect(slotDivs.length).toBe(2);
+    for (const slot of Array.from(slotDivs)) {
+      expect(slot.querySelector('[id^="atContainer-"]')).not.toBeNull();
+    }
 
-    // No single-consumption global atOptions (one-shot bug).
     expect((window as Window & { atOptions?: unknown }).atOptions).toBeUndefined();
   });
 
   it("keeps reserved placeholder dimensions on the outer slot div", () => {
-    const { fire } = installIntersectionObserver();
     const { container } = render(
       React.createElement(AdSlot, {
         pageSlug: "home",
@@ -628,11 +607,15 @@ describe("AdSlot multi-placement (official atAsyncOptions pattern)", () => {
       }),
     );
     const slot = container.querySelector('[data-testid="papyr-ad-slot"]') as HTMLElement;
+    expect(slot).not.toBeNull();
     expect(slot.style.width).toBe("160px");
     expect(slot.style.height).toBe("600px");
-    act(() => {
-      fire(true);
-    });
+    const win = window as Window & { atAsyncOptions?: Array<Record<string, unknown>> };
+    const entry = (win.atAsyncOptions ?? []).find(
+      (o) => o.key === "d7750ca9d81b86c2f911c3fee1f5cadd",
+    );
+    expect(entry).toBeDefined();
+    expect(entry?.container).toBe("atContainer-d7750ca9d81b86c2f911c3fee1f5cadd");
     expect(container.querySelector('[id^="atContainer-"]')).not.toBeNull();
   });
 });
