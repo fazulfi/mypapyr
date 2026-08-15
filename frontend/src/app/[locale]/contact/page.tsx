@@ -24,10 +24,10 @@ export default async function ContactPage({
       </div>
       <div
         className="mt-10 flex max-w-full flex-col items-center gap-6 overflow-hidden"
-        aria-label="Advertisement"
+        aria-label={copy.adLabel}
       >
-        <AdSlot pageSlug="contact" immediate unit="banner-468x60" />
-        <AdSlot pageSlug="contact" immediate unit="half-page-160x300" />
+        <AdSlot pageSlug="contact" immediate unit="banner-468x60" label={copy.adLabel} />
+        <AdSlot pageSlug="contact" immediate unit="half-page-160x300" label={copy.adLabel} />
       </div>
     </div>
   );

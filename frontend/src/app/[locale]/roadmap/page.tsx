@@ -8,5 +8,5 @@ export default async function RoadmapPage({
   params,
 }: SupportingPageProps): Promise<React.ReactElement> {
   const copy = await resolveSupportingPageCopy(params, "roadmap");
-  return <SupportingPageContent copy={copy} pageSlug="roadmap" />;
+  return <SupportingPageContent copy={copy} pageSlug="roadmap" adLabel={copy.adLabel} />;
 }

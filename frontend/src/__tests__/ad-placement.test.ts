@@ -311,6 +311,18 @@ describe("AdSlot component", () => {
     expect(container.querySelector('[aria-label="Advertisement"]')).toBeNull();
   });
 
+  it("renders the localized label passed as a prop (Publicidad/Iklan)", () => {
+    const { container } = render(
+      React.createElement(AdSlot, { pageSlug: "home", immediate: true, label: "Publicidad" }),
+    );
+    expect(container.querySelector('[aria-label="Publicidad"]')).not.toBeNull();
+    cleanup();
+    const { container: id } = render(
+      React.createElement(AdSlot, { pageSlug: "home", immediate: true, label: "Iklan" }),
+    );
+    expect(id.querySelector('[aria-label="Iklan"]')).not.toBeNull();
+  });
+
   it("renders nothing on a non-allowed page (status)", () => {
     const { container } = render(React.createElement(AdSlot, { pageSlug: "status" }));
     expect(container.querySelector('[aria-label="Advertisement"]')).toBeNull();

@@ -40,15 +40,6 @@ interface AdSlotProps {
  */
 const FALLBACK_LABEL = "Advertisement";
 
-// Locale -> ad label; must mirror messages.ads.label so the aria-label stays
-// trilingual without every callsite passing copy. SSR/hydration keeps the
-// neutral fallback; after mount the label follows <html lang>.
-const AD_LABELS: Record<string, string> = {
-  en: "Advertisement",
-  es: "Publicidad",
-  id: "Iklan",
-};
-
 export function AdSlot({
   pageSlug,
   phase,
@@ -59,14 +50,7 @@ export function AdSlot({
   const slotRef = useRef<HTMLDivElement | null>(null);
   // Resolve the accessible label once at mount: explicit prop wins, else the
   // <html lang> from the hydration document, else the neutral fallback.
-  const [resolvedLabel] = useState<string>(() => {
-    if (label !== undefined) return label;
-    if (typeof window !== "undefined") {
-      const lang = document.documentElement.lang;
-      if (lang in AD_LABELS) return AD_LABELS[lang];
-    }
-    return FALLBACK_LABEL;
-  });
+  const resolvedLabel = label ?? FALLBACK_LABEL;
   const [enabled] = useState<boolean>(() => isAdEnabled());
   const selected: AdUnit = unit !== undefined ? AD_UNITS[unit] : AD_UNITS["box-300x250"];
   const allowed =

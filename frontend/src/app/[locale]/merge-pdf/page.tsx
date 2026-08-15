@@ -114,7 +114,7 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
         <div className="mx-auto max-w-3xl">
           <ToolPageHeader locale={locale} toolId="merge-pdf" />
           <PrivacyNotice locale={locale} model="client" />
-          <LeaderboardAdSlot pageSlug="merge-pdf" />
+          <LeaderboardAdSlot pageSlug="merge-pdf" label={copy.ads.label} />
           <Dropzone
             files={files}
             onChange={setFiles}
@@ -136,7 +136,7 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
               : copy.tools.merge.actions.merge}
           </button>
           <OtherTools currentTool="merge-pdf" locale={locale} />
-          <AdSlot pageSlug="merge-pdf" immediate unit="skyscraper-160x600" />
+          <AdSlot pageSlug="merge-pdf" immediate unit="skyscraper-160x600" label={copy.ads.label} />
         </div>
       </main>
     );
@@ -177,12 +177,12 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
       <div className="mx-auto max-w-3xl">
         <ToolPageHeader locale={locale} toolId="merge-pdf" />
         <PrivacyNotice locale={locale} model="client" />
-        <LeaderboardAdSlot pageSlug="merge-pdf" />
+        <LeaderboardAdSlot pageSlug="merge-pdf" label={copy.ads.label} />
         {card}
-        <AdSlot pageSlug="merge-pdf" phase={phase} />
+        <AdSlot pageSlug="merge-pdf" phase={phase} label={copy.ads.label} />
         <OtherTools currentTool="merge-pdf" locale={locale} />
         <ResultProblemReport locale={locale} page="/merge-pdf" localeContext={locale} />
-        <AdSlot pageSlug="merge-pdf" immediate unit="skyscraper-160x600" />
+        <AdSlot pageSlug="merge-pdf" immediate unit="skyscraper-160x600" label={copy.ads.label} />
       </div>
     </main>
   );

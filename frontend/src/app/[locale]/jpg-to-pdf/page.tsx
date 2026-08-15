@@ -111,7 +111,7 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
         <div className="mx-auto max-w-3xl">
           <ToolPageHeader locale={locale} toolId="jpg-to-pdf" />
           <PrivacyNotice locale={locale} model="hybrid" />
-          <LeaderboardAdSlot pageSlug="jpg-to-pdf" />
+          <LeaderboardAdSlot pageSlug="jpg-to-pdf" label={copy.ads.label} />
           <Dropzone
             files={files}
             onChange={setFiles}
@@ -137,7 +137,12 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
             <p className="text-xs text-slate-500">{copy.tools.jpgToPdf.metadataNote}</p>
           </div>
           <OtherTools currentTool="jpg-to-pdf" locale={locale} />
-          <AdSlot pageSlug="jpg-to-pdf" immediate unit="skyscraper-160x600" />
+          <AdSlot
+            pageSlug="jpg-to-pdf"
+            immediate
+            unit="skyscraper-160x600"
+            label={copy.ads.label}
+          />
         </div>
       </main>
     );
@@ -178,12 +183,12 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
       <div className="mx-auto max-w-3xl">
         <ToolPageHeader locale={locale} toolId="jpg-to-pdf" />
         <PrivacyNotice locale={locale} model="hybrid" />
-        <LeaderboardAdSlot pageSlug="jpg-to-pdf" />
+        <LeaderboardAdSlot pageSlug="jpg-to-pdf" label={copy.ads.label} />
         {card}
-        <AdSlot pageSlug="jpg-to-pdf" phase={phase} />
+        <AdSlot pageSlug="jpg-to-pdf" phase={phase} label={copy.ads.label} />
         <OtherTools currentTool="jpg-to-pdf" locale={locale} />
         <ResultProblemReport locale={locale} page="/jpg-to-pdf" localeContext={locale} />
-        <AdSlot pageSlug="jpg-to-pdf" immediate unit="skyscraper-160x600" />
+        <AdSlot pageSlug="jpg-to-pdf" immediate unit="skyscraper-160x600" label={copy.ads.label} />
       </div>
     </main>
   );

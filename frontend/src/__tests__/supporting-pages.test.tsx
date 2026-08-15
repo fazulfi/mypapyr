@@ -187,9 +187,10 @@ describe("SH-08 shared supporting-page contract", () => {
     for (const key of pageKeys) {
       for (const locale of locales) {
         const copy = await resolveSupportingPageCopy(Promise.resolve({ locale }), key);
-        expect(copy).toBe(getMessages(locale).pages[key]);
-        expect(copy.title).toBe(getMessages(locale).pages[key].title);
-        expect(copy.description).toBe(getMessages(locale).pages[key].description);
+        const page = getMessages(locale).pages[key];
+        expect(copy.title).toBe(page.title);
+        expect(copy.description).toBe(page.description);
+        expect(copy.adLabel).toBe(getMessages(locale).ads.label);
       }
     }
   });

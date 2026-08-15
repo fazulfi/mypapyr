@@ -132,7 +132,7 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
         <div className="mx-auto max-w-3xl">
           <ToolPageHeader locale={locale} toolId="split-pdf" />
           <PrivacyNotice locale={locale} model="client" />
-          <LeaderboardAdSlot pageSlug="split-pdf" />
+          <LeaderboardAdSlot pageSlug="split-pdf" label={copy.ads.label} />
           <Dropzone
             files={files}
             onChange={setFiles}
@@ -227,7 +227,7 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
               : copy.tools.split.actions.split}
           </button>
           <OtherTools currentTool="split-pdf" locale={locale} />
-          <AdSlot pageSlug="split-pdf" immediate unit="skyscraper-160x600" />
+          <AdSlot pageSlug="split-pdf" immediate unit="skyscraper-160x600" label={copy.ads.label} />
         </div>
       </main>
     );
@@ -270,12 +270,12 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
       <div className="mx-auto max-w-3xl">
         <ToolPageHeader locale={locale} toolId="split-pdf" />
         <PrivacyNotice locale={locale} model="client" />
-        <LeaderboardAdSlot pageSlug="split-pdf" />
+        <LeaderboardAdSlot pageSlug="split-pdf" label={copy.ads.label} />
         {card}
-        <AdSlot pageSlug="split-pdf" phase={phase} />
+        <AdSlot pageSlug="split-pdf" phase={phase} label={copy.ads.label} />
         <OtherTools currentTool="split-pdf" locale={locale} />
         <ResultProblemReport locale={locale} page="/split-pdf" localeContext={locale} />
-        <AdSlot pageSlug="split-pdf" immediate unit="skyscraper-160x600" />
+        <AdSlot pageSlug="split-pdf" immediate unit="skyscraper-160x600" label={copy.ads.label} />
       </div>
     </main>
   );
