@@ -2,7 +2,7 @@
 
 This roadmap distinguishes code available in the repository from intended product capability. It is directional, not a release commitment.
 
-Status note: the work described under "In this feature branch" below is implemented on the phase-5 and phase-6 feature branches, not yet merged to `main`, and not deployed. Production still runs the prior Phase 4 release, whose readiness probe reports unavailable until the Phase 5 topology (single Compose project, worker, scanner, cleanup, monitor) is deployed under separate authorization. The Phase 6 privacy, analytics, advertising, and support work is frontend-side and verified by unit + coverage gates on its branch.
+Status note: the Phase 5 (five tools end to end, hardened delivery) and Phase 6 (privacy, analytics, advertising, support) work is merged to `main` via PR #24 and deployed to production on 2026-08-15 (release 1767ca8; verified via <https://mypapyr.com> and <https://api.mypapyr.com> through Cloudflare). The contact form's email delivery requires the owner to provision Cloudflare Email Sending credentials out of band; until then submissions validate and are accepted while delivery failures are counted only.
 
 ## Available foundation
 
@@ -31,20 +31,20 @@ The shared trilingual shell that lands the locale routing, accessibility navigat
 - Localized homepage, localized 404 with `lang` and locale-resolved copy, and localized supporting route shells for privacy, terms, cookies and advertising, contact, status, roadmap, and blog.
 - Unit and Playwright E2E gates cover locale routing, cookie preference, the SkipLink and focus target, contrast on the focused SkipLink, the localized 404, and the supporting route headings across all three locales.
 
-## In this feature branch: five tools end to end (pending merge and deployment)
+## Deployed: five tools end to end
 
-The following is implemented on the phase-5 feature branch and verified by the branch's unit, integration, and E2E gates. It is not merged to `main` and not active in production.
+The five-tool work is merged to `main` and active in production since 2026-08-15 (release 1767ca8), verified by unit, integration, and E2E gates.
 
 - Five localized tool pages (English, Spanish, Indonesian) with localized slugs — `/en/compress-pdf` (`/es/comprimir-pdf`, `/id/kompres-pdf`), `/en/merge-pdf` (`/es/combinar-pdf`, `/id/gabungkan-pdf`), `/en/split-pdf` (`/es/dividir-pdf`, `/id/pisahkan-pdf`), `/en/jpg-to-pdf` (`/es/jpg-a-pdf`, `/id/gambar-ke-pdf`), `/en/pdf-to-jpg` (`/es/pdf-a-jpg`, `/id/pdf-ke-gambar`) — plus canonical EN route aliases for translated slugs, a shared task download helper, and Playwright E2E coverage of the five tools.
 - Upload and enqueue admission on all five tool routers, with the five-tool executor registry (`compress-pdf`, `merge-pdf`, `split-pdf`, `jpg-to-pdf`, `pdf-to-jpg`) dispatching worker jobs; pinned conversion engines and Ghostscript 10.07.1 in the worker image; a truthful worker entrypoint with health probe and graceful shutdown.
 - Concrete ClamAV threat scanning wired into all five admission paths with fail-closed semantics, plus canonical hostile-PDF acceptance fixtures.
 - Unified Compose topology (profiles `app`, `edge`, `queue`) covering `api`, `nginx`, `redis`, `workers`, `clamd`, `cleanup`, and `monitor` with digest-form image variables.
 - R2 lifecycle policy gate: the approved two-rule contract (one-day `tmp/` expiration safety net and one-day incomplete-multipart abort) is verified by `python -m app.ops.r2_lifecycle --check deploy/r2-lifecycle.json` / `scripts/check-r2-lifecycle.sh`; applying the policy to the live bucket stays a separately authorized deploy-time action.
-- Operations entrypoints implemented but not yet active in production: `python -m app.ops.cleanup_loop` (bounded cleanup passes with graceful shutdown) and `python -m app.ops.monitor` (eight health checks: api readiness, redis, clamd, queue backlog, queue PEL, worker health, cleanup freshness, R2 ops probe) with stable exit codes 0/1/2.
+- Operations entrypoints active in production as compose services (cleanup, monitor): `python -m app.ops.cleanup_loop` (bounded cleanup passes with graceful shutdown) and `python -m app.ops.monitor` (eight health checks: api readiness, redis, clamd, queue backlog, queue PEL, worker health, cleanup freshness, R2 ops probe) with stable exit codes 0/1/2.
 
-## In this feature branch: privacy, analytics, advertising, and support (P6, pending merge and deployment)
+## Deployed: privacy, analytics, advertising, and support (P6)
 
-The following Phase 6 work is implemented on the `feat/phase-6-privacy-analytics-support` branch and verified by 710 frontend tests across 47 files (statements 92.11%, branches 88.09%, functions 93.24%, lines 93.58%) and 1346 backend tests with ruff and mypy strict clean. It is not merged to `main` and not active in production.
+The Phase 6 work is merged to `main` (PR #24) and active in production since 2026-08-15 (release 1767ca8), verified by 710 frontend tests across 47 files (statements 92.11%, branches 88.09%, functions 93.24%, lines 93.58%) and 1346 backend tests with ruff and mypy strict clean. It is not merged to `main` and not active in production.
 
 - **Analytics schema, redaction, and leakage tests (PT-01)** — a closed-field event schema (`frontend/src/lib/analytics-schema.ts`) enumerating allowed fields (page, locale, referrer, UTM, tool, mode, coarse size bands, funnel, timing, error categories, outcomes, web vitals, ad presence) and a forbidden list (filenames, object keys, signed URLs, passwords, contents, previews, raw error and message payloads, fingerprints). `frontend/src/lib/analytics.ts` provides a redaction pipeline (`redactPayload` strips non-allowed keys and coerces filename-like values), a closed `errorCategory` enum (raw errors are never sent), coarse size-band enforcement (never exact bytes), opt-out via DNT / Global Privacy Control / app flag, SSR-safe wrappers, and a `useAnalytics` hook. The leakage test suite (`frontend/src/__tests__/leakage.test.ts`, 36 tests) verifies the schema and redaction contracts.
 - **Advertising slots with placement guards (PT-02)** — an Adsterra native unit (300x250) configured once (`frontend/src/lib/ads.ts`, `frontend/src/components/ads/AdSlot.tsx`, `frontend/src/components/ads/placement.ts`). Reserved dimensions prevent layout shift; lazy client-side script injection triggers only after the slot scrolls into view; the slot renders only on the five tool pages and only after the primary task experience (after the result/download card, per FR/DEC-151, enforced by a DOM-order guard test), never beside the Download control, and never on status, legal, or support surfaces. Wired into all five tool pages.

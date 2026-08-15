@@ -68,20 +68,20 @@ Papyr labels every claim so the repository can be read honestly: the source tree
 | Public-safe Docker Compose, Nginx, and environment templates | Available now |
 | CI quality, security, and repository QA gates: format, lint, coverage, build, Playwright E2E, Trivy, gitleaks, dependency and package audits, and QA checks for action pins, Dockerfiles, Compose, YAML, markdown, and shell | Available now |
 | Product, architecture, security, integration, and roadmap documentation | Available now |
-| Five-tool catalogue (Compress, Merge, Split, JPG to PDF, PDF to JPG) | In branch |
-| Localization across the five tool pages — English, Spanish, Indonesian | In branch |
+| Five-tool catalogue (Compress, Merge, Split, JPG to PDF, PDF to JPG) | Deployed |
+| Localization across the five tool pages — English, Spanish, Indonesian | Deployed |
 | Versioned `/api/v1` endpoints: capabilities, task status, and signed downloads | Available now |
 | Cloudflare R2 temporary-object lifecycle with a one-hour retention target | Available now |
-| Ghostscript compression subprocess (official, unmodified distribution) | In branch |
+| Ghostscript compression subprocess (official, unmodified distribution) | Deployed |
 | Per-tool limits and stable error categories | Available now |
-| Upload/enqueue endpoints, five-tool executors, worker dispatch, ClamAV threat scanning, cleanup coordination, and monitoring | In branch |
+| Upload/enqueue endpoints, five-tool executors, worker dispatch, ClamAV threat scanning, cleanup coordination, and monitoring | Deployed |
 | Shared upload, progress, error, and download experience | Planned |
 | Full legal, support, and status content and functionality | Planned |
-| Privacy-reviewed analytics schema with redaction and leakage tests (PT-01) | In branch |
-| Reserved-dimension Adsterra ad placement with layout/placement guards (PT-02) | In branch |
-| Categorized contact form and result-problem report with anti-spam (PT-03) | In branch |
-| Memory-only encrypted-PDF password handling (PT-04) | In branch |
-| Backend contact delivery endpoint with server-side validation, rate limiting, Turnstile siteverify, and Cloudflare Email Sending (PT-03) | In branch |
+| Privacy-reviewed analytics schema with redaction and leakage tests (PT-01) | Deployed |
+| Reserved-dimension Adsterra ad placement with layout/placement guards (PT-02) | Deployed |
+| Categorized contact form and result-problem report with anti-spam (PT-03) | Deployed |
+| Memory-only encrypted-PDF password handling (PT-04) | Deployed |
+| Backend contact delivery endpoint with server-side validation, rate limiting, Turnstile siteverify, and Cloudflare Email Sending (PT-03) | Deployed |
 | Blog publishing programme | Planned |
 | Redis queue and bounded worker processing | Available now |
 | Privacy-safe structured logging and minimal-metadata task records | Available now |
