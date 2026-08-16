@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getMessages } from "@/lib/messages";
@@ -234,5 +235,16 @@ describe("CompressPdfTool polling / result states", () => {
     fireEvent.click(screen.getByRole("button", { name: copy.reset.processAnother }));
 
     expect(screen.getByTestId("dropzone")).toBeTruthy();
+  });
+});
+
+describe("CompressPdfTool SSR ad slot markers", () => {
+  it("emits at least one reserved slot marker and defers third-party scripts to the client", () => {
+    idlePolling();
+    const markup = renderToStaticMarkup(<CompressPdfTool locale="en" />);
+    const markerCount = markup.match(/data-testid="papyr-ad-slot"/g)?.length ?? 0;
+    expect(markerCount).toBeGreaterThanOrEqual(1);
+    // Third-party ad scripts must stay client-only: never present in SSR markup.
+    expect(markup).not.toContain("highperformanceformat.com");
   });
 });

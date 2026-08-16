@@ -472,3 +472,15 @@ describe("T4 rich homepage restore (hero pill, trust badges, card footer, privac
     }
   });
 });
+describe("SSR ad slot markers: reserved placeholders, client-only scripts", () => {
+  it("emits leaderboard + box slot markers with a width:320px placeholder and defers third-party scripts to the client", async () => {
+    const markup = await renderHome("en");
+    const slotTags = [
+      ...markup.matchAll(/<div\b[^>]*\bdata-testid="papyr-ad-slot"\b[^>]*>/g),
+    ].map((match) => match[0]);
+    expect(slotTags.length).toBeGreaterThanOrEqual(2);
+    expect(slotTags.some((tag) => /width:320px/.test(tag))).toBe(true);
+    // Third-party ad scripts must stay client-only: never present in SSR markup.
+    expect(markup).not.toContain("highperformanceformat.com");
+  });
+});
