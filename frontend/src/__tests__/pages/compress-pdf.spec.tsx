@@ -239,12 +239,10 @@ describe("CompressPdfTool polling / result states", () => {
 });
 
 describe("CompressPdfTool SSR ad slot markers", () => {
-  it("emits at least one reserved slot marker and defers third-party scripts to the client", () => {
-    idlePolling();
+  it("defers the idle ad until after the primary interaction", () => {
     const markup = renderToStaticMarkup(<CompressPdfTool locale="en" />);
     const markerCount = markup.match(/data-testid="papyr-ad-slot"/g)?.length ?? 0;
-    expect(markerCount).toBeGreaterThanOrEqual(1);
-    // Third-party ad scripts must stay client-only: never present in SSR markup.
+    expect(markerCount).toBe(0);
     expect(markup).not.toContain("highperformanceformat.com");
   });
 });

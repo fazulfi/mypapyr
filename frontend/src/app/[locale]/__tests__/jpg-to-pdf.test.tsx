@@ -136,11 +136,6 @@ describe("JpgToPdfTool idle phase", () => {
     }) as HTMLButtonElement;
     expect(button.disabled).toBe(false);
   });
-
-  it("renders the immediate leaderboard slot during idle phase (owner decision 2026-08-15)", () => {
-    render(<JpgToPdfTool locale="en" />);
-    expect(document.querySelector('div[data-testid="papyr-ad-slot"]')).toBeTruthy();
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -193,22 +188,12 @@ describe("JpgToPdfTool upload / admission", () => {
 // ---------------------------------------------------------------------------
 
 describe("JpgToPdfTool polling / result states", () => {
-  it("renders the queued card after admission while the task waits", async () => {
+  it("keeps the single ad absent before the result phase", async () => {
     pollingWithStatus({ state: "queued", messageKey: null, retryable: false, outputCount: 1 });
     stubFetch();
     await submitImages("en");
     await waitFor(() => expect(screen.getByText(getMessages("en").states.queued)).toBeTruthy());
-    // AdSlot should NOT render during queued
-    expect(document.querySelector('div[data-testid="papyr-ad-slot"]')).toBeTruthy();
-  });
-
-  it("renders the processing card while the task is processing", async () => {
-    pollingWithStatus({ state: "processing", messageKey: null, retryable: false, outputCount: 1 });
-    stubFetch();
-    await submitImages("en");
-    await waitFor(() => expect(screen.getByText(getMessages("en").states.processing)).toBeTruthy());
-    // AdSlot should NOT render during processing
-    expect(document.querySelector('div[data-testid="papyr-ad-slot"]')).toBeTruthy();
+    expect(document.querySelector('div[data-testid="papyr-ad-slot"]')).toBeNull();
   });
 
   it("auto-fetches the download grant when the task completes and offers download + reset", async () => {

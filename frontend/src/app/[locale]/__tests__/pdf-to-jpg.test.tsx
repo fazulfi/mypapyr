@@ -311,48 +311,23 @@ describe("PdfToJpgTool polling / result states", () => {
 });
 
 describe("PdfToJpgTool AdSlot rendering", () => {
-  it("renders the AdSlot on the done phase", async () => {
+  it("renders one AdSlot on the done phase", async () => {
     pollingWithStatus({ state: "done", messageKey: null, retryable: false, outputCount: 1 });
     stubFetch();
     await submitPdf("en");
-
-    await waitFor(() =>
-      expect(screen.getAllByLabelText("Advertisement").length).toBeGreaterThan(0),
-    );
+    await waitFor(() => expect(screen.getAllByLabelText("Advertisement")).toHaveLength(1));
   });
 
-  it("renders the AdSlot on the error phase", async () => {
-    pollingWithStatus({
-      state: "failed",
-      messageKey: null,
-      retryable: false,
-      outputCount: null,
-    });
+  it("renders one AdSlot on the error phase", async () => {
+    pollingWithStatus({ state: "failed", messageKey: null, retryable: false, outputCount: null });
     stubFetch();
     await submitPdf("en");
-
     await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
-    expect(screen.getAllByLabelText("Advertisement").length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText("Advertisement")).toHaveLength(1);
   });
 
-  it("renders the immediate leaderboard AdSlot on the idle phase (owner decision 2026-08-15)", () => {
+  it("does not render an ad before the primary interaction completes", () => {
     render(<PdfToJpgTool locale="en" />);
-    expect(screen.getAllByLabelText("Advertisement").length).toBeGreaterThan(0);
-  });
-
-  it("renders the immediate AdSlot on the queued phase", async () => {
-    pollingWithStatus({ state: "queued", messageKey: null, retryable: false, outputCount: 1 });
-    stubFetch();
-    await submitPdf("en");
-    await waitFor(() => expect(screen.getByText(getMessages("en").states.queued)).toBeTruthy());
-    expect(screen.getAllByLabelText("Advertisement").length).toBeGreaterThan(0);
-  });
-
-  it("renders the immediate AdSlot on the processing phase", async () => {
-    pollingWithStatus({ state: "processing", messageKey: null, retryable: false, outputCount: 1 });
-    stubFetch();
-    await submitPdf("en");
-    await waitFor(() => expect(screen.getByText(getMessages("en").states.processing)).toBeTruthy());
-    expect(screen.getAllByLabelText("Advertisement").length).toBeGreaterThan(0);
+    expect(screen.queryAllByLabelText("Advertisement")).toHaveLength(0);
   });
 });

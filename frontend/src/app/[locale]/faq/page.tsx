@@ -126,7 +126,6 @@ export function FAQContent({ locale }: { locale: string }): React.ReactElement {
         aria-label="Advertisement"
       >
         <AdSlot pageSlug="faq" immediate unit="banner-468x60" label={copy.ads.label} />
-        <AdSlot pageSlug="faq" immediate unit="half-page-160x300" label={copy.ads.label} />
       </div>
     </div>
   );

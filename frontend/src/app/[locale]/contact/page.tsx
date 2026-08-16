@@ -27,7 +27,6 @@ export default async function ContactPage({
         aria-label={copy.adLabel}
       >
         <AdSlot pageSlug="contact" immediate unit="banner-468x60" label={copy.adLabel} />
-        <AdSlot pageSlug="contact" immediate unit="half-page-160x300" label={copy.adLabel} />
       </div>
     </div>
   );
