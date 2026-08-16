@@ -118,7 +118,7 @@ export default async function Image() {
           color: "rgba(255, 255, 255, 0.5)",
         }}
       >
-        mypapyr.com · Free · No account needed · Auto-delete 1 hour
+        budgezen.com · Free · No account needed · Auto-delete 1 hour
       </div>
     </div>,
     {

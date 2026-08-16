@@ -7,7 +7,7 @@ import { LEGACY_ROUTING_PATHS } from "../../lib/i18n";
 
 describe("T8 sitemap", () => {
   it("uses the canonical production base URL", () => {
-    expect(BASE_URL).toBe("https://mypapyr.com");
+    expect(BASE_URL).toBe("https://budgezen.com");
     for (const entry of sitemap()) {
       expect(entry.url.startsWith(BASE_URL)).toBe(true);
     }
@@ -76,6 +76,6 @@ describe("T8 robots", () => {
   it("allows all user agents and points at the sitemap", () => {
     const config = robots();
     expect(config.rules).toEqual({ userAgent: "*", allow: "/" });
-    expect(config.sitemap).toBe("https://mypapyr.com/sitemap.xml");
+    expect(config.sitemap).toBe("https://budgezen.com/sitemap.xml");
   });
 });
