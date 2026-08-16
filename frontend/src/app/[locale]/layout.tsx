@@ -1,11 +1,10 @@
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
+import { PrivacyAnalytics } from "@/components/PrivacyAnalytics";
 import { SkipLink } from "@/components/SkipLink";
 import { fontVariables } from "@/lib/fonts";
 import { isLocale, locales, type Locale } from "@/lib/i18n";
@@ -99,8 +98,7 @@ export default async function LocaleLayout({
           {children}
         </main>
         <Footer locale={locale} />
-        <Analytics />
-        <SpeedInsights />
+        <PrivacyAnalytics />
       </body>
     </html>
   );
