@@ -6,6 +6,81 @@ import { ADSTERRA_HOST, AD_UNITS, isAdEnabled, type AdUnit, type AdUnitId } from
 
 import { isAfterPrimaryExperience, shouldRenderAd } from "./placement";
 
+interface AdLoadEntry {
+  slotNode: HTMLDivElement;
+  selected: AdUnit;
+  cancelled: boolean;
+  atOptionsScript?: HTMLScriptElement;
+  invokeScript?: HTMLScriptElement;
+  finish?: () => void;
+}
+
+const adLoadQueue: AdLoadEntry[] = [];
+let activeAdLoad: AdLoadEntry | null = null;
+
+function pumpAdLoadQueue(): void {
+  if (activeAdLoad !== null) return;
+
+  const entry = adLoadQueue.shift();
+  if (entry === undefined) return;
+  if (entry.cancelled) {
+    pumpAdLoadQueue();
+    return;
+  }
+
+  activeAdLoad = entry;
+  const atOptionsScript = document.createElement("script");
+  atOptionsScript.dataset.papyrAtoptions = "true";
+  atOptionsScript.text =
+    "atOptions = {'key': '" +
+    entry.selected.key +
+    "','format': 'iframe','height': " +
+    entry.selected.height +
+    ",'width': " +
+    entry.selected.width +
+    ",'params': {}};";
+
+  const invokeScript = document.createElement("script");
+  invokeScript.dataset.papyrAdSlot = "true";
+  invokeScript.dataset.papyrUnit = entry.selected.id;
+  invokeScript.type = "text/javascript";
+  invokeScript.async = false;
+  invokeScript.src = `${ADSTERRA_HOST}/${entry.selected.key}/invoke.js`;
+
+  const finish = () => {
+    if (activeAdLoad !== entry) return;
+    invokeScript.removeEventListener("load", finish);
+    invokeScript.removeEventListener("error", finish);
+    activeAdLoad = null;
+    entry.finish = undefined;
+    pumpAdLoadQueue();
+  };
+
+  entry.atOptionsScript = atOptionsScript;
+  entry.invokeScript = invokeScript;
+  entry.finish = finish;
+  invokeScript.addEventListener("load", finish);
+  invokeScript.addEventListener("error", finish);
+  entry.slotNode.appendChild(atOptionsScript);
+  entry.slotNode.appendChild(invokeScript);
+}
+
+function enqueueAdLoad(slotNode: HTMLDivElement, selected: AdUnit): AdLoadEntry {
+  const entry: AdLoadEntry = { slotNode, selected, cancelled: false };
+  adLoadQueue.push(entry);
+  pumpAdLoadQueue();
+  return entry;
+}
+
+function cancelAdLoad(entry: AdLoadEntry): void {
+  entry.cancelled = true;
+  const queuedIndex = adLoadQueue.indexOf(entry);
+  if (queuedIndex >= 0) adLoadQueue.splice(queuedIndex, 1);
+  entry.atOptionsScript?.remove();
+  entry.invokeScript?.remove();
+  if (activeAdLoad === entry) entry.finish?.();
+}
+
 interface AdSlotProps {
   /** Route slug of the page rendering the slot (e.g. "compress-pdf"). */
   pageSlug: string;
@@ -63,33 +138,9 @@ export function AdSlot({
     if (slotNode === null) return;
     if (slotNode.querySelector("script[data-papyr-ad-slot='true']") !== null) return;
 
-    // Owner-approved PT-02 unit code: define the global `atOptions`
-    // configuration (format 'iframe', reserved dimensions), then load the
-    // zone's invoke.js — both inside the slot div, because invoke.js
-    // renders the iframe at the script's own position. This exact pattern
-    // was verified displaying ads in production (release 5fe86e6).
-    const atOptionsScript = document.createElement("script");
-    atOptionsScript.dataset.papyrAtoptions = "true";
-    atOptionsScript.text =
-      "atOptions = {'key': '" +
-      selected.key +
-      "','format': 'iframe','height': " +
-      selected.height +
-      ",'width': " +
-      selected.width +
-      ",'params': {}};";
-
-    const invokeScript = document.createElement("script");
-    invokeScript.dataset.papyrAdSlot = "true";
-    invokeScript.dataset.papyrUnit = selected.id;
-    invokeScript.type = "text/javascript";
-    invokeScript.async = true;
-    invokeScript.src = `${ADSTERRA_HOST}/${selected.key}/invoke.js`;
-
-    slotNode.appendChild(atOptionsScript);
-    slotNode.appendChild(invokeScript);
-
+    const entry = enqueueAdLoad(slotNode, selected);
     return () => {
+      cancelAdLoad(entry);
       slotNode.innerHTML = "";
     };
   }, [enabled, allowed, selected]);

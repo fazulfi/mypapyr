@@ -438,7 +438,7 @@ describe("AdSlot lazy script injection", () => {
     expect(invoke?.src).toBe(
       "https://www.highperformanceformat.com/14278ade858b889df3f9a48a85098165/invoke.js",
     );
-    expect(invoke?.async).toBe(true);
+    expect(invoke?.async).toBe(false);
   });
 
   it("removes injected scripts on unmount", () => {
@@ -577,6 +577,11 @@ describe("AdSlot per-slot P6 embed (proven pattern)", () => {
     const slotDivs = container.querySelectorAll('[data-testid="papyr-ad-slot"]');
     expect(slotDivs.length).toBe(2);
 
+    const firstInvoke = slotDivs[0]?.querySelector('script[data-papyr-ad-slot="true"]');
+    expect(firstInvoke).not.toBeNull();
+    expect(slotDivs[1]?.querySelector('script[data-papyr-ad-slot="true"]')).toBeNull();
+    firstInvoke?.dispatchEvent(new Event("load"));
+
     const scripts = container.querySelectorAll("script[data-papyr-ad-slot='true']");
     expect(scripts.length).toBe(2);
     const srcs = Array.from(scripts).map((s) => (s as HTMLScriptElement).src);
@@ -588,6 +593,33 @@ describe("AdSlot per-slot P6 embed (proven pattern)", () => {
     expect(options.length).toBe(2);
     expect(options[0]?.textContent).toContain("ed81f188de7abab7b8a0d9913a927205");
     expect(options[1]?.textContent).toContain("14278ade858b889df3f9a48a85098165");
+  });
+  it("waits for the first invoke script before appending the next global atOptions pair", () => {
+    const { container } = render(
+      React.createElement("div", null, [
+        React.createElement(AdSlot, {
+          key: "first",
+          pageSlug: "home",
+          immediate: true,
+          unit: "leaderboard-728x90",
+        }),
+        React.createElement(AdSlot, {
+          key: "second",
+          pageSlug: "home",
+          immediate: true,
+          unit: "box-300x250",
+        }),
+      ]),
+    );
+
+    const slots = container.querySelectorAll('[data-testid="papyr-ad-slot"]');
+    const firstInvoke = slots[0]?.querySelector('script[data-papyr-ad-slot="true"]');
+    expect(firstInvoke).not.toBeNull();
+    expect(slots[1]?.querySelector('script[data-papyr-ad-slot="true"]')).toBeNull();
+
+    firstInvoke?.dispatchEvent(new Event("load"));
+
+    expect(slots[1]?.querySelector('script[data-papyr-ad-slot="true"]')).not.toBeNull();
   });
 
   it("keeps reserved placeholder dimensions on the outer slot div", () => {
