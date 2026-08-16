@@ -468,6 +468,10 @@ export default async function LocaleHomePage({
         </div>
       </section>
 
+      <section className="mx-auto max-w-[760px] px-6 pb-24" aria-label={copy.ads.label}>
+        <AdSlot pageSlug="home" label={copy.ads.label} />
+      </section>
+
       <section className="border-y border-slate-200 bg-slate-100">
         <div className="mx-auto max-w-[1200px] px-6 py-[72px]">
           <div className="mb-12 text-center">
@@ -535,10 +539,6 @@ export default async function LocaleHomePage({
             </details>
           ))}
         </div>
-      </section>
-
-      <section className="mx-auto max-w-[760px] px-6 pb-24" aria-label={copy.ads.label}>
-        <AdSlot pageSlug="home" label={copy.ads.label} />
       </section>
     </>
   );

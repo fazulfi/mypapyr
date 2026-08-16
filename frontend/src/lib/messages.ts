@@ -2,7 +2,15 @@ import type { Locale } from "./i18n";
 
 export const messages = {
   en: {
-    ads: { label: "Advertisement" },
+    ads: {
+      label: "Advertisement",
+      fallback: {
+        eyebrow: "From Papyr",
+        title: "Free PDF tools",
+        body: "Compress, merge, split, and convert PDFs. No account needed.",
+        cta: "Explore tools",
+      },
+    },
     siteName: "Papyr",
     nav: {
       home: "Home",
@@ -417,7 +425,15 @@ export const messages = {
     },
   },
   es: {
-    ads: { label: "Publicidad" },
+    ads: {
+      label: "Publicidad",
+      fallback: {
+        eyebrow: "De Papyr",
+        title: "Herramientas PDF gratis",
+        body: "Comprime, combina, divide y convierte PDFs. Sin cuenta.",
+        cta: "Explorar herramientas",
+      },
+    },
     siteName: "Papyr",
     nav: {
       home: "Inicio",
@@ -836,7 +852,15 @@ export const messages = {
     },
   },
   id: {
-    ads: { label: "Iklan" },
+    ads: {
+      label: "Iklan",
+      fallback: {
+        eyebrow: "Dari Papyr",
+        title: "Alat PDF gratis",
+        body: "Kompres, gabung, pisah, dan konversi PDF. Tanpa akun.",
+        cta: "Jelajahi alat",
+      },
+    },
     siteName: "Papyr",
     nav: {
       home: "Beranda",

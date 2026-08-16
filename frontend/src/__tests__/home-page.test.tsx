@@ -465,13 +465,16 @@ describe("T4 rich homepage restore (hero pill, trust badges, card footer, privac
       expect((markup.match(/data-testid="papyr-ad-slot"/g) ?? []).length).toBe(1);
     }
   });
-  it("keeps the single ad after the FAQ", async () => {
+  it("keeps the single ad between the tools grid and the FAQ (owner's moved-higher placement)", async () => {
     for (const locale of locales) {
+      const copy = getMessages(locale);
       const markup = await renderHome(locale);
-      const faqIdx = markup.indexOf("Frequently");
+      const toolsIdx = markup.indexOf(copy.home.toolsHeading);
+      const faqIdx = markup.indexOf(copy.home.faq);
       const label = locale === "es" ? "Publicidad" : locale === "id" ? "Iklan" : "Advertisement";
       const adIdx = markup.lastIndexOf(`aria-label="${label}"`);
-      expect(adIdx).toBeGreaterThan(faqIdx);
+      expect(adIdx).toBeGreaterThan(toolsIdx);
+      expect(adIdx).toBeLessThan(faqIdx);
     }
   });
 });
