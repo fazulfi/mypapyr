@@ -13,7 +13,7 @@ import { getMessages } from "@/lib/messages";
 
 import "../globals.css";
 
-const METADATA_BASE_URL = "https://mypapyr.com";
+const METADATA_BASE_URL = "https://budgezen.com";
 
 // Mirrored from canonical docs/assets/papyr-hero-light.svg (1200x400, 1.91:1).
 const SOCIAL_IMAGE_URL = "/papyr-hero-light.svg";

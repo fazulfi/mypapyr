@@ -1,14 +1,10 @@
-// papyr — Adsterra ad unit registry (owner-approved 2026-08-15).
-// ===============================================================
+// papyr — Adsterra ad unit registry (budgezen publisher zones).
+// ================================================================
 // Single source of truth for every ad unit: zone key, reserved
 // dimensions, responsive pairing, and the pages each unit may render on.
 //
-// Owner decisions applied (2026-08-15):
-// - Homepage + all five tool pages + supporting content pages may carry ads.
-// - Tool pages show ads immediately (idle), not only after results.
-// - The 300x250 result-area placement from FR/DEC-151 is retained in
-//   addition to the new placements; nothing may obstruct or imitate
-//   primary controls (uploader, download, forms).
+// The zone keys are public client-side publisher identifiers supplied by
+// the owner. They grant no access to Papyr systems or document data.
 //
 // Privacy: ad scripts load client-side only, lazily; disabled under
 // DNT/GPC via isAdEnabled().
@@ -40,37 +36,37 @@ export type AdUnitId =
 export const AD_UNITS: Record<AdUnitId, AdUnit> = Object.freeze({
   "box-300x250": {
     id: "box-300x250",
-    key: "b552110bd65e7690ed89a04a1d654898",
+    key: "14278ade858b889df3f9a48a85098165",
     width: 300,
     height: 250,
   },
   "leaderboard-728x90": {
     id: "leaderboard-728x90",
-    key: "d78b74f28dcbbde269d55fe72b8a96a3",
+    key: "ed81f188de7abab7b8a0d9913a927205",
     width: 728,
     height: 90,
   },
   "mobile-banner-320x50": {
     id: "mobile-banner-320x50",
-    key: "ee018a59ef764e1441c33552349209a0",
+    key: "e2dfaa4221ee4a3dca911358c1b8db05",
     width: 320,
     height: 50,
   },
   "banner-468x60": {
     id: "banner-468x60",
-    key: "5b954d1bc5abe2a0e4c8d13431e61d9c",
+    key: "c4481f08be3b70c7319918d35aa4fcb2",
     width: 468,
     height: 60,
   },
   "skyscraper-160x600": {
     id: "skyscraper-160x600",
-    key: "d7750ca9d81b86c2f911c3fee1f5cadd",
+    key: "f08af336b34c0f385d0f7c7963b901c7",
     width: 160,
     height: 600,
   },
   "half-page-160x300": {
     id: "half-page-160x300",
-    key: "fefb15efab5ec11aa8457b17b09775bf",
+    key: "da5cac1e0adafcc3bf2523ac944d6806",
     width: 160,
     height: 300,
   },

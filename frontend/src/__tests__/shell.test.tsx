@@ -146,7 +146,7 @@ describe("SH-03 per-locale metadata", () => {
   it("anchors metadata to the canonical production origin", async () => {
     for (const locale of locales) {
       const metadata = await generateMetadata({ params: Promise.resolve({ locale }) });
-      expect(new URL(String(metadata.metadataBase)).origin).toBe("https://mypapyr.com");
+      expect(new URL(String(metadata.metadataBase)).origin).toBe("https://budgezen.com");
     }
   });
 
@@ -202,8 +202,8 @@ describe("SH-03 per-locale metadata", () => {
       const twitterUrl = firstImageUrl(metadata.twitter?.images);
       expect(ogUrl).not.toBe("");
       expect(twitterUrl).not.toBe("");
-      expect(new URL(ogUrl, base).href).toBe("https://mypapyr.com/papyr-hero-light.svg");
-      expect(new URL(twitterUrl, base).href).toBe("https://mypapyr.com/papyr-hero-light.svg");
+      expect(new URL(ogUrl, base).href).toBe("https://budgezen.com/papyr-hero-light.svg");
+      expect(new URL(twitterUrl, base).href).toBe("https://budgezen.com/papyr-hero-light.svg");
     }
   });
 

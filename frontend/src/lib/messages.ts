@@ -344,7 +344,7 @@ export const messages = {
         },
         {
           q: "Can I use it on my phone?",
-          a: "Yes! Papyr is optimized for mobile. All features are accessible from your phone's browser without installing an app. Just open mypapyr.com from Chrome, Safari, or any other browser.",
+          a: "Yes! Papyr is optimized for mobile. All features are accessible from your phone's browser without installing an app. Just open budgezen.com from Chrome, Safari, or any other browser.",
         },
         {
           q: "Is Papyr free?",
@@ -763,7 +763,7 @@ export const messages = {
         },
         {
           q: "¿Se puede usar en el móvil?",
-          a: "¡Sí! Papyr está optimizado para móviles. Todas las funciones son accesibles desde el navegador del teléfono sin instalar ninguna aplicación. Solo abre mypapyr.com desde Chrome, Safari o cualquier otro navegador.",
+          a: "¡Sí! Papyr está optimizado para móviles. Todas las funciones son accesibles desde el navegador del teléfono sin instalar ninguna aplicación. Solo abre budgezen.com desde Chrome, Safari o cualquier otro navegador.",
         },
         {
           q: "¿Papyr es gratis?",
@@ -1184,7 +1184,7 @@ export const messages = {
         },
         {
           q: "Bisa dipakai di HP?",
-          a: "Ya! Papyr dioptimalkan untuk mobile. Semua fitur bisa diakses dari browser HP tanpa perlu install aplikasi. Cukup buka mypapyr.com dari Chrome, Safari, atau browser lainnya.",
+          a: "Ya! Papyr dioptimalkan untuk mobile. Semua fitur bisa diakses dari browser HP tanpa perlu install aplikasi. Cukup buka budgezen.com dari Chrome, Safari, atau browser lainnya.",
         },
         {
           q: "Apakah Papyr gratis?",

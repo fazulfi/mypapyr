@@ -21,10 +21,10 @@ import {
   AD_SLOT_DIMENSIONS,
   ADSTERRA_HOST,
   ADSTERRA_KEY,
+  AD_UNITS,
   allowedAdPages,
   isAdEnabled,
 } from "@/lib/ads";
-
 import { AdSlot } from "@/components/ads/AdSlot";
 import { LeaderboardAdSlot } from "@/components/ads/LeaderboardAdSlot";
 import {
@@ -117,9 +117,19 @@ describe("ads config", () => {
     expect(AD_SLOT_DIMENSIONS).toEqual({ width: 300, height: 250 });
   });
 
-  it("exports a non-empty Adsterra key and host", () => {
-    expect(ADSTERRA_KEY).toBe("b552110bd65e7690ed89a04a1d654898");
+  it("exports the supplied Adsterra box key and host", () => {
+    expect(ADSTERRA_KEY).toBe("14278ade858b889df3f9a48a85098165");
     expect(ADSTERRA_HOST).toBe("https://www.highperformanceformat.com");
+  });
+  it("registers every supplied zone with its reserved dimensions", () => {
+    expect(AD_UNITS).toMatchObject({
+      "banner-468x60": { key: "c4481f08be3b70c7319918d35aa4fcb2", width: 468, height: 60 },
+      "box-300x250": { key: "14278ade858b889df3f9a48a85098165", width: 300, height: 250 },
+      "half-page-160x300": { key: "da5cac1e0adafcc3bf2523ac944d6806", width: 160, height: 300 },
+      "leaderboard-728x90": { key: "ed81f188de7abab7b8a0d9913a927205", width: 728, height: 90 },
+      "mobile-banner-320x50": { key: "e2dfaa4221ee4a3dca911358c1b8db05", width: 320, height: 50 },
+      "skyscraper-160x600": { key: "f08af336b34c0f385d0f7c7963b901c7", width: 160, height: 600 },
+    });
   });
 
   it("allowedAdPages covers home, tools, and supporting pages; status stays ad-free (owner decision 2026-08-15)", () => {
@@ -419,14 +429,14 @@ describe("AdSlot lazy script injection", () => {
     const atOptions = slot.querySelector('script[data-papyr-atoptions="true"]');
     expect(atOptions).not.toBeNull();
     expect(atOptions?.textContent).toContain("'format': 'iframe'");
-    expect(atOptions?.textContent).toContain("b552110bd65e7690ed89a04a1d654898");
+    expect(atOptions?.textContent).toContain("14278ade858b889df3f9a48a85098165");
 
     const invoke = slot.querySelector(
       'script[data-papyr-ad-slot="true"]',
     ) as HTMLScriptElement | null;
     expect(invoke).not.toBeNull();
     expect(invoke?.src).toBe(
-      "https://www.highperformanceformat.com/b552110bd65e7690ed89a04a1d654898/invoke.js",
+      "https://www.highperformanceformat.com/14278ade858b889df3f9a48a85098165/invoke.js",
     );
     expect(invoke?.async).toBe(true);
   });
@@ -570,14 +580,14 @@ describe("AdSlot per-slot P6 embed (proven pattern)", () => {
     const scripts = container.querySelectorAll("script[data-papyr-ad-slot='true']");
     expect(scripts.length).toBe(2);
     const srcs = Array.from(scripts).map((s) => (s as HTMLScriptElement).src);
-    expect(srcs.some((src) => src.includes("d78b74f28dcbbde269d55fe72b8a96a3"))).toBe(true);
-    expect(srcs.some((src) => src.includes("b552110bd65e7690ed89a04a1d654898"))).toBe(true);
+    expect(srcs.some((src) => src.includes("ed81f188de7abab7b8a0d9913a927205"))).toBe(true);
+    expect(srcs.some((src) => src.includes("14278ade858b889df3f9a48a85098165"))).toBe(true);
 
     // Each slot carries its own atOptions with its own zone key.
     const options = container.querySelectorAll("script[data-papyr-atoptions='true']");
     expect(options.length).toBe(2);
-    expect(options[0]?.textContent).toContain("d78b74f28dcbbde269d55fe72b8a96a3");
-    expect(options[1]?.textContent).toContain("b552110bd65e7690ed89a04a1d654898");
+    expect(options[0]?.textContent).toContain("ed81f188de7abab7b8a0d9913a927205");
+    expect(options[1]?.textContent).toContain("14278ade858b889df3f9a48a85098165");
   });
 
   it("keeps reserved placeholder dimensions on the outer slot div", () => {

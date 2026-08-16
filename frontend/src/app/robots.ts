@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://mypapyr.com/sitemap.xml",
+    sitemap: "https://budgezen.com/sitemap.xml",
   };
 }

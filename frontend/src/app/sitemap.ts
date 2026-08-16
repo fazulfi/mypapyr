@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { toolCatalog } from "../lib/catalog";
 
-export const BASE_URL = "https://mypapyr.com";
+export const BASE_URL = "https://budgezen.com";
 
 // Deferred legacy tool slugs: they no longer exist as live routes in the
 // five-tool launch and are served by the URL-disposition layer as an
