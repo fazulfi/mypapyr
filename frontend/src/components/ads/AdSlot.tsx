@@ -145,8 +145,7 @@ export function AdSlot({
     };
   }, [enabled, allowed, selected]);
 
-  if (!enabled || !allowed) return null;
-
+  if (!allowed) return null;
   return (
     <div
       ref={slotRef}

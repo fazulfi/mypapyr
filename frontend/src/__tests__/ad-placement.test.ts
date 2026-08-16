@@ -317,12 +317,13 @@ describe("AdSlot component", () => {
     expect(htmlEl.style.height).toBe("250px");
   });
 
-  it("renders nothing when ads are disabled via _papyrAdsDisabled", () => {
+  it("keeps a reserved slot but disables scripts via _papyrAdsDisabled", () => {
     const w = window as Window & { _papyrAdsDisabled?: unknown };
     w._papyrAdsDisabled = true;
 
     const { container } = render(React.createElement(AdSlot, { pageSlug: "compress-pdf" }));
-    expect(container.querySelector('[aria-label="Advertisement"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Advertisement"]')).not.toBeNull();
+    expect(container.querySelector("script")).toBeNull();
   });
 
   it("renders the localized label passed as a prop (Publicidad/Iklan)", () => {
@@ -393,24 +394,34 @@ describe("AdSlot component", () => {
     expect(container.querySelector('[aria-label="Advertisement"]')).not.toBeNull();
   });
 
-  it("renders nothing when ad disabled (DNT)", () => {
+  it("keeps a reserved slot while DNT disables ad scripts", () => {
     Object.defineProperty(navigator, "doNotTrack", {
       value: "1",
       configurable: true,
     });
 
     const { container } = render(React.createElement(AdSlot, { pageSlug: "compress-pdf" }));
-    expect(container.querySelector('[aria-label="Advertisement"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Advertisement"]')).not.toBeNull();
+    expect(container.querySelector("script")).toBeNull();
   });
 
-  it("renders nothing when ad disabled (GPC)", () => {
+  it("keeps a reserved slot while GPC disables ad scripts", () => {
     Object.defineProperty(navigator, "globalPrivacyControl", {
       value: true,
       configurable: true,
     });
 
     const { container } = render(React.createElement(AdSlot, { pageSlug: "compress-pdf" }));
-    expect(container.querySelector('[aria-label="Advertisement"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Advertisement"]')).not.toBeNull();
+    expect(container.querySelector("script")).toBeNull();
+  });
+  it("keeps the reserved slot while privacy signals block ad scripts", () => {
+    Object.defineProperty(navigator, "doNotTrack", { value: "1", configurable: true });
+    const { container } = render(React.createElement(AdSlot, { pageSlug: "compress-pdf" }));
+    const slot = container.querySelector('[data-testid="papyr-ad-slot"]') as HTMLElement | null;
+    expect(slot).not.toBeNull();
+    expect(slot?.style.width).toBe("300px");
+    expect(slot?.querySelector("script")).toBeNull();
   });
 });
 
