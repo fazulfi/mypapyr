@@ -1,0 +1,70 @@
+name: papyr-monitoring
+
+# ============================================================================
+# Papyr OP-01 monitoring companion: internal-only Netdata.
+#
+# Standalone Compose project (docker compose -f deploy/monitoring/netdata-
+# compose.yml --profile monitoring up -d) that attaches the Netdata agent to
+# the SINGLE existing app network (external network papyr-app_papyr, the
+# BLKR-11 project/network of deploy/docker-compose.yml) so it resolves api,
+# redis, clamd, and workers by stable in-project service DNS and observes the
+# OP-01 health signals declared in deploy/monitoring/health-signals.md.
+#
+# Hard guarantees enforced by scripts/check-monitoring.sh:
+#   * internal-only — NO published port; the Netdata UI is reachable only
+#     inside the compose network (operator access via SSH tunnel, never a
+#     public port); no docker socket mount.
+#   * immutable image — netdata/netdata v2.11.0 pinned by digest (verified
+#     against Docker Hub, 2026-08-17); floating tags rejected.
+#   * no cloud/provider claim — no NETDATA_CLAIM_* variables and no Netdata
+#     Cloud endpoint references; the agent never registers to a provider.
+#   * neutral identity — NETDATA_HOSTNAME is a display alias, never the VPS
+#     hostname, and the container loads no env_file (the app PAPYR_ENV_FILE
+#     carries R2 credentials and must never reach the monitor).
+#   * privacy — the agent collects aggregate operational signals only
+#     (DEC-175/DEC-182); document content never enters the monitoring plane.
+#
+# Posture note: unlike the app services, this daemon intentionally does NOT
+# cap_drop ALL — the official image drops to the netdata user via internal
+# privilege transition and the go.d/system collectors need the default
+# capability set. Justification is recorded in health-signals.md.
+# ============================================================================
+
+services:
+  netdata:
+    image: netdata/netdata:v2.11.0@sha256:c45c71eb23ff3f1012bcda7832bf08c0b09954363557e84511bcfaf6cafa3aa8
+    profiles: ["monitoring"]
+    environment:
+      - NETDATA_HOSTNAME=papyr-monitor
+      - NETDATA_LISTENER_PORT=19999
+    networks:
+      - papyr
+    volumes:
+      - netdata-lib:/var/lib/netdata
+      - netdata-cache:/var/cache/netdata
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:size=64M
+    cpus: "0.25"
+    mem_limit: 256M
+    pids_limit: 128
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "com.papyr.service=netdata"
+
+networks:
+  papyr:
+    external: true
+    name: papyr-app_papyr
+
+volumes:
+  netdata-lib:
+    driver: local
+  netdata-cache:
+    driver: local
