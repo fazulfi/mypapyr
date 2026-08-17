@@ -43,6 +43,13 @@ The Phase 6 enterprise controls are implemented, tested, and deployed (backend r
 - **Analytics (PT-01):** closed-field schema, redaction pipeline, and DNT/GPC-gated injection — no document bodies, filenames, passwords, signed URLs, or extracted content in telemetry.
 - **Encrypted-PDF passwords (PT-04):** memory-only prompts in the merge flow, per-file validation at the admission sanitizer, passwords never persisted, logged, or echoed (enforced by a banned-field contract, DEC-174).
 
+The Phase 6 enterprise controls are implemented, tested, and deployed (release p6-complete-1786951216, 2026-08-17):
+
+- **Contact (PT-03):** server-side validation, honeypot, Cloudflare Turnstile siteverify (soft gate), per-origin in-memory rate limiting (3 requests per 60 seconds), and best-effort Cloudflare Email Sending with counts-only delivery metrics — no message content or addresses in logs.
+- **Advertising (PT-02):** reserved-dimension slots only, one ad unit per page, delivery gated by Do Not Track / Global Privacy Control, house-promo fallback on provider failure, and never beside the Download control or on status/legal/support surfaces.
+- **Analytics (PT-01):** closed-field schema, redaction pipeline, and DNT/GPC-gated injection — no document bodies, filenames, passwords, signed URLs, or extracted content in telemetry.
+- **Encrypted-PDF passwords (PT-04):** memory-only prompts in the merge flow, per-file validation at the admission sanitizer, passwords never persisted, logged, or echoed (enforced by a banned-field contract, DEC-174).
+
 ## Dependency posture
 
 Third-party libraries and executables are consumed as pinned upstream dependencies. The compression path invokes the official, unmodified Ghostscript distribution (pinned 10.07.1, checksum-verified at image build) as a separate hardened subprocess; its source is not vendored, forked, modified, or linked into the application.
