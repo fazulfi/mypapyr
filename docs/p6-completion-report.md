@@ -1,8 +1,8 @@
 # P6 Completion Report — Enterprise Scope
 
 - **Date**: 2026-08-17
-- **Branch**: `feat/full-p6-enterprise-completion` @ `e9c49cc`
-- **PR**: https://github.com/fazulfi/mypapyr/pull/46 — CI 19/19 green (run 32002627224)
+- **Branch**: `feat/full-p6-enterprise-completion` @ `cf56039`
+- **PR**: [fazulfi/mypapyr#46](https://github.com/fazulfi/mypapyr/pull/46) — CI 19/19 green (run 32002627224)
 - **Deployed release**: `p6-complete-1786951216` on faiz-prod (82.25.62.204), active 2026-08-17.
 
 ## Scope delivered
