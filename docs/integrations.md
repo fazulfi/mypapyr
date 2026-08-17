@@ -5,14 +5,14 @@ This public inventory lists the external services and dependencies the repositor
 | Integration | Purpose | Repository status |
 | --- | --- | --- |
 | GitHub | Source hosting, pull requests, and CI | Active for this repository |
-| Vercel | Frontend hosting, status surface, Analytics, Speed Insights | Implemented in repository: privacy-gated `<Analytics/>`/`<SpeedInsights/>` in the root layout |
+| Vercel | Frontend hosting (budgezen.com), status surface, Analytics, Speed Insights | Implemented in repository: privacy-gated `<Analytics/>`/`<SpeedInsights/>` in the root layout; mypapyr.com is served from the VPS, budgezen.com from Vercel |
 | Cloudflare | DNS, TLS, edge proxying, and coarse abuse controls | Configuration contract documented |
 | Cloudflare R2 | Temporary object storage for server-processed documents | Implemented in repository: client, signed downloads, cleanup, and lifecycle template |
 | Cloudflare Email Sending | Best-effort async delivery of contact submissions | Implemented in repository: REST client, payload contract, counts-only metrics; delivery gated on dashboard onboarding plus `CF_EMAIL_API_TOKEN` |
 | Cloudflare Turnstile | Bot gate on the contact form | Implemented in repository: client render (opt-in site key) + server `siteverify` (soft gate, opt-in secret) |
-| VPS and Nginx | API, Redis, and bounded worker hosting | Public-safe templates only |
+| VPS and Nginx | API, Redis, and bounded worker hosting; Next.js frontend on mypapyr.com | Live production host (faiz-prod): Nginx reverse proxy, systemd-served Next.js on :3017, Docker Compose `papyr-app` on :3016 |
 | Redis | Durable queue and minimal task-state store | Implemented in repository: Streams queue, task store, and one-worker processing |
-| Ghostscript | Compress PDF engine, invoked as an official unmodified subprocess | Implemented in branch: pinned 10.07.1 build in the worker image; pending merge/deployment |
+| Ghostscript | Compress PDF engine, invoked as an official unmodified subprocess | Deployed: pinned 10.07.1 build in the worker image (p6-complete-1786951216) |
 | ClamAV (clamd) | Threat scanning of uploads | Implemented in repository: scanner gate wired via `CLAMD_HOST`/`CLAMD_PORT`/`SCANNER_ENABLED` |
 | AI gateway | Planned model gateway for explicitly specified server features | Environment contract only |
 | Sentry | Planned sanitized application error reporting | Environment contract only |
@@ -31,7 +31,7 @@ This public inventory lists the external services and dependencies the repositor
 
 ## Ghostscript
 
-The compression workflow uses the official, unmodified Ghostscript distribution, implemented in the feature branch. Papyr invokes it as a separate hardened server-side subprocess with pinned versions (10.07.1, checksum-verified at image build) and bounded execution. The project does not fork, modify, vendor, or link Ghostscript source into its application code.
+The compression workflow uses the official, unmodified Ghostscript distribution, deployed in production. Papyr invokes it as a separate hardened server-side subprocess with pinned versions (10.07.1, checksum-verified at image build) and bounded execution. The project does not fork, modify, vendor, or link Ghostscript source into its application code.
 
 ## Redis
 

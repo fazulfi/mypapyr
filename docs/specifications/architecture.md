@@ -4,7 +4,7 @@
 
 This document defines the target technical architecture for Papyr: the component boundaries, processing model, task and API contracts, storage lifecycle, security controls, observability, delivery boundary, and verification strategy that the launch product is designed against.
 
-The current repository implements the five-tool platform: a Next.js web application with localized tool pages, a typed FastAPI service (app factory, strict configuration, health and readiness endpoints, request correlation, a stable error envelope, validation schemas, the pure server task state machine, and 9 versioned `/api/v1` routers including per-tool admission), deployment templates, and CI. The Phase 5/6 baseline is merged to `main` and deployed to production (release 1767ca8); the follow-up feature branch adds PT-04 merge-password wiring, ad-placement E2E, SEO, and documentation reconciliation. Every component described as a target service is specified here and is not yet available unless the status matrix in Section 16, or source code and automated tests, demonstrate otherwise. Documentation is never a substitute for runtime evidence; a component becomes implemented only when its code, tests, configuration, and operational constraints are present.
+The current repository implements the five-tool platform: a Next.js web application with localized tool pages, a typed FastAPI service (app factory, strict configuration, health and readiness endpoints, request correlation, a stable error envelope, validation schemas, the pure server task state machine, and 9 versioned `/api/v1` routers including per-tool admission), deployment templates, and CI. The Phase 5/6 baseline is merged to `main` and deployed to production (release 1767ca8); the follow-up Phase 6 enterprise completion (PT-04 merge-password wiring, ad-placement E2E, SEO, and documentation reconciliation) was merged via PR #46 and is deployed as backend release p6-complete-1786951216 and frontend release p6-ads-all-1786954951 (2026-08-17). Every component described as a target service is specified here and is not yet available unless the status matrix in Section 16, or source code and automated tests, demonstrate otherwise. Documentation is never a substitute for runtime evidence; a component becomes implemented only when its code, tests, configuration, and operational constraints are present.
 
 The companion [product specification](product.md) defines the user-visible behaviour and acceptance criteria. Where responsibilities meet, this document states the mechanism and the product specification states the experience.
 
@@ -14,7 +14,7 @@ Papyr is designed as a browser-first PDF platform with an explicit, bounded serv
 
 | Layer | Component | Responsibility |
 | --- | --- | --- |
-| Hosting | Next.js application on Vercel | Localized product experience, browser processing, upload and result UI, public status experience |
+| Hosting | Next.js application on a VPS (mypapyr.com) plus Vercel (budgezen.com) | Localized product experience, browser processing, upload and result UI, public status experience |
 | Edge | Cloudflare | DNS, TLS, proxying of the public domain and API, coarse country context, first-layer bot and attack filtering |
 | Compute | Dedicated host (VPS) | Nginx reverse proxy, FastAPI application, Redis queue, bounded PDF workers, cleanup and operational tooling |
 | Storage | Cloudflare R2 | Temporary server-processed source, intermediate, and result objects |
@@ -53,7 +53,7 @@ Server job:
 | Storage | Cloudflare R2 client with opaque keys, presigned downloads, cleanup coordination, and a lifecycle rule template; live lifecycle rule applied at release | One-hour temporary-object lifecycle safety net in production |
 | Edge and proxy | Nginx server-block template with `__SET_ME__` placeholders only | Hardened Nginx reverse proxy behind Cloudflare |
 | Monitoring | Monitor and cleanup operations entrypoints; incident alerting not yet configured | Host resource monitoring, external uptime checks, automated status experience, incident alerts |
-| Delivery | CI with 19 required checks (18 on pushes to main, where the PR-only dependency review is skipped) and no deployment steps | Nineteen required CI checks with no deployment steps; separately authorized release and deployment procedures |
+| Delivery | CI with 20 required checks (19 on pushes to main, where the PR-only dependency review is skipped) and no deployment steps | Twenty required CI checks with no deployment steps; separately authorized release and deployment procedures |
 
 ## 4. Component boundaries
 
@@ -275,7 +275,7 @@ The target backend topology is Nginx, FastAPI, Redis, and bounded workers in one
 CI is continuous integration only. The repository CI:
 
 - Runs on every push and pull request to the main branch.
-- Requires 19 checks on pull requests (18 on pushes to main, where the PR-only dependency review is skipped), across three groups: core quality (frontend format and lint, frontend unit tests with coverage, frontend production build, Playwright E2E, backend lint and format, backend strict mypy, backend tests with an 80 percent coverage floor), security and supply chain (Trivy filesystem and configuration scan, gitleaks full-history secret scan, dependency review, npm audit, pip audit), and repository QA (action pin verification, Dockerfile lint, production-image build and non-root smoke, Compose structural validation, workflow YAML lint, markdownlint, shellcheck).
+- Requires 20 checks on pull requests (19 on pushes to main, where the PR-only dependency review is skipped), across three groups: core quality (frontend format and lint, frontend unit tests with coverage, frontend production build, Playwright E2E, backend lint and format, backend strict mypy, backend tests with an 80 percent coverage floor), security and supply chain (Trivy filesystem and configuration scan, gitleaks full-history secret scan, dependency review, npm audit, pip audit), and repository QA (action pin verification, Dockerfile lint, production-image build and non-root smoke, Compose structural validation, workflow YAML lint, markdownlint, shellcheck).
 - Third-party actions are pinned to immutable commit SHAs.
 - Jobs use least-privilege read-only permissions and do not persist checkout credentials.
 - Contains no deployment steps and consumes no production credentials.
@@ -337,7 +337,7 @@ Status values match the product specification: **Available now**, **Deployed**, 
 | Next.js frontend foundation | Available now | `frontend/` source and tests |
 | FastAPI service foundation (app factory, strict configuration, health and readiness endpoints, request correlation, stable error envelope, validation schemas) | Available now | `backend/` source and tests |
 | Deployment templates (Compose, Nginx, environment, runbook) | Available now | `deploy/` |
-| Continuous integration (19 required checks: quality, security and supply chain, repository QA) | Available now | `.github/workflows/ci.yml` |
+| Continuous integration (20 required checks: quality, security and supply chain, repository QA) | Available now | `.github/workflows/ci.yml` |
 | Shared trilingual shell: locale routing, accessible navigation, supporting route shells, localized 404, and unit and E2E gates | Deployed | `frontend/src/app/[locale]/`, `frontend/src/components/`, `frontend/src/lib/i18n.ts`, `frontend/src/proxy.ts`; roadmap |
 | Legal, support, and status route shells (privacy, terms, cookies and advertising, contact, status, roadmap) | Deployed | `frontend/src/app/[locale]/`; roadmap |
 | Blog route shell | Available now | `frontend/src/app/[locale]/blog/` |

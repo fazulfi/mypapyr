@@ -16,7 +16,7 @@ Every tool follows the same shared workflow and state model, from ready and sele
 
 English, Spanish, and Indonesian are first-class launch languages across every essential surface. Accessibility targets WCAG 2.2 Level AA. The launch catalogue is free to use and requires no account.
 
-Status in one line: the five tools, their shared experience, and the Phase 6 privacy, analytics, advertising, and support capabilities described in this document are implemented and the Phase 5/6 baseline is deployed to production (release 1767ca8); this document remains the target-behaviour contract, and the implementation state is tracked in the status matrix in Section 13 and the roadmap.
+Status in one line: the five tools, their shared experience, and the Phase 6 privacy, analytics, advertising, and support capabilities described in this document are implemented; the Phase 5/6 baseline is deployed to production (release 1767ca8) and the Phase 6 enterprise completion shipped via PR #46 as backend release p6-complete-1786951216 and frontend release p6-ads-all-1786954951 (2026-08-17). This document remains the target-behaviour contract, and the implementation state is tracked in the status matrix in Section 13 and the roadmap.
 
 ## 2. Product promise and principles
 
@@ -295,7 +295,7 @@ Status values are used consistently across the product and architecture specific
 | Frontend application foundation (shell, strict TypeScript, tooling, tests, build) | Available now | Repository `frontend/` |
 | Backend service foundation (app factory, strict configuration, health and readiness endpoints, request correlation, stable error envelope, validation schemas, server task state machine) | Available now | Repository `backend/` |
 | Deployment templates and environment placeholders | Available now | Repository `deploy/` |
-| Continuous integration with 19 required checks (quality, security and supply chain, repository QA) | Available now | Repository `.github/workflows/ci.yml` |
+| Continuous integration with 20 required checks (quality, security and supply chain, repository QA) | Available now | Repository `.github/workflows/ci.yml` |
 | Shared trilingual shell: English, Spanish, and Indonesian locale routing, accessible navigation, supporting route shells, localized 404, and unit and E2E gates | Available now | Repository `frontend/src/` |
 | Legal, support, and status route shells (privacy, terms, cookies and advertising, contact, status, roadmap) | Available now | Repository `frontend/src/app/[locale]/` |
 | Blog route shell | Available now | Repository `frontend/src/app/[locale]/blog/` |

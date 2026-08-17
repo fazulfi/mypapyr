@@ -39,11 +39,12 @@ Repo guard (root):
 - [ ] Security: Trivy (critical/high), gitleaks full-history.
 - [ ] Supply chain: dependency review, npm audit, pip-audit.
 - [ ] QA: action-pin truth, compose structural, hadolint, markdownlint, production API image build + non-root smoke, shellcheck, yamllint.
+- [ ] All 20 CI jobs pass on the PR (19 on pushes to main; 7 status checks required by branch protection).
 
 ## 4. Release build (VPS)
 
 - [ ] Pull the release commit into `/opt/mypapyr/ci/mypapyr` (or equivalent staging clone) and reset to the exact commit.
-- [ ] Build the frontend with production env (`NEXT_PUBLIC_API_BASE_URL=https://api.mypapyr.com`); record the `BUILD_ID`.
+- [ ] Build the frontend with production env (`NEXT_PUBLIC_API_BASE_URL=https://api.mypapyr.com`); record the `BUILD_ID` (current: `HHzujraVbxQa5Q0LcI4dZ`).
 - [ ] Build `papyr-api` (`Dockerfile.production`, context `backend/`) and `papyr-workers` (`Dockerfile.worker`, context = repo root) locally; record digests.
 - [ ] Stage the release directory under `/opt/mypapyr/releases/<name>`; `chown -R mypapyr:mypapyr`.
 - [ ] Write `deploy/image-manifest.env` with digest-form image references + `PAPYR_ENV_FILE=/opt/mypapyr/production/.env`.
@@ -72,10 +73,11 @@ Frontend (Vercel-hosted, when applicable):
 
 - [ ] `nginx -t` (read-only) passes before any reload; never reload nginx broadly on the shared host.
 - [ ] Public verification via Cloudflare: `GET https://mypapyr.com/` → 307; `/en` `/es` `/id` → 200; `https://api.mypapyr.com/health`, `/health/ready`, `/api/v1/capabilities` → 200.
-- [ ] Content markers for the release (e.g. sitemap URL count, hreflang/canonical, ad-slot markers, contact copy) verified live.
+- [ ] Content markers for the release (e.g. sitemap URL count, hreflang/canonical, contact copy) verified live.
+- [ ] Ad-slot verification (all-pages policy): exactly one reserved-dimension ad marker present on `/en` (homepage), on a tool page after the result phase, and on supporting pages including `/en/status` and `/en/blog`; no slot beside the Download control.
 - [ ] Rollback target recorded in `/opt/mypapyr/production/rollback/<release>-rollback.md` and in the repo evidence.
 
 ## 7. Post-release
 
-- [ ] Completion report written (evidence, gates, deployment, verification, rollback target, known limitations, manual actions).
+- [ ] Completion report written (evidence, gates, deployment, verification, rollback target, known limitations, manual actions) naming both releases (backend `p6-complete-*`, frontend `p6-ads-all-*`) and the BUILD_ID.
 - [ ] Documentation reconciled: README capability table, roadmap, AGENTS.md facts, integrations, environment-variables, api-reference.

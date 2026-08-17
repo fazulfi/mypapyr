@@ -2,21 +2,23 @@
 
 All notable changes to this project are tracked here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once a release version is cut. Branch-level work during a release cycle is recorded here before merge.
 
-## [Unreleased] — branch `feat/phase-6-privacy-analytics-support`
+## [Unreleased] — Phase 6 enterprise completion
 
-Phase 6 (Privacy, analytics, advertising, and support) closes the privacy/revenue/support surface of the product across frontend and backend. Verified by 710 frontend tests across 47 files (statements 92.11%, branches 88.09%, functions 93.24%, lines 93.58%) and 1346 backend tests (ruff + mypy strict clean).
+Phase 6 enterprise completion closes the remaining Phase 6 scope: PT-04 merge-password wiring, ad-placement E2E, SEO/hreflang, and documentation reconciliation. Merged via PR #46 and deployed 2026-08-17 as backend release `p6-complete-1786951216` and frontend release `p6-ads-all-1786954951` (BUILD_ID `HHzujraVbxQa5Q0LcI4dZ`). Verified by 780 frontend tests across 52 files (statements 91.27%, branches 86.15%, functions 91.71%, lines 93.10%) and 1360 backend tests with 44 opt-in skips (coverage 89.38%, gate 80%).
 
 ### Added
 
-- **Analytics schema, redaction, and leakage tests (PT-01)** — closed-field event schema (`frontend/src/lib/analytics-schema.ts`) with a forbidden-field contract; redaction pipeline and closed `errorCategory` enum (raw errors never sent), coarse size-band enforcement, DNT/GPC/app-flag opt-out, SSR-safe `trackEvent`/`trackPageView`/`useAnalytics`; leakage test suite (`frontend/src/__tests__/leakage.test.ts`, 36 tests).
-- **Advertising slots with placement guards (PT-02)** — reserved-dimension Adsterra native unit (300x250) with lazy client-side injection, allowed-page gating, and post-primary-experience placement guards; wired into all five result-state tool pages (compress, merge, split, jpg-to-pdf, pdf-to-jpg) **after** the result/download area per FR/DEC-151, with a DOM-order guard test. Never on status/legal/support surfaces, never beside the Download control (`frontend/src/lib/ads.ts`, `frontend/src/components/ads/`).
-- **Contact form and result-problem report (PT-03)** — trilingual categorized contact form + result-local problem report (wired into all five tool pages) with minimal data model, honeypot + client rate-limit + Turnstile anti-spam, redaction-safe errors, and locale-matched confirmations (`frontend/src/lib/support.ts`, `frontend/src/components/support/`). **Backend delivery endpoint** `POST /api/v1/support/contact` (`backend/app/routers/support.py`, `backend/app/services/contact_service.py`): closed-enum category, ≤2000-char message, optional email (≤254), sanitized page/locale, honeypot discard, server-side Turnstile siteverify (soft gate), per-origin rate limit, and 202-accepted with async best-effort delivery via the Cloudflare Email Sending REST API — server-side secrets only (never exposed to the client), counts-only metrics and exception-class-only logs, no message/email content in logs. 61 dedicated tests.
-- **Password handling verification (PT-04)** — memory-only password entry for encrypted inputs with per-source Merge validation, distinct wrong-password errors, and no password material in analytics/logs/URLs/storage (`frontend/src/components/PasswordInput.tsx`, `frontend/src/lib/password.ts`).
-- **Tool-page coverage** — full state-machine unit coverage for `jpg-to-pdf` and `pdf-to-jpg` (19% → 86-89% branches), closing the branch-coverage gate.
+- **Encrypted-PDF password handling (PT-04) end to end** — client detection (`isEncryptedPdf`, first 4 KiB), per-file `PasswordInput` on the merge-pdf tool page, per-index `password_<i>` multipart fields, backend sanitizer password stage with a distinct `400 error.wrongPassword` envelope; passwords never persisted, logged, or echoed (DEC-174).
+- **Ad-placement E2E and all-pages ad policy** — `e2e/ad-behavior.spec.ts` (presence/absence, DNT/GPC gating, house-promo fallback) plus an a11y E2E spec isolated from the third-party ad network. One symmetric ad slot per page (owner decision 2026-08-17): box-300x250 on the homepage (immediate) and on the five tool pages after the result phase, banner-468x60 on the supporting pages (contact, privacy, terms, cookies-advertising, roadmap, faq, status, blog).
+- **SEO (ADR-06)** — hreflang alternates + canonical in `generateMetadata`, per-locale sitemap (42 URLs), robots alignment, and tests.
+- **Privacy leakage suite refresh** — `frontend/src/__tests__/leakage.test.ts` holds 26 tests covering the closed-field schema and redaction contracts (PT-01).
+- **Typecheck hardening (ADR-09)** — fixed 5 pre-existing `tsc --noEmit` errors and added a new `frontend-typecheck` CI job (CI is now 20 jobs, 19 on pushes to main).
+- **Documentation reconciliation** — roadmap self-contradiction removed; README capability table and legend, product/architecture specifications, AGENTS.md facts, integrations inventory, API reference (merge `password_<i>` fields), and SECURITY.md aligned with the deployed state.
 
 ### Changed
 
-- Branch coverage threshold gate restored to passing: the pre-existing ~74% branch baseline rose above the 80% CI threshold via the analytics, support, and tool-page test additions.
+- **All-pages advertising policy** — supersedes the prior status/legal/support exclusion (DEC-130): the 8 supporting pages render a banner-468x60 immediately via the shared `SupportingPageContent` container; ads remain gated by DNT/GPC (`isAdEnabled`) and never appear beside the Download control.
+- **CI** — 20 jobs (19 on pushes to main, +1 `frontend-typecheck`); branch protection requires 7 status checks.
 
 ## [Unreleased] — branch `feat/phase-5-production-readiness`
 
@@ -45,7 +47,7 @@ Phase 5 hardens the platform toward production readiness: five-tool completion e
 
 ### Changed
 
-- **CI** — aligned the frontend build/e2e env var name to `NEXT_PUBLIC_API_BASE_URL` (was the mismatched `NEXT_PUBLIC_API_URL`, which never reached the rewrite). 19 CI jobs, CI-without-CD.
+- **CI** — aligned the frontend build/e2e env var name to `NEXT_PUBLIC_API_BASE_URL` (was the mismatched `NEXT_PUBLIC_API_URL`, which never reached the rewrite). 20 CI jobs, CI-without-CD.
 - README/SECURITY capability claims aligned with branch state; roadmap records branch and correction note.
 
 ### Removed

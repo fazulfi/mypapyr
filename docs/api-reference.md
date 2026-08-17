@@ -294,6 +294,7 @@ the failure-code table above.
 `tool` ∈ `{compress-pdf, merge-pdf, split-pdf, jpg-to-pdf, pdf-to-jpg}`.
 
 - Multipart `file` upload. `compress-pdf` accepts one PDF; `merge-pdf`/`jpg-to-pdf` accept multiple files; `split-pdf` adds a `ranges` **form field** (default `""` = one output per page; grammar admits only `[0-9,\- ]*`, validated at admission, `schemas/job.py:72-85`, `routers/split.py:116-121`).
+- **Merge encrypted PDFs (`merge-pdf` only):** optional per-file `password_<i>` **form fields**, where `<i>` is the zero-based file index (`password_0`, `password_1`, ...). Each password is capped at 1024 UTF-8 bytes; only encrypted files need a value; an empty value is allowed and treated as absent. A locked file with a wrong or absent password fails the whole job with a `400` envelope whose `messageKey` is `error.wrongPassword`. The password is consumed at the sanitizer stage (`PdfSanitizer.sanitize(password=...)`), is never persisted, logged, or echoed, and lives only in request memory (`security/sanitize.py`, `routers/merge.py`; FR-MERGE-04, DEC-174).
 - Server runs, in order: **validation** → **security sanitize** → **scanner gate** → **R2 upload (sanitized bytes)** → **enqueue** → **admission response** (see `compress.py:88-160`).
 - Success returns **`202 Accepted`**:
 

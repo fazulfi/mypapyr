@@ -1,12 +1,12 @@
 # Architecture overview
 
-Papyr is designed as a browser-first PDF platform with an explicit, bounded server-processing path. This repository implements the frontend foundation (including the shared trilingual shell), the backend service foundation with its API, queue, storage contracts, deployment templates, and CI foundation. Native PDF processing via five tool executors, upload and enqueue endpoints, concrete threat scanning (ClamAV), worker dispatch, R2 object lifecycle cleanup, and monitoring services are implemented, and the Phase 5/6 baseline is merged to `main` (PR #24) and deployed to production on 2026-08-15 (release 1767ca8). The five PDF workflows are implemented with localized EN/ES/ID routes; progress is tracked on the [roadmap](roadmap.md).
+Papyr is designed as a browser-first PDF platform with an explicit, bounded server-processing path. This repository implements the frontend foundation (including the shared trilingual shell), the backend service foundation with its API, queue, storage contracts, deployment templates, and CI foundation. Native PDF processing via five tool executors, upload and enqueue endpoints, concrete threat scanning (ClamAV), worker dispatch, R2 object lifecycle cleanup, and monitoring services are implemented, and the Phase 5/6 baseline is merged to `main` (PR #24) and deployed to production on 2026-08-15 (release 1767ca8). The Phase 6 enterprise completion (PT-04 merge passwords, ad-placement E2E, SEO, docs reconciliation) shipped via PR #46 and is deployed as backend release p6-complete-1786951216 and frontend release p6-ads-all-1786954951 (2026-08-17). The five PDF workflows are implemented with localized EN/ES/ID routes; progress is tracked on the [roadmap](roadmap.md).
 
 ## Current implementation
 
 - A Next.js application with strict TypeScript and automated quality gates, including the shared trilingual shell: English, Spanish, and Indonesian locale routing with persistent preference, Navbar, Footer, LanguageSwitcher, and SkipLink navigation, a localized homepage, supporting route shells for privacy, terms, cookies and advertising, contact, status, roadmap, and blog, and a localized 404, with unit and Playwright E2E gates.
 - A typed FastAPI service foundation: app factory with strict configuration, `GET /health` and `GET /health/ready` endpoints, request correlation headers, a stable error envelope, file and job validation schemas, the pure server task state machine, and versioned `/api/v1` contracts for capabilities, task status, and signed downloads.
-- A Redis-backed backend foundation: a minimal-metadata task store, a durable Streams queue with queue caps and fair-use controls, a one-worker processing loop (executors implemented per tool), an R2 client with opaque-key storage and presigned downloads, a cleanup coordinator enforcing the hard one-hour retention maximum, and monitoring services. Typed file validation, PDF sanitization, fail-closed classification, and concrete ClamAV threat scanning are implemented in this feature branch.
+- A Redis-backed backend foundation: a minimal-metadata task store, a durable Streams queue with queue caps and fair-use controls, a one-worker processing loop (executors implemented per tool), an R2 client with opaque-key storage and presigned downloads, a cleanup coordinator enforcing the hard one-hour retention maximum, and monitoring services. Typed file validation, PDF sanitization, fail-closed classification, and concrete ClamAV threat scanning are deployed.
 - Privacy-safe logging and records: request and task correlation, redacted settings, and no document bodies, filenames, passwords, signed URLs, or extracted text in logs or store records.
 - Public-safe Docker Compose and Nginx templates for `nginx`, `api`, `redis`, and `workers` services.
 - CI-only GitHub Actions for formatting, linting, tests, coverage, builds, Playwright E2E, Trivy, gitleaks, dependency and package audits, and repository QA checks.
@@ -14,7 +14,7 @@ Papyr is designed as a browser-first PDF platform with an explicit, bounded serv
 
 ## Backend service contracts
 
-The versioned backend contracts below are implemented and covered by unit and integration tests and are part of the deployed Phase 5/6 baseline (release 1767ca8): capabilities, task status, signed downloads under `/api/v1`, plus upload/enqueue admission on all five tool routers, five-tool executors, ClamAV threat scanning with fail-closed wiring, cleanup coordinator, and monitoring checks.
+The versioned backend contracts below are implemented and covered by unit and integration tests and are part of the deployed Phase 5/6 baseline (release 1767ca8) and the Phase 6 enterprise completion releases (backend p6-complete-1786951216, frontend p6-ads-all-1786954951, 2026-08-17): capabilities, task status, signed downloads under `/api/v1`, plus upload/enqueue admission on all five tool routers, five-tool executors, ClamAV threat scanning with fail-closed wiring, cleanup coordinator, and monitoring checks.
 
 | Endpoint | Purpose | Behaviour |
 | --- | --- | --- |
@@ -36,7 +36,7 @@ The versioned backend contracts below are implemented and covered by unit and in
 
 ```mermaid
 flowchart LR
-    U["User browser"] --> W["Next.js (Vercel)"]
+    U["User browser"] --> W["Next.js (VPS-served at mypapyr.com; budgezen.com on Vercel)"]
     W --> B["Browser PDF libraries"]
     W --> E["Cloudflare edge"]
     E --> N["Nginx reverse proxy"]
