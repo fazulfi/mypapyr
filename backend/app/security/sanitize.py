@@ -17,6 +17,15 @@ from :class:`io.BytesIO` (never a live network stream), and
 ``attempt_recovery=False`` means a document that needs parsing recovery is
 refused instead of being reconstructed from hostile structure.
 
+Encrypted inputs (FR-SHARED-09): :meth:`PdfSanitizer.sanitize` accepts an
+optional ``password`` that is threaded into the pikepdf open and consumed
+at that point only — the fresh output is always saved unencrypted, the
+password is never persisted or logged, and the default value keeps every
+other caller refusing locked documents unchanged. A refusal whose cause is
+``pikepdf.PasswordError`` is reported on :attr:`refusal_reason` so
+admission routers can render a distinct wrong-password error instead of
+the generic corruption category.
+
 Sanitization limitations (documented per the execution-matrix SEC-02 test
 contract): the engine removes active content reachable through the
 documented action slots (catalog open/additional actions, page and
@@ -34,6 +43,7 @@ from __future__ import annotations
 import io
 import logging
 from collections.abc import Iterator
+from enum import StrEnum
 from typing import Final
 
 import pikepdf
@@ -48,9 +58,23 @@ from app.security.classification import (
     SanitizerStatus,
 )
 
-__all__ = ["PdfSanitizer"]
+__all__ = ["PdfSanitizer", "SanitizerRefusal"]
 
 logger = logging.getLogger(__name__)
+
+
+class SanitizerRefusal(StrEnum):
+    """Closed cause vocabulary for a ``REFUSED`` verdict.
+
+    Lets admission routers distinguish a locked document (wrong or missing
+    password, FR-SHARED-09) from a corrupt or otherwise unsupported one
+    without exposing payload details; the value is never rendered to users.
+    """
+
+    PASSWORD = "password"
+    CORRUPT = "corrupt"
+    OTHER = "other"
+
 
 # External-access subtypes, split out from the engine's combined set so the
 # launch category is reported separately from the other external actions.
@@ -224,27 +248,36 @@ class PdfSanitizer(Sanitizer):
     """
 
     output_bytes: bytes | None
+    refusal_reason: SanitizerRefusal | None
 
     def __init__(self) -> None:
         self.output_bytes = None
+        self.refusal_reason = None
 
-    def sanitize(self, data: bytes) -> SanitizationVerdict:
+    def sanitize(self, data: bytes, *, password: str = "") -> SanitizationVerdict:
         """Sanitize *data* in memory and return the SEC-01 verdict.
 
         The sanitized document (for ``CLEAN``/``SANITIZED`` outcomes) is
         available on :attr:`output_bytes`; it is always ``None`` after a
-        refusal. Never raises with payload details.
+        refusal, with :attr:`refusal_reason` describing the closed cause.
+        ``password`` decrypts an encrypted input at open time only (the
+        output is never re-encrypted) and is never logged or persisted;
+        the default keeps locked documents refused for callers that do not
+        supply one. Never raises with payload details.
         """
         self.output_bytes = None
+        self.refusal_reason = None
         try:
-            return self._sanitize(data)
+            return self._sanitize(data, password=password)
         except pikepdf.PasswordError:
-            # Password-required input: the sanitizer never prompts for or
-            # guesses passwords, so the document is refused.
+            # Password-required input: wrong, missing, or no supplied
+            # password; the document is refused.
+            self.refusal_reason = SanitizerRefusal.PASSWORD
             return SanitizationVerdict(status=SanitizerStatus.REFUSED)
         except pikepdf.PdfError:
             # Malformed or structurally unsupported input fails closed; a
             # damaged document is never reconstructed into an output.
+            self.refusal_reason = SanitizerRefusal.CORRUPT
             return SanitizationVerdict(status=SanitizerStatus.REFUSED)
         except Exception as exc:
             # Any unexpected engine behaviour fails closed rather than
@@ -252,6 +285,7 @@ class PdfSanitizer(Sanitizer):
             # telemetry carries only the closed category and the exception
             # class name (DEC-175, DEC-169).
             self.output_bytes = None
+            self.refusal_reason = SanitizerRefusal.OTHER
             logger.error(
                 "pdf sanitizer refusal",
                 extra={
@@ -263,11 +297,11 @@ class PdfSanitizer(Sanitizer):
             )
             return SanitizationVerdict(status=SanitizerStatus.REFUSED)
 
-    def _sanitize(self, data: bytes) -> SanitizationVerdict:
+    def _sanitize(self, data: bytes, *, password: str) -> SanitizationVerdict:
         source = io.BytesIO(data)
-        with pikepdf.Pdf.open(source, password="", attempt_recovery=False) as pdf:
+        with pikepdf.Pdf.open(source, password=password, attempt_recovery=False) as pdf:
             categories = _detect_categories(pdf)
-            if not categories:
+            if not categories and not pdf.is_encrypted:
                 self.output_bytes = data
                 return SanitizationVerdict(status=SanitizerStatus.CLEAN)
             scrubber = (
@@ -282,6 +316,7 @@ class PdfSanitizer(Sanitizer):
         if remaining:
             # A prohibited category survived the pass: the document cannot
             # be claimed sanitized, so it is refused, never downgraded.
+            self.refusal_reason = SanitizerRefusal.OTHER
             return SanitizationVerdict(status=SanitizerStatus.REFUSED)
         # Only a verified, active-content-free rewrite is published; a
         # failure in the verification above must never leave output_bytes set.
