@@ -71,6 +71,29 @@ Listed in the root `.env.example` as an out-of-band provision contract. CI uses 
 
 The three Adsterra names listed in the root `.env.example` (`ADSTERRA_PUBLISHER_ID`, `ADSTERRA_PLACEMENT_IDS`, `ADSTERRA_API_KEY`) are **not read by any code**: the frontend keeps the owner-approved zone keys hardcoded in `frontend/src/lib/ads.ts` (client-side public identifiers) and reads no Adsterra variables from the environment. They are documented as a dead contract only.
 
+## P7 operations, owner-gated
+
+These variables describe the OP-03 Telegram relay and OP-04 encrypted restic procedure. They are placeholders only. No bot, backup repository, access key, password, or host state is provisioned by this repository, and none belongs in a committed file.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `TELEGRAM_BOT_TOKEN` | unset | Owner-provisioned Telegram Bot API credential, read only by the relay. |
+| `TELEGRAM_CHAT_ID` | unset | Owner-provisioned destination identifier, read only by the relay. |
+| `BACKUP_S3_BUCKET` | unset | Owner-provisioned S3-compatible backup bucket label. |
+| `BACKUP_S3_ENDPOINT` | unset | Owner-provisioned S3-compatible endpoint. |
+| `BACKUP_S3_ACCESS_KEY_ID` | unset | Owner-provisioned backup access key. |
+| `BACKUP_S3_SECRET_ACCESS_KEY` | unset | Owner-provisioned backup secret key. |
+| `RESTIC_REPOSITORY` | unset | Encrypted restic repository URL, supplied out of band. |
+| `RESTIC_PASSWORD_FILE` | unset | Mode `0600` restic password file path; must be a regular file with owner-only permissions, supplied out of band. |
+| `PAPYR_BACKUP_ROOT` | `__SET_ME__` | Operator-selected directory holding the deployment configuration. |
+| `PAPYR_BACKUP_SCOPE` | `__SET_ME__` | Allowlist scope manifest (deploy/backup/backup-scope.txt); restic reads only these relative config paths via `--files-from`. |
+| `RESTIC_KEEP_DAILY` | `7` pending R-13 approval | Restic daily retention family. |
+| `RESTIC_KEEP_WEEKLY` | `4` pending R-13 approval | Restic weekly retention family. |
+| `RESTIC_KEEP_MONTHLY` | `12` pending R-13 approval | Restic monthly retention family. |
+| `RESTIC_KEEP_YEARLY` | `3` pending R-13 approval | Restic yearly retention family. |
+
+OP-04 backup scope is privacy-enforced by an **allowlist scope manifest**, not by exclude patterns: restic reads only the narrow configuration paths listed in `PAPYR_BACKUP_SCOPE` via `--files-from`, so document data (filenames, contents, metadata), R2 objects, queue payloads, uploads, results, Redis state, signed URLs, and credentials structurally cannot enter the repository. OP-01 and OP-03 carry aggregate operational signals only. The live monitoring profile, Telegram provisioning, backup destination, retention approval under R-13, and host-state verification under R-12/R-26 remain owner gates.
+
 Rules:
 
 - Values are never committed. The root `.env.example` and `deploy/.env.production.example` carry names/placeholders only.

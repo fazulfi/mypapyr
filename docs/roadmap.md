@@ -91,6 +91,17 @@ P9 is implemented on this feature branch and pending the authorized release proc
 
 Status: **In branch (PR #49)**; the branch head `da6e94e` is additionally deployed to the VPS frontend as release `p9-da6e94e` (BUILD_ID `2nIWv0nNRIdkFQbh92Ueh`) ahead of merge, per the authorized release process. External indexing, ranking, and search-engine presence remain NOT_VERIFIED.
 
+## In branch: P7 enterprise operations (monitoring, status, alerts, backup)
+
+The Phase 7 operations work lives on `feat/full-p7-enterprise-completion` and is **not yet merged to `main`**; the PR must precede any deployment. It implements privacy-safe ops artifacts, contracts, and guards without touching the backend monitor schema or the frontend ad contract. Local verdicts (guards, unit tests, E2E, CI) are source-level evidence; production activation is owner-gated.
+
+- **OP-01 internal monitoring** — `deploy/monitoring/netdata-compose.yml` (internal-only, digest-pinned, no published port, no docker socket, no Netdata Cloud claim) plus the closed health-signal contract in `deploy/monitoring/health-signals.md` covering api readiness, queue, workers, Redis, engines, storage integration, cleanup freshness, and public endpoints, with `scripts/check-monitoring.sh` as the repository guard.
+- **OP-02 derived public status** — `frontend/src/lib/status.ts` derives availability from consecutive failures across at least two regions; the localized status page renders without a VPS health fetch and word claims as observations. The live multi-region snapshot producer remains owner-gated under R-12.
+- **OP-03 Telegram relay** — `deploy/monitoring/telegram-relay.py` (standard library only) consumes the closed alert vocabulary in `deploy/monitoring/alerts.md` with open/resolved dedup, bounded retry, and a permanent-failure marker; `scripts/check-telegram-relay.sh` guards it. No bot token or chat id is provisioned.
+- **OP-04 encrypted restic** — `deploy/backup/restic-backup.sh` and the monthly isolated restore drill in `deploy/backup/restore-drill.md`; scope is enforced by the `deploy/backup/backup-scope.txt` allowlist via `--files-from`, and `run` fails closed unless the password file is a mode-`0600` regular file, with `scripts/check-backup.sh` guarding scope and plan mode.
+- **Owner gates (not provisioned, not executed)** — monitoring provider/threshold approval, Telegram bot/chat provisioning, backup S3 credentials and restic password, R-13 retention approval (documented placeholder families daily 7 / weekly 4 / monthly 12 / yearly 3), and the conflicting VPS host targets (`root@<HOST_A>` versus `root@<HOST_B>`, user `mypapyr`), which remain explicit and unresolved.
+- **Deployment status** — blocked until the owner resolves the host targets and confirms host state (R-12/R-26), and there is no live Telegram relay, no live restic repository, and no restore drill run against production (2026-08-17). Deployment follows the no-CD policy: PR and CI first, then gated runtime verification only with all gates cleared.
+
 ## Changelog notes
 
 - The squash merge of Phase 4 (`dabfbbd`) carries the misspelling `pdfToJag` in its message; the correct identifier is `pdfToJpg`. Public history is intentionally not rewritten; the correction is recorded here.
