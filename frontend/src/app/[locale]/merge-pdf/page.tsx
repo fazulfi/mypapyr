@@ -19,6 +19,12 @@ import { DoneCard } from "@/components/states/DoneCard";
 import { ErrorCard } from "@/components/states/ErrorCard";
 import type { ToolState } from "@/lib/toolState";
 import { useTaskPolling } from "@/hooks/useTaskPolling";
+import PasswordInput, {
+  type LockedFileInfo,
+  type PasswordErrorKind,
+} from "@/components/PasswordInput";
+import { isEncryptedPdf } from "@/lib/pdf-encryption";
+import { buildPasswordFields, fileId, reconcilePasswordValues } from "@/lib/mergePasswordFields";
 
 const MAX_FILES = 20;
 const MIN_FILES = 2;
@@ -41,6 +47,13 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
   const [taskId, setTaskId] = useState<string | null>(null);
   const [uploadPhase, setUploadPhase] = useState<"idle" | "uploading" | "error">("idle");
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  // Memory-only encrypted-PDF detection and passwords (PT-04): the ids are
+  // derived from file metadata, and the values live only in React state —
+  // never localStorage/sessionStorage/URL/analytics. Removed files drop out
+  // via reconcilePasswordValues; reset clears both maps.
+  const [encryptedIds, setEncryptedIds] = useState<Set<string>>(new Set());
+  const [passwordValues, setPasswordValues] = useState<Map<string, string>>(new Map());
+  const [passwordError, setPasswordError] = useState<PasswordErrorKind | null>(null);
 
   const { status } = useTaskPolling({
     toolId: "merge-pdf",
@@ -65,12 +78,38 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
     };
   }, [taskId, status, downloadUrl]);
 
+  async function handleFilesChange(next: File[]): Promise<void> {
+    setFiles(next);
+    setPasswordError(null);
+    const nextIds = new Set<string>(encryptedIds);
+    const pending: Promise<void>[] = [];
+    for (const file of next) {
+      const id = fileId(file);
+      if (nextIds.has(id)) continue;
+      pending.push(
+        isEncryptedPdf(file).then((encrypted) => {
+          if (encrypted) nextIds.add(id);
+        }),
+      );
+    }
+    await Promise.all(pending);
+    setEncryptedIds(nextIds);
+    setPasswordValues(reconcilePasswordValues(next, nextIds, passwordValues));
+  }
+
   async function handleSubmit(selected: File[]): Promise<void> {
     if (selected.length < MIN_FILES) return;
+    setPasswordError(null);
+    const built = buildPasswordFields(selected, encryptedIds, passwordValues);
+    if (!built.ok) {
+      setPasswordError("unsupported");
+      return;
+    }
     setUploadPhase("uploading");
     try {
       const form = new FormData();
       for (const file of selected) form.append("files", file);
+      for (const [field, value] of Object.entries(built.fields)) form.append(field, value);
       const response = await fetch("/api/v1/tools/merge-pdf/tasks", {
         method: "POST",
         body: form,
@@ -89,6 +128,9 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
     setTaskId(null);
     setDownloadUrl(null);
     setUploadPhase("idle");
+    setEncryptedIds(new Set());
+    setPasswordValues(new Map());
+    setPasswordError(null);
   }
 
   function handleDownload(): void {
@@ -115,13 +157,48 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
           <PrivacyNotice locale={locale} model="client" />
           <Dropzone
             files={files}
-            onChange={setFiles}
+            onChange={(next) => void handleFilesChange(next)}
             accept={["application/pdf"]}
             maxFiles={MAX_FILES}
             maxSizeBytes={MAX_SIZE_BYTES}
             disabled={phase === "uploading"}
             locale={locale}
           />
+
+          <ul className="mt-4 space-y-1">
+            {files
+              .filter((file) => encryptedIds.has(fileId(file)))
+              .map((file) => {
+                const info: LockedFileInfo = {
+                  id: fileId(file),
+                  name: file.name,
+                  type: file.type,
+                  size: file.size,
+                  isEncrypted: true,
+                };
+                const id = fileId(file);
+                return (
+                  <li key={id}>
+                    <PasswordInput
+                      file={info}
+                      locale={locale}
+                      errorType={passwordError ?? undefined}
+                      memoryUsage={{
+                        value: passwordValues.get(id) ?? "",
+                        onChange: (pw) => {
+                          setPasswordError(null);
+                          setPasswordValues((prev) => {
+                            const nextMap = new Map(prev);
+                            nextMap.set(id, pw);
+                            return nextMap;
+                          });
+                        },
+                      }}
+                    />
+                  </li>
+                );
+              })}
+          </ul>
 
           <button
             type="button"
