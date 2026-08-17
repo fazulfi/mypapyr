@@ -132,7 +132,7 @@ describe("ads config", () => {
     });
   });
 
-  it("allowedAdPages covers home, tools, and supporting pages; status stays ad-free (owner decision 2026-08-15)", () => {
+  it("allowedAdPages covers home, tools, and every supporting page (owner decisions 2026-08-15 + 2026-08-17)", () => {
     expect(allowedAdPages).toEqual([
       "home",
       "compress-pdf",
@@ -146,8 +146,9 @@ describe("ads config", () => {
       "cookies-advertising",
       "roadmap",
       "faq",
+      "status",
+      "blog",
     ]);
-    expect(allowedAdPages).not.toContain("status");
   });
 });
 
@@ -228,8 +229,8 @@ describe("shouldRenderAd()", () => {
     }
   });
 
-  it("returns false for status, legal, and support surfaces", () => {
-    const nonAllowed = ["status", "blog", "tool-unavailable", "unknown-page"];
+  it("returns false for non-page slugs", () => {
+    const nonAllowed = ["tool-unavailable", "unknown-page", "does-not-exist"];
     for (const slug of nonAllowed) {
       expect(shouldRenderAd(slug)).toBe(false);
     }
@@ -342,8 +343,8 @@ describe("AdSlot component", () => {
     expect(id.querySelector('[aria-label="Iklan"]')).not.toBeNull();
   });
 
-  it("renders nothing on a non-allowed page (status)", () => {
-    const { container } = render(React.createElement(AdSlot, { pageSlug: "status" }));
+  it("renders nothing on a non-allowed page (unknown-page)", () => {
+    const { container } = render(React.createElement(AdSlot, { pageSlug: "unknown-page" }));
     expect(container.querySelector('[aria-label="Advertisement"]')).toBeNull();
   });
 
@@ -496,7 +497,7 @@ describe("AdSlot lazy script injection", () => {
   it("does NOT inject the script on a non-allowed page", () => {
     const { fire } = installIntersectionObserver();
 
-    render(React.createElement(AdSlot, { pageSlug: "status" }));
+    render(React.createElement(AdSlot, { pageSlug: "unknown-page" }));
 
     act(() => {
       fire(true);
@@ -530,12 +531,12 @@ describe("ad placement guards integration", () => {
     expect(shouldRender).toBe(true);
   });
 
-  it("status page returns shouldRenderAd false even if phase is done", () => {
-    expect(shouldRenderAd("status")).toBe(false);
+  it("non-page slug returns shouldRenderAd false even if phase is done", () => {
+    expect(shouldRenderAd("unknown-page")).toBe(false);
     expect(isAfterPrimaryExperience("done")).toBe(true);
 
-    // The page guard takes precedence — no ad on non-tool pages.
-    const shouldRender = shouldRenderAd("status") && isAfterPrimaryExperience("done");
+    // The page guard takes precedence — no ad on non-page surfaces.
+    const shouldRender = shouldRenderAd("unknown-page") && isAfterPrimaryExperience("done");
     expect(shouldRender).toBe(false);
   });
 

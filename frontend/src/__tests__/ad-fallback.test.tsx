@@ -344,7 +344,7 @@ describe("AdSlot fallback privacy gating", () => {
   });
 
   it("renders nothing (and never a fallback) on a non-allowed page", () => {
-    const { container } = render(React.createElement(AdSlot, { pageSlug: "status" }));
+    const { container } = render(React.createElement(AdSlot, { pageSlug: "unknown-page" }));
     expect(container.querySelector('[data-testid="papyr-ad-slot"]')).toBeNull();
     expect(getFallback(container)).toBeNull();
   });

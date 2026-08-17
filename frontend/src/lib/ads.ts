@@ -96,10 +96,11 @@ export const AD_SLOT_DIMENSIONS = Object.freeze({
 });
 
 /**
- * Pages where ads may render (owner decision 2026-08-15): the homepage,
- * all five tool pages, and supporting content pages (contact, privacy,
- * terms, cookies-advertising, roadmap, faq). The status page stays ad-free
- * so incident information remains immediately readable (DEC-130).
+ * Pages where ads may render (owner decision 2026-08-15, extended 2026-08-17):
+ * the homepage, all five tool pages, and every supporting content page
+ * (contact, privacy, terms, cookies-advertising, roadmap, faq, status, blog).
+ * One reserved-dimension unit renders per page, centered, with the same
+ * banner format on supporting pages so the layout stays symmetric.
  */
 export const allowedAdPages: readonly string[] = Object.freeze([
   "home",
@@ -114,6 +115,8 @@ export const allowedAdPages: readonly string[] = Object.freeze([
   "cookies-advertising",
   "roadmap",
   "faq",
+  "status",
+  "blog",
 ]);
 
 /**

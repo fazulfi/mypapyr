@@ -8,5 +8,5 @@ export default async function StatusPage({
   params,
 }: SupportingPageProps): Promise<React.ReactElement> {
   const copy = await resolveSupportingPageCopy(params, "status");
-  return <SupportingPageContent copy={copy} />;
+  return <SupportingPageContent copy={copy} pageSlug="status" adLabel={copy.adLabel} />;
 }

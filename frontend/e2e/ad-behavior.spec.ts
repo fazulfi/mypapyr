@@ -8,7 +8,8 @@ import { expect, test, type Page } from "@playwright/test";
  *   (one ad per page, commit 8d9fc04);
  * - tool pages defer their slot until the primary experience completes
  *   (FR/DEC-151) and show it afterwards;
- * - the status page stays ad-free (DEC-130);
+ * - every supporting page (status, blog, terms, faq, ...) renders the
+ *   shared banner slot (owner decision 2026-08-17, all-pages policy);
  * - DNT/GPC opt-out blocks ad delivery (privacy gate);
  * - the house-promo fallback appears when the provider script is blocked.
  *
@@ -110,11 +111,16 @@ test.describe("ad behavior", () => {
     await expect(page.locator(AD_SLOT)).toHaveCount(1);
   });
 
-  test("status stays ad-free across locales (DEC-130)", async ({ page }) => {
-    for (const locale of ["en", "es", "id"]) {
-      await page.goto(`/${locale}/status`);
-      await expect(page.locator(AD_SLOT)).toHaveCount(0);
-      await expect(page.getByLabel(AD_LABEL[locale])).toHaveCount(0);
+  test("supporting pages render the shared banner slot across locales (all-pages policy)", async ({
+    page,
+  }) => {
+    for (const slug of ["status", "blog", "faq", "terms", "cookies-advertising", "roadmap"]) {
+      for (const locale of ["en", "es", "id"]) {
+        await page.goto(`/${locale}/${slug}`);
+        await expect(page.locator(AD_SLOT)).toHaveCount(1);
+        await expect(page.locator(AD_SLOT)).toBeVisible();
+        await expect(page.locator(AD_SLOT)).toHaveAttribute("aria-label", AD_LABEL[locale]);
+      }
     }
   });
 
