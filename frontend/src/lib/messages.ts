@@ -119,12 +119,12 @@ export const messages = {
       privacy: {
         title: "Privacy",
         description:
-          "How Papyr handles your data: temporary server processing with 1-hour deletion, no tracking cookies, no AI training, and browser-only processing for Merge and Split.",
+          "This page is an informational shell that provides general information about privacy on Papyr. The complete privacy content will be published in a later phase.",
       },
       terms: {
         title: "Terms of Service",
         description:
-          "The terms that govern your use of the Papyr PDF tools: acceptable use, no warranty, and how to contact us.",
+          "This page is an informational shell that provides general information about the terms that govern Papyr. The complete terms content will be published in a later phase.",
       },
       cookiesAdvertising: {
         title: "Cookies & Advertising",
@@ -139,16 +139,17 @@ export const messages = {
       status: {
         title: "Status",
         description:
-          "General information about the availability of Papyr services and current service status.",
+          "Observed availability of the Papyr service, derived from approved aggregate monitoring signals. This page reports observations, not guarantees: it renders without depending on the service itself, and availability is marked only after repeated failures across at least two regions.",
       },
       roadmap: {
         title: "Roadmap",
-        description: "General information about the Papyr roadmap and product direction.",
+        description:
+          "This page is an informational shell that provides general information about the Papyr roadmap. The complete roadmap content will be published in a later phase.",
       },
       blog: {
         title: "Blog",
         description:
-          "Guides for every Papyr PDF tool: compress, merge, split, JPG to PDF, and PDF to JPG.",
+          "This page is an informational shell that provides general information about the Papyr blog. Blog articles will be published in a later phase.",
       },
     },
     footer: {
@@ -176,10 +177,6 @@ export const messages = {
     notFound: {
       title: "Page not found",
       description: "The page you are looking for does not exist.",
-    },
-    gone: {
-      title: "Tool no longer available",
-      description: "This tool is no longer available.",
     },
     tools: {
       compress: {
@@ -371,79 +368,8 @@ export const messages = {
         },
       ],
     },
-    legal: {
-      version: "1.0",
-      effectiveDate: "2026-08-20",
-      footerLabel: "Effective date",
-      sections: {
-        privacy: [
-          {
-            heading: "What we collect",
-            paragraphs: [
-              "Files you upload for server-processed tools (Compress PDF, JPG to PDF, PDF to JPG) are stored temporarily in Cloudflare R2 only for processing and are automatically deleted within 1 hour. Files for browser-processed tools (Merge PDF, Split PDF) never leave your device.",
-              "We use Vercel Analytics, a privacy-friendly service that reports anonymous, aggregated page views without cookies and without identifying individual users.",
-            ],
-          },
-          {
-            heading: "What we do NOT collect",
-            paragraphs: [
-              "We do not require an account, name, or email. We do not read, analyze, or use your documents for any purpose other than providing the tool you chose, and never for AI training.",
-            ],
-          },
-          {
-            heading: "Security",
-            paragraphs: [
-              "All transfers use HTTPS. Download links are signed and expire within 5 minutes. Our servers never log file contents, object keys, or signed URLs.",
-            ],
-          },
-          {
-            heading: "Contact",
-            paragraphs: ["Questions about privacy? Email privacy@mypapyr.com."],
-          },
-        ],
-        terms: [
-          {
-            heading: "Service",
-            paragraphs: [
-              "Papyr provides browser-based PDF utilities at budgezen.com with no account or payment required: compress, merge, split, JPG to PDF, and PDF to JPG.",
-            ],
-          },
-          {
-            heading: "Acceptable use",
-            paragraphs: [
-              "You may use the tools only with files you are authorized to process. Uploading malicious content or abusing the service is prohibited.",
-            ],
-          },
-          {
-            heading: "No warranty",
-            paragraphs: [
-              "The service is provided as-is without warranties of any kind. Papyr is not liable for indirect or consequential damages.",
-            ],
-          },
-          {
-            heading: "Contact",
-            paragraphs: ["Questions about these terms? Email privacy@mypapyr.com."],
-          },
-        ],
-        cookiesAdvertising: [
-          {
-            heading: "Cookies",
-            paragraphs: [
-              "Papyr does not use tracking cookies. A single functional cookie (papyr_locale) remembers your language choice.",
-            ],
-          },
-          {
-            heading: "Advertising",
-            paragraphs: [
-              "Reserved-dimension ad slots may appear on the homepage, the five tool pages, and selected supporting pages. Ad content is served by a third-party network; opting out is supported and honors Do Not Track and Global Privacy Control.",
-            ],
-          },
-          { heading: "Contact", paragraphs: ["Advertising concerns? Email privacy@mypapyr.com."] },
-        ],
-      },
-    },
     privacyPage: {
-      lastUpdated: "Last updated: 20 August 2026",
+      lastUpdated: "Last updated: April 2026",
       sections: {
         intro:
           "Papyr is a free PDF tool that puts your privacy first. We designed this service to touch your personal data as little as possible.",
@@ -496,6 +422,37 @@ export const messages = {
           paragraphs: ["Have a privacy question? Contact us at {email}."],
         },
       },
+    },
+    statusPage: {
+      observedDisclaimer:
+        "This page reports observed availability, not a guarantee of future uptime.",
+      state: {
+        operational: "Operational",
+        degraded: "Degraded",
+        down: "Service disruption",
+        unknown: "Status unknown",
+      },
+      stateBody: {
+        operational:
+          "All monitored regions reported success in the most recent observation window.",
+        degraded:
+          "One or more regions are reporting repeated failures. Some requests may be affected.",
+        down: "Multiple regions are reporting sustained failures at the same time.",
+        unknown:
+          "Monitoring signals are being configured. There is not enough observed data to determine availability yet.",
+      },
+      regionsHeading: "Regions",
+      regionState: {
+        operational: "Operational",
+        degraded: "Observed failures",
+        down: "Down",
+      },
+      policyHeading: "How availability is derived",
+      policyBody:
+        "Availability is derived from consecutive failed observations. A region is marked down only after {failures} failed observations in a row, and the service is marked as disrupted only when {regions} regions fail together.",
+      lastObservedLabel: "Last observed",
+      neverObserved: "Never",
+      insufficientNote: "Not enough observations yet to confirm availability.",
     },
   },
   es: {
@@ -616,12 +573,12 @@ export const messages = {
       privacy: {
         title: "Privacidad",
         description:
-          "Cómo trata Papyr tus datos: procesamiento temporal en el servidor con eliminación en 1 hora, sin cookies de seguimiento, sin entrenamiento de IA y procesamiento en el navegador para Unir y Dividir.",
+          "Esta página es un marco informativo que ofrece información general sobre la privacidad en Papyr. El contenido completo de privacidad se publicará en una fase posterior.",
       },
       terms: {
         title: "Términos de servicio",
         description:
-          "Los términos que rigen el uso de las herramientas PDF de Papyr: uso aceptable, ausencia de garantías y cómo contactarnos.",
+          "Esta página es un marco informativo que ofrece información general sobre los términos que rigen Papyr. El contenido completo de los términos se publicará en una fase posterior.",
       },
       cookiesAdvertising: {
         title: "Cookies y publicidad",
@@ -636,16 +593,17 @@ export const messages = {
       status: {
         title: "Estado",
         description:
-          "Información general sobre la disponibilidad de los servicios de Papyr y el estado actual del servicio.",
+          "Disponibilidad observada del servicio Papyr, derivada de señales de monitoreo agregadas aprobadas. Esta página informa observaciones, no garantías: se genera sin depender del propio servicio y la indisponibilidad solo se marca después de fallos repetidos en al menos dos regiones.",
       },
       roadmap: {
         title: "Hoja de ruta",
-        description: "Información general sobre la hoja de ruta y la dirección del producto Papyr.",
+        description:
+          "Esta página es un marco informativo que ofrece información general sobre la hoja de ruta de Papyr. El contenido completo de la hoja de ruta se publicará en una fase posterior.",
       },
       blog: {
         title: "Blog",
         description:
-          "Guías para todas las herramientas PDF de Papyr: comprimir, combinar, dividir, JPG a PDF y PDF a JPG.",
+          "Esta página es un marco informativo que ofrece información general sobre el blog de Papyr. Los artículos del blog se publicarán en una fase posterior.",
       },
     },
     footer: {
@@ -674,10 +632,6 @@ export const messages = {
     notFound: {
       title: "Página no encontrada",
       description: "La página que buscas no existe.",
-    },
-    gone: {
-      title: "Herramienta no disponible",
-      description: "Esta herramienta ya no está disponible.",
     },
     tools: {
       compress: {
@@ -872,82 +826,8 @@ export const messages = {
         },
       ],
     },
-    legal: {
-      version: "1.0",
-      effectiveDate: "2026-08-20",
-      footerLabel: "Fecha de entrada en vigor",
-      sections: {
-        privacy: [
-          {
-            heading: "Qué recopilamos",
-            paragraphs: [
-              "Los archivos que subes para las herramientas procesadas en el servidor (Comprimir PDF, JPG a PDF y PDF a JPG) se almacenan temporalmente en Cloudflare R2 solo para su procesamiento y se eliminan automáticamente en un plazo de 1 hora. Los archivos de las herramientas procesadas en el navegador (Unir PDF y Dividir PDF) nunca salen de tu dispositivo.",
-              "Usamos Vercel Analytics, un servicio respetuoso con la privacidad que informa de visitas anónimas y agregadas sin cookies y sin identificar a usuarios individuales.",
-            ],
-          },
-          {
-            heading: "Qué NO recopilamos",
-            paragraphs: [
-              "No exigimos una cuenta, nombre ni correo electrónico. No leemos, analizamos ni usamos tus documentos para ningún fin distinto de ofrecer la herramienta que elegiste, y nunca para entrenar IA.",
-            ],
-          },
-          {
-            heading: "Seguridad",
-            paragraphs: [
-              "Todas las transferencias usan HTTPS. Los enlaces de descarga están firmados y caducan en un plazo de 5 minutos. Nuestros servidores nunca registran el contenido de los archivos, las claves de objetos ni las URL firmadas.",
-            ],
-          },
-          {
-            heading: "Contacto",
-            paragraphs: ["¿Preguntas sobre privacidad? Escribe a privacy@mypapyr.com."],
-          },
-        ],
-        terms: [
-          {
-            heading: "Servicio",
-            paragraphs: [
-              "Papyr ofrece herramientas PDF basadas en el navegador en budgezen.com sin cuenta ni pago: comprimir, unir, dividir, JPG a PDF y PDF a JPG.",
-            ],
-          },
-          {
-            heading: "Uso aceptable",
-            paragraphs: [
-              "Solo puedes usar las herramientas con archivos cuyo procesamiento estés autorizado a realizar. Está prohibido subir contenido malicioso o abusar del servicio.",
-            ],
-          },
-          {
-            heading: "Sin garantías",
-            paragraphs: [
-              "El servicio se proporciona tal cual, sin garantías de ningún tipo. Papyr no se hace responsable de daños indirectos o consecuentes.",
-            ],
-          },
-          {
-            heading: "Contacto",
-            paragraphs: ["¿Preguntas sobre estos términos? Escribe a privacy@mypapyr.com."],
-          },
-        ],
-        cookiesAdvertising: [
-          {
-            heading: "Cookies",
-            paragraphs: [
-              "Papyr no utiliza cookies de seguimiento. Una única cookie funcional (papyr_locale) recuerda tu elección de idioma.",
-            ],
-          },
-          {
-            heading: "Publicidad",
-            paragraphs: [
-              "Pueden aparecer espacios publicitarios de dimensiones reservadas en la página de inicio, las cinco herramientas y algunas páginas de soporte. El contenido publicitario lo sirve una red externa; se admite la exclusión y se respetan Do Not Track y Global Privacy Control.",
-            ],
-          },
-          {
-            heading: "Contacto",
-            paragraphs: ["¿Dudas sobre publicidad? Escribe a privacy@mypapyr.com."],
-          },
-        ],
-      },
-    },
     privacyPage: {
-      lastUpdated: "Última actualización: 20 de agosto de 2026",
+      lastUpdated: "Última actualización: abril de 2026",
       sections: {
         intro:
           "Papyr es una herramienta PDF gratuita que antepone tu privacidad. Diseñamos este servicio para tocar tus datos personales lo menos posible.",
@@ -1000,6 +880,38 @@ export const messages = {
           paragraphs: ["¿Tienes una pregunta sobre privacidad? Contáctanos en {email}."],
         },
       },
+    },
+    statusPage: {
+      observedDisclaimer:
+        "Esta página informa disponibilidad observada, no garantiza disponibilidad futura.",
+      state: {
+        operational: "Operativo",
+        degraded: "Degradado",
+        down: "Interrupción del servicio",
+        unknown: "Estado desconocido",
+      },
+      stateBody: {
+        operational:
+          "Todas las regiones supervisadas informaron resultados correctos en la ventana de observación más reciente.",
+        degraded:
+          "Una o más regiones informan fallos repetidos. Algunas solicitudes pueden verse afectadas.",
+        down: "Varias regiones informan fallos sostenidos al mismo tiempo.",
+        unknown:
+          "Las señales de supervisión se están configurando. Todavía no hay suficientes datos observados para determinar la disponibilidad.",
+      },
+      regionsHeading: "Regiones",
+      regionState: {
+        operational: "Operativo",
+        degraded: "Fallos observados",
+        down: "Caído",
+      },
+      policyHeading: "Cómo se determina la disponibilidad",
+      policyBody:
+        "La disponibilidad se determina a partir de observaciones fallidas consecutivas. Una región solo se marca como caída después de {failures} observaciones fallidas seguidas, y el servicio solo se marca como interrumpido cuando {regions} regiones fallan a la vez.",
+      lastObservedLabel: "Última observación",
+      neverObserved: "Nunca",
+      insufficientNote:
+        "Todavía no hay suficientes observaciones para confirmar la disponibilidad.",
     },
   },
   id: {
@@ -1120,12 +1032,12 @@ export const messages = {
       privacy: {
         title: "Privasi",
         description:
-          "Cara Papyr menangani data Anda: pemrosesan sementara di server dengan penghapusan dalam 1 jam, tanpa cookie pelacakan, tanpa pelatihan AI, dan pemrosesan di browser untuk Gabung dan Pisah.",
+          "Halaman ini adalah kerangka informasi yang memberikan informasi umum tentang privasi di Papyr. Konten privasi lengkap akan diterbitkan pada fase berikutnya.",
       },
       terms: {
         title: "Ketentuan Layanan",
         description:
-          "Ketentuan yang mengatur penggunaan alat PDF Papyr: penggunaan yang dapat diterima, tanpa jaminan, dan cara menghubungi kami.",
+          "Halaman ini adalah kerangka informasi yang memberikan informasi umum tentang ketentuan yang mengatur Papyr. Konten ketentuan lengkap akan diterbitkan pada fase berikutnya.",
       },
       cookiesAdvertising: {
         title: "Cookie dan Iklan",
@@ -1140,16 +1052,17 @@ export const messages = {
       status: {
         title: "Status",
         description:
-          "Informasi umum tentang ketersediaan layanan Papyr dan status layanan saat ini.",
+          "Ketersediaan layanan Papyr yang teramati, diturunkan dari sinyal pemantauan agregat yang disetujui. Halaman ini melaporkan observasi, bukan jaminan: halaman dirender tanpa bergantung pada layanan itu sendiri, dan status terganggu hanya ditandai setelah kegagalan berulang di setidaknya dua wilayah.",
       },
       roadmap: {
         title: "Peta Jalan",
-        description: "Informasi umum tentang peta jalan dan arah produk Papyr.",
+        description:
+          "Halaman ini adalah kerangka informasi yang memberikan informasi umum tentang peta jalan Papyr. Konten peta jalan lengkap akan diterbitkan pada fase berikutnya.",
       },
       blog: {
         title: "Blog",
         description:
-          "Panduan untuk setiap alat PDF Papyr: kompres, gabungkan, pisahkan, JPG ke PDF, dan PDF ke JPG.",
+          "Halaman ini adalah kerangka informasi yang memberikan informasi umum tentang blog Papyr. Artikel blog akan diterbitkan pada fase berikutnya.",
       },
     },
     footer: {
@@ -1178,10 +1091,6 @@ export const messages = {
     notFound: {
       title: "Halaman tidak ditemukan",
       description: "Halaman yang Anda cari tidak ada.",
-    },
-    gone: {
-      title: "Alat tidak lagi tersedia",
-      description: "Alat ini tidak lagi tersedia.",
     },
     tools: {
       compress: {
@@ -1378,82 +1287,8 @@ export const messages = {
         },
       ],
     },
-    legal: {
-      version: "1.0",
-      effectiveDate: "2026-08-20",
-      footerLabel: "Tanggal berlaku",
-      sections: {
-        privacy: [
-          {
-            heading: "Apa yang kami kumpulkan",
-            paragraphs: [
-              "File yang Anda unggah untuk alat yang diproses di server (Kompres PDF, Gambar ke PDF, PDF ke Gambar) disimpan sementara di Cloudflare R2 hanya untuk pemrosesan dan otomatis dihapus dalam 1 jam. File untuk alat yang diproses di browser (Gabung PDF, Pisah PDF) tidak pernah meninggalkan perangkat Anda.",
-              "Kami menggunakan Vercel Analytics, layanan yang ramah privasi untuk melaporkan kunjungan halaman secara anonim dan agregat tanpa cookie dan tanpa mengidentifikasi pengguna secara individual.",
-            ],
-          },
-          {
-            heading: "Apa yang TIDAK kami kumpulkan",
-            paragraphs: [
-              "Kami tidak memerlukan akun, nama, atau email. Kami tidak membaca, menganalisis, atau menggunakan dokumen Anda untuk tujuan selain menyediakan alat yang Anda pilih, dan tidak pernah untuk pelatihan AI.",
-            ],
-          },
-          {
-            heading: "Keamanan",
-            paragraphs: [
-              "Semua transfer menggunakan HTTPS. Link unduhan ditandatangani dan kedaluwarsa dalam 5 menit. Server kami tidak pernah mencatat isi file, kunci objek, atau signed URL.",
-            ],
-          },
-          {
-            heading: "Kontak",
-            paragraphs: ["Ada pertanyaan tentang privasi? Email privacy@mypapyr.com."],
-          },
-        ],
-        terms: [
-          {
-            heading: "Layanan",
-            paragraphs: [
-              "Papyr menyediakan alat PDF berbasis browser di budgezen.com tanpa akun atau biaya: kompres, gabung, pisah, gambar ke PDF, dan PDF ke gambar.",
-            ],
-          },
-          {
-            heading: "Penggunaan yang dapat diterima",
-            paragraphs: [
-              "Anda hanya boleh menggunakan alat dengan file yang Anda berwenang untuk proses. Mengunggah konten berbahaya atau menyalahgunakan layanan dilarang.",
-            ],
-          },
-          {
-            heading: "Tanpa jaminan",
-            paragraphs: [
-              "Layanan disediakan apa adanya tanpa jaminan apa pun. Papyr tidak bertanggung jawab atas kerugian tidak langsung atau konsekuensial.",
-            ],
-          },
-          {
-            heading: "Kontak",
-            paragraphs: ["Ada pertanyaan tentang ketentuan ini? Email privacy@mypapyr.com."],
-          },
-        ],
-        cookiesAdvertising: [
-          {
-            heading: "Cookie",
-            paragraphs: [
-              "Papyr tidak menggunakan cookie pelacakan. Satu cookie fungsional (papyr_locale) mengingat pilihan bahasa Anda.",
-            ],
-          },
-          {
-            heading: "Iklan",
-            paragraphs: [
-              "Slot iklan berdimensi khusus dapat muncul di beranda, lima halaman alat, dan halaman pendukung tertentu. Konten iklan disediakan jaringan pihak ketiga; opsi menolak didukung dan menghormati Do Not Track serta Global Privacy Control.",
-            ],
-          },
-          {
-            heading: "Kontak",
-            paragraphs: ["Ada kekhawatiran tentang iklan? Email privacy@mypapyr.com."],
-          },
-        ],
-      },
-    },
     privacyPage: {
-      lastUpdated: "Terakhir diperbarui: 20 Agustus 2026",
+      lastUpdated: "Terakhir diperbarui: April 2026",
       sections: {
         intro:
           "Papyr adalah alat PDF gratis yang mengutamakan privasimu. Kami merancang layanan ini agar sesedikit mungkin menyentuh data pribadimu.",
@@ -1506,6 +1341,37 @@ export const messages = {
           paragraphs: ["Punya pertanyaan tentang privasi? Hubungi kami di {email}."],
         },
       },
+    },
+    statusPage: {
+      observedDisclaimer:
+        "Halaman ini melaporkan ketersediaan yang teramati, bukan jaminan ketersediaan di masa depan.",
+      state: {
+        operational: "Beroperasi normal",
+        degraded: "Menurun",
+        down: "Gangguan layanan",
+        unknown: "Status tidak diketahui",
+      },
+      stateBody: {
+        operational:
+          "Semua wilayah yang dipantau melaporkan hasil sukses pada jendela observasi terbaru.",
+        degraded:
+          "Satu atau lebih wilayah melaporkan kegagalan berulang. Sebagian permintaan mungkin terdampak.",
+        down: "Beberapa wilayah melaporkan kegagalan berkelanjutan pada waktu yang sama.",
+        unknown:
+          "Sinyal pemantauan sedang dikonfigurasi. Belum ada cukup data teramati untuk menentukan ketersediaan.",
+      },
+      regionsHeading: "Wilayah",
+      regionState: {
+        operational: "Beroperasi normal",
+        degraded: "Kegagalan teramati",
+        down: "Gangguan",
+      },
+      policyHeading: "Cara ketersediaan ditentukan",
+      policyBody:
+        "Ketersediaan ditentukan dari kegagalan observasi berurutan. Sebuah wilayah baru ditandai terganggu setelah {failures} kegagalan observasi berturut-turut, dan layanan baru ditandai terganggu ketika {regions} wilayah gagal bersamaan.",
+      lastObservedLabel: "Terakhir diamati",
+      neverObserved: "Tidak pernah",
+      insufficientNote: "Belum cukup observasi untuk mengonfirmasi ketersediaan.",
     },
   },
 } as const;
