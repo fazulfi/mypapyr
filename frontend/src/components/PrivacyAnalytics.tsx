@@ -12,18 +12,28 @@
  * Rendered from the server-side layout; the opt-out check runs client-side
  * at event-send time, so late-setting of the app flag is honoured.
  */
-import { Analytics, type BeforeSendEvent as AnalyticsBeforeSendEvent } from "@vercel/analytics/next";
-import { SpeedInsights, type BeforeSendEvent as SpeedBeforeSendEvent } from "@vercel/speed-insights/next";
+import type { ComponentProps } from "react";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import { isOptedOut } from "@/lib/analytics";
+
+/**
+ * `BeforeSendEvent` is not exported by @vercel/analytics or
+ * @vercel/speed-insights (it is declared locally in each entry point), so the
+ * event/return types are derived from the components' own `beforeSend` prop
+ * types instead of importing a possibly-missing named type.
+ */
+type AnalyticsBeforeSend = NonNullable<ComponentProps<typeof Analytics>["beforeSend"]>;
+type SpeedBeforeSend = NonNullable<ComponentProps<typeof SpeedInsights>["beforeSend"]>;
 
 /**
  * `beforeSend` for `<Analytics />`. Returns `null` to cancel the event when
  * the visitor has expressed an opt-out preference.
  */
 export function analyticsBeforeSend(
-  event: AnalyticsBeforeSendEvent,
-): AnalyticsBeforeSendEvent | null {
+  event: Parameters<AnalyticsBeforeSend>[0],
+): ReturnType<AnalyticsBeforeSend> {
   return isOptedOut() ? null : event;
 }
 
@@ -32,8 +42,8 @@ export function analyticsBeforeSend(
  * when the visitor has expressed an opt-out preference.
  */
 export function speedInsightsBeforeSend(
-  event: SpeedBeforeSendEvent,
-): SpeedBeforeSendEvent | false {
+  event: Parameters<SpeedBeforeSend>[0],
+): ReturnType<SpeedBeforeSend> {
   return isOptedOut() ? false : event;
 }
 

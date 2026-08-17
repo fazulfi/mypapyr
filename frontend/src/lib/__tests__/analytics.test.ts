@@ -208,12 +208,12 @@ describe("lib/analytics redactPayload edge cases", () => {
       {
         page: "/merge",
         webVitals: [{ name: "LCP", value: 120 }],
-        metadata: { password: "hunter2", kept: "yes" },
+        referrer: { password: "hunter2", kept: "yes" },
       },
-      ["page", "webVitals", "metadata"],
+      ["page", "webVitals", "referrer"],
     );
     expect(result.webVitals).toEqual([{ name: "LCP", value: 120 }]);
-    expect(result.metadata).toEqual({ kept: "yes" });
+    expect(result.referrer).toEqual({ kept: "yes" });
   });
 
   it("drops keys not in the allowed list", () => {
