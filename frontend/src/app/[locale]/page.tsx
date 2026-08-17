@@ -469,7 +469,7 @@ export default async function LocaleHomePage({
       </section>
 
       <section className="mx-auto max-w-[760px] px-6 pb-24" aria-label={copy.ads.label}>
-        <AdSlot pageSlug="home" label={copy.ads.label} />
+        <AdSlot pageSlug="home" immediate label={copy.ads.label} />
       </section>
 
       <section className="border-y border-slate-200 bg-slate-100">

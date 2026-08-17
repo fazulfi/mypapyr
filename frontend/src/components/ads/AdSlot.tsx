@@ -99,7 +99,9 @@ interface AdSlotProps {
    * Current tool interaction phase. When provided AND `immediate` is not
    * set, the slot only renders after the primary tool experience
    * completes (done/error/finalizing), per the original FR/DEC-151
-   * placement. Pages using `immediate` render the placeholder right away.
+   * placement. Omitting `phase` (and `immediate`) fails closed (G12): the
+   * slot does not render, because the caller has not declared its intent.
+   * Static pages with no phase concept must pass `immediate` to opt in.
    */
   phase?: string;
   /**
@@ -132,6 +134,10 @@ interface AdSlotProps {
  *   first-party fallback when the provider fails or no-fills.
  * - Injected nodes, the observer, and the timeout are cleaned up on unmount.
  * - Never renders on non-allowed pages or when ads are disabled (DNT/GPC).
+ * - Undefined `phase` with no `immediate` fails closed (G12): the slot
+ *   does not render at all, because the caller has not declared whether
+ *   the ad may show immediately or only after a primary experience.
+ *   Static pages opt in with `immediate`; tool pages pass their phase.
  */
 const FALLBACK_LABEL = "Advertisement";
 
@@ -148,7 +154,12 @@ export function AdSlot({
   const selected: AdUnit = unit !== undefined ? AD_UNITS[unit] : AD_UNITS["box-300x250"];
   const allowed =
     shouldRenderAd(pageSlug) &&
-    (immediate || phase === undefined || isAfterPrimaryExperience(phase));
+    // G12 explicit phase contract: `immediate` opts a static page in to
+    // the load-time slot; a known phase defers to after the primary
+    // experience. An undefined phase (no `immediate`) fails closed and
+    // renders nothing rather than silently treating the missing phase as
+    // "render now" or collapsing a reserved slot.
+    (immediate || (phase !== undefined && isAfterPrimaryExperience(phase)));
 
   useEffect(() => {
     if (!enabled || !allowed) return;

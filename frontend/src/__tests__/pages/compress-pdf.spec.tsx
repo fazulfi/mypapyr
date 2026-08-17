@@ -195,9 +195,9 @@ describe("CompressPdfTool polling / result states", () => {
 
     const copy = getMessages("en");
     const download = await screen.findByRole("button", { name: copy.states.download });
-    // Multiple slots exist (leaderboard + result box + skyscraper). FR/DEC-151
-    // requires the result-area box to follow the download control; pick the
-    // first slot that is document-following the download button.
+    // PT-02: one ad per page (commit 8d9fc04). The single result-area slot
+    // must follow the download control (FR/DEC-151); pick the slot that is
+    // document-following the download button.
     const adSlot = await waitFor(() => {
       const slots = Array.from(document.querySelectorAll('div[data-testid="papyr-ad-slot"]'));
       const following = slots.find(

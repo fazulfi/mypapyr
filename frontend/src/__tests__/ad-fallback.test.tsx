@@ -299,7 +299,9 @@ describe("AdSlot fallback privacy gating", () => {
     vi.useFakeTimers();
     Object.defineProperty(navigator, "doNotTrack", { value: "1", configurable: true });
 
-    const { container } = render(React.createElement(AdSlot, { pageSlug: "compress-pdf" }));
+    const { container } = render(
+      React.createElement(AdSlot, { pageSlug: "compress-pdf", immediate: true }),
+    );
     act(() => {
       vi.advanceTimersByTime(FALLBACK_TIMEOUT_MS * 2);
     });
@@ -313,7 +315,9 @@ describe("AdSlot fallback privacy gating", () => {
     vi.useFakeTimers();
     Object.defineProperty(navigator, "globalPrivacyControl", { value: true, configurable: true });
 
-    const { container } = render(React.createElement(AdSlot, { pageSlug: "compress-pdf" }));
+    const { container } = render(
+      React.createElement(AdSlot, { pageSlug: "compress-pdf", immediate: true }),
+    );
     act(() => {
       vi.advanceTimersByTime(FALLBACK_TIMEOUT_MS * 2);
     });
@@ -327,7 +331,9 @@ describe("AdSlot fallback privacy gating", () => {
     vi.useFakeTimers();
     (window as Window & { _papyrAdsDisabled?: unknown })._papyrAdsDisabled = true;
 
-    const { container } = render(React.createElement(AdSlot, { pageSlug: "compress-pdf" }));
+    const { container } = render(
+      React.createElement(AdSlot, { pageSlug: "compress-pdf", immediate: true }),
+    );
     act(() => {
       vi.advanceTimersByTime(FALLBACK_TIMEOUT_MS * 2);
     });

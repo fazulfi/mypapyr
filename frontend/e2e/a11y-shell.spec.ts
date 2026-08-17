@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
 
+test.beforeEach(async ({ page }) => {
+  await page.route("**/highperformanceformat.com/**", (route) => route.abort());
+});
+
 test.describe("SkipLink accessibility", () => {
   test("SkipLink is the first tab stop in the page", async ({ page }) => {
     await page.goto("/en");
