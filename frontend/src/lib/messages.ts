@@ -129,12 +129,12 @@ export const messages = {
       cookiesAdvertising: {
         title: "Cookies & Advertising",
         description:
-          "This page is an informational shell that provides general information about cookies and advertising on Papyr. The complete cookies and advertising content will be published in a later phase.",
+          "How Papyr uses cookies and advertising: reserved-dimension ad slots on the homepage, the five tools, and selected supporting pages; no tracking cookies; and an opt-out that honors Do Not Track and Global Privacy Control.",
       },
       contact: {
         title: "Contact",
         description:
-          "This page is an informational shell that provides general information about how to contact Papyr. Contact functionality will be published in a later phase.",
+          "Send us a message through the contact form. Categorized submissions are delivered to the Papyr owner inbox by email; replies go to the address you provide, if any.",
       },
       status: {
         title: "Status",
@@ -552,12 +552,12 @@ export const messages = {
       cookiesAdvertising: {
         title: "Cookies y publicidad",
         description:
-          "Esta página es un marco informativo que ofrece información general sobre las cookies y la publicidad en Papyr. El contenido completo sobre cookies y publicidad se publicará en una fase posterior.",
+          "Cómo usa Papyr las cookies y la publicidad: espacios publicitarios con dimensiones reservadas en la página de inicio, las cinco herramientas y algunas páginas de soporte; sin cookies de seguimiento; y una opción de exclusión que respeta Do Not Track y Global Privacy Control.",
       },
       contact: {
         title: "Contacto",
         description:
-          "Esta página es un marco informativo que ofrece información general sobre cómo contactar con Papyr. La funcionalidad de contacto se publicará en una fase posterior.",
+          "Envíanos un mensaje a través del formulario de contacto. Las solicitudes categorizadas se entregan por correo electrónico a la bandeja de entrada del propietario de Papyr; las respuestas van a la dirección que proporciones, si la indicas.",
       },
       status: {
         title: "Estado",
@@ -979,12 +979,12 @@ export const messages = {
       cookiesAdvertising: {
         title: "Cookie dan Iklan",
         description:
-          "Halaman ini adalah kerangka informasi yang memberikan informasi umum tentang cookie dan iklan di Papyr. Konten lengkap tentang cookie dan iklan akan diterbitkan pada fase berikutnya.",
+          "Bagaimana Papyr menggunakan cookie dan iklan: slot iklan dengan dimensi yang disediakan di beranda, lima alat, dan beberapa halaman pendukung; tanpa cookie pelacakan; dan opsi menolak yang menghormati Do Not Track dan Global Privacy Control.",
       },
       contact: {
         title: "Kontak",
         description:
-          "Halaman ini adalah kerangka informasi yang memberikan informasi umum tentang cara menghubungi Papyr. Fungsionalitas kontak akan diterbitkan pada fase berikutnya.",
+          "Kirim pesan kepada kami melalui formulir kontak. Pengiriman yang dikategorikan dikirim lewat email ke kotak masuk pemilik Papyr; balasan dikirim ke alamat yang Anda berikan, jika ada.",
       },
       status: {
         title: "Status",

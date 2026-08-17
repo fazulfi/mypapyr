@@ -5,8 +5,8 @@ backend. Every shape here is grounded in the backend source under
 `backend/app/` — the schemas in `schemas/job.py`, the error envelope in
 `errors.py`, the closed failure vocabulary in
 `routers/capabilities.py`, the state machine in `tasks/state_machine.py`,
-and the four router modules (`capabilities`, `status`, `download`,
-`compress`). Field names are **snake_case** unless the endpoint payload is
+and the router modules (`capabilities`, `status`, `download`, `compress`,
+`support`). Field names are **snake_case** unless the endpoint payload is
 modeled with `alias_generator=to_camel` (the capabilities contract); the
 concrete shapes below state which is which.
 
@@ -344,6 +344,44 @@ zero-based integer (`ge=0`). Returns **`200`**:
   only when `record.tool == tool`, `state == done`, and `0 ≤ output < len(objects)`
   (`authorize_download`, `download.py:108-123`).
 - `Cache-Control: no-store`. R2 credential/transport failure → generic `500`.
+
+### `POST /api/v1/support/contact`
+
+Categorized contact form submission (PT-03). **JSON** request body — not multipart, despite the frontend page being a form: the client serializes the fields with `fetch` + `application/json` (`frontend/src/components/support/ContactForm.tsx:209-213`). Backed by `backend/app/routers/support.py` and `backend/app/services/contact_service.py`.
+
+Request fields (all sanitized server-side; extra fields rejected by `extra="forbid"`):
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `category` | string | yes | Closed enum: `bug`, `suggestion`, `question`, `privacy`, `advertising`, `other` |
+| `message` | string | yes | Trimmed, control chars stripped; 1–2000 chars |
+| `email` | string | no | Optional reply address; ≤254 chars, basic format check |
+| `page` | string | no | Sanitized context path (alphanumerics, hyphen, slash; ≤120) |
+| `locale` | string | no | Sanitized locale tag (letters, hyphen; ≤16) |
+| `_hp` | string | no | Honeypot — must be empty for humans |
+| `turnstileToken` | string | no | Turnstile widget token (wire alias for `turnstile_token`) |
+
+**`202 Accepted`** — always returned first for valid, non-honeypot, non-rate-limited submissions:
+
+```json
+{"status": "accepted"}
+```
+
+(`ContactAccepted`, `contact_service.py:153-158`.) Email delivery runs in a FastAPI `BackgroundTasks` task after the response; the 202 never waits on the provider.
+
+Behavior notes:
+
+- **Honeypot**: a non-empty `_hp` is silently accepted as a `202` with no delivery and no content logs (`support.py:169-172`). The client mirrors this by pretending success.
+- **Rate limiting**: in-memory per-origin `OriginRateLimiter` (3 per 60 s per fingerprint; fingerprint = `Origin` header else client host). Exceeding it returns **`429`** with the standard envelope (`error.rateLimited`, retryable). The limiter is per-process and resets on restart.
+- **Turnstile soft gate**: server-side `siteverify` (`challenges.cloudflare.com/turnstile/v0/siteverify`) runs only when `TURNSTILE_SITE_SECRET` is configured. A missing token or failed verification is **counted, never rejected** (`metrics.turnstile_rejections`); the submission is still delivered. On the client, the widget renders only when `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is set, and without a token the client blocks submission with a localized message — but the API itself does not enforce it.
+- **Delivery**: Cloudflare Email Sending REST (`POST https://api.cloudflare.com/client/v4/accounts/{account_id}/email/sending/send`), async, best-effort. Requires `CF_EMAIL_API_TOKEN`; `CF_EMAIL_ACCOUNT_ID` falls back to `R2_ACCOUNT_ID`. Without a token the task counts a delivery failure and logs only the exception class name (`deliver_contact_email`, `contact_service.py:263-282`). `CONTACT_RECIPIENT`/`CONTACT_FROM_DOMAIN` default to `privacy@mypapyr.com` / `mypapyr.com`.
+- **Privacy**: message/email/page/locale content is PII, never logged and never echoed in envelopes; only counts and exception class names appear in logs (`contact_service.py:9-12`).
+
+Failures:
+
+- **`400`** — invalid JSON, invalid category, empty/oversized message, or invalid email. Envelope carries `code: "invalid_request"`, `category: "validation"`, `messageKey: "support.invalidRequest"`, `retryable: false` (`ContactValidationError`, `support.py:51-62`).
+- **`429`** — rate limited, standard `error.rateLimited` envelope (retryable).
+- **`202`** is the only success status; there is no `200`. Provider errors never surface to the client (best-effort delivery).
 
 **Download flow contract**: admission returns `task_id` → poll `status` until
 `state == "done"` (with `result.outputCount`) → request
