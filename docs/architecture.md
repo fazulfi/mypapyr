@@ -1,6 +1,6 @@
 # Architecture overview
 
-Papyr is designed as a browser-first PDF platform with an explicit, bounded server-processing path. This feature branch implements the frontend foundation (including the shared trilingual shell), the backend service foundation with its API, queue, storage contracts, deployment templates, and CI foundation described below. Native PDF processing via five tool executors, upload and enqueue endpoints, concrete threat scanning (ClamAV), worker dispatch, R2 object lifecycle cleanup, and monitoring services are implemented in this feature branch; production release requires merge to main and separate authorization. The five PDF workflows are implemented here with localized EN/ES/ID routes; progress is tracked on the [roadmap](roadmap.md).
+Papyr is designed as a browser-first PDF platform with an explicit, bounded server-processing path. This repository implements the frontend foundation (including the shared trilingual shell), the backend service foundation with its API, queue, storage contracts, deployment templates, and CI foundation. Native PDF processing via five tool executors, upload and enqueue endpoints, concrete threat scanning (ClamAV), worker dispatch, R2 object lifecycle cleanup, and monitoring services are implemented, and the Phase 5/6 baseline is merged to `main` (PR #24) and deployed to production on 2026-08-15 (release 1767ca8). The five PDF workflows are implemented with localized EN/ES/ID routes; progress is tracked on the [roadmap](roadmap.md).
 
 ## Current implementation
 
@@ -14,7 +14,7 @@ Papyr is designed as a browser-first PDF platform with an explicit, bounded serv
 
 ## Backend service contracts
 
-The versioned backend contracts below are implemented and covered by unit and integration tests (branch state; pending merge to main): capabilities, task status, signed downloads under `/api/v1`, plus upload/enqueue admission on all five tool routers, five-tool executors, ClamAV threat scanning with fail-closed wiring, cleanup coordinator, and monitoring checks. These describe the branch implementation awaiting production deployment.
+The versioned backend contracts below are implemented and covered by unit and integration tests and are part of the deployed Phase 5/6 baseline (release 1767ca8): capabilities, task status, signed downloads under `/api/v1`, plus upload/enqueue admission on all five tool routers, five-tool executors, ClamAV threat scanning with fail-closed wiring, cleanup coordinator, and monitoring checks.
 
 | Endpoint | Purpose | Behaviour |
 | --- | --- | --- |

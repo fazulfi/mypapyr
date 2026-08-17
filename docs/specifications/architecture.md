@@ -4,7 +4,7 @@
 
 This document defines the target technical architecture for Papyr: the component boundaries, processing model, task and API contracts, storage lifecycle, security controls, observability, delivery boundary, and verification strategy that the launch product is designed against.
 
-The current repository implements a minimal engineering foundation: a Next.js web shell, a typed FastAPI service foundation (app factory, strict configuration, health and readiness endpoints, request correlation, a stable error envelope, validation schemas, and the pure server task state machine), deployment templates, and CI. Every component described as a target service is specified here and is not yet available unless the status matrix in Section 16, or source code and automated tests, demonstrate otherwise. Documentation is never a substitute for runtime evidence; a component becomes implemented only when its code, tests, configuration, and operational constraints are present.
+The current repository implements the five-tool platform: a Next.js web application with localized tool pages, a typed FastAPI service (app factory, strict configuration, health and readiness endpoints, request correlation, a stable error envelope, validation schemas, the pure server task state machine, and 9 versioned `/api/v1` routers including per-tool admission), deployment templates, and CI. The Phase 5/6 baseline is merged to `main` and deployed to production (release 1767ca8); the follow-up feature branch adds PT-04 merge-password wiring, ad-placement E2E, SEO, and documentation reconciliation. Every component described as a target service is specified here and is not yet available unless the status matrix in Section 16, or source code and automated tests, demonstrate otherwise. Documentation is never a substitute for runtime evidence; a component becomes implemented only when its code, tests, configuration, and operational constraints are present.
 
 The companion [product specification](product.md) defines the user-visible behaviour and acceptance criteria. Where responsibilities meet, this document states the mechanism and the product specification states the experience.
 
@@ -46,13 +46,13 @@ Server job:
 
 | Area | Current (available now) | Target (specified) |
 | --- | --- | --- |
-| Frontend | Minimal Next.js shell, strict TypeScript, lint, format, unit tests, production build configuration | Localized product shell, five tool interfaces, browser processing, shared upload, progress, and result components |
-| Backend API | FastAPI service foundation: app factory, strict configuration, health and readiness endpoints, request correlation, stable error envelope, validation schemas, the pure server task state machine, and versioned `/api/v1` capabilities, task status, and signed-download endpoints | Versioned `/api/v1` admission (upload), cancellation, and native tool execution |
-| Queue | Redis-backed minimal-metadata task store and durable Streams queue (`jobs`/`workers`) with queue caps and an admission seam; adaptive fair-use controls implemented | Bounded scheduling with the upload path wired to the admission seam |
-| Workers | One-worker processing foundation: single in-flight job, per-tool timeouts, stale-claim recovery, and terminal acknowledgement | Bounded worker processes; one active worker executing one concurrent native job at launch |
+| Frontend | Localized product shell, five tool interfaces, browser processing, shared upload, progress, and result components (deployed in the Phase 5/6 baseline) | Ongoing polish and follow-up work per roadmap |
+| Backend API | FastAPI service foundation: app factory, strict configuration, health and readiness endpoints, request correlation, stable error envelope, validation schemas, the pure server task state machine, versioned `/api/v1` capabilities, task status, signed-download endpoints, and upload/enqueue admission on all five tool routers (deployed in the Phase 5/6 baseline) | Cancellation and any additional admission surface |
+| Queue | Redis-backed minimal-metadata task store and durable Streams queue (`jobs`/`workers`) with queue caps and admission wired to the upload path; adaptive fair-use controls implemented | Bounded scheduling with the upload path wired to the admission seam |
+| Workers | One-worker processing foundation: single in-flight job, per-tool timeouts, stale-claim recovery, terminal acknowledgement, and five-tool executors; worker entrypoint (`__main__.py` + `entrypoint.py`) | One active worker executing one concurrent native job at launch |
 | Storage | Cloudflare R2 client with opaque keys, presigned downloads, cleanup coordination, and a lifecycle rule template; live lifecycle rule applied at release | One-hour temporary-object lifecycle safety net in production |
-| Edge and proxy | Nginx server-block template with placeholders only | Hardened Nginx reverse proxy behind Cloudflare |
-| Monitoring | None | Host resource monitoring, external uptime checks, automated status experience, incident alerts |
+| Edge and proxy | Nginx server-block template with `__SET_ME__` placeholders only | Hardened Nginx reverse proxy behind Cloudflare |
+| Monitoring | Monitor and cleanup operations entrypoints; incident alerting not yet configured | Host resource monitoring, external uptime checks, automated status experience, incident alerts |
 | Delivery | CI with 19 required checks (18 on pushes to main, where the PR-only dependency review is skipped) and no deployment steps | Nineteen required CI checks with no deployment steps; separately authorized release and deployment procedures |
 
 ## 4. Component boundaries
@@ -87,7 +87,7 @@ The target API uses versioned routes under `/api/v1`. It is asynchronous and adm
 - Cancellation (queued jobs only) and expiry coordination.
 - Stable, non-sensitive error responses.
 
-The current backend foundation exposes `GET /health` and `GET /health/ready` and implements the pure server task state machine; the versioned API is not implemented.
+The current backend implements `GET /health` and `GET /health/ready`, the pure server task state machine, and the versioned `/api/v1` contract (capabilities, task status, signed downloads, and upload/enqueue admission on all five tool routers) plus the support contact endpoint.
 
 ### 4.3 Queue
 
@@ -268,7 +268,7 @@ A simple public status page shows material service availability and incidents in
 
 ### 12.1 Target host topology
 
-The target backend topology is Nginx, FastAPI, Redis, and bounded workers in one Docker Compose stack on a dedicated host. Nginx is the only host service exposed to the public; Redis and worker ports are never published. The Compose template declares health checks for api, nginx, and redis, resource limits, restart behaviour, and bounded log rotation. Startup dependencies use service-health conditions where they exist: workers start after Redis is healthy and Nginx starts after the API is healthy. The API service runs standalone with no Redis or worker dependency in the current foundation template, and the worker healthcheck is deferred until the worker image exists.
+The target backend topology is Nginx, FastAPI, Redis, and bounded workers in one Docker Compose stack on a dedicated host. Nginx is the only host service exposed to the public; Redis and worker ports are never published. The Compose template declares health checks for api, nginx, and redis, resource limits, restart behaviour, and bounded log rotation. Startup dependencies use service-health conditions where they exist: workers start after Redis is healthy and Nginx starts after the API is healthy. The API service runs standalone with no Redis or worker dependency in the foundation template, and the worker healthcheck is deferred until the worker image digest is published (`Dockerfile.worker` unwired).
 
 ### 12.2 Delivery boundary
 
@@ -302,12 +302,12 @@ The following are targets, not claims of achieved or measured performance. They 
 
 | ID | Target | Current evidence |
 | --- | --- | --- |
-| NFR-01 | Server-side objects are removed no later than one hour after upload receipt | Specified; no storage integration exists yet |
-| NFR-02 | Operational logs retain no document-derived data and are kept for 30 days | Specified; logging policy applies once services ship |
-| NFR-03 | Backend unit-test coverage floor of 80% | Enforced today by CI on the backend service foundation |
-| NFR-04 | One active worker executing one concurrent native job at launch | Specified; worker capacity targets tuned from production observability |
-| NFR-05 | Browser-capable tools remain usable during backend incidents | Design property; verified once tool flows exist |
-| NFR-06 | Task status and download authorization complete within bounded, non-extending retention | Specified |
+| NFR-01 | Server-side objects are removed no later than one hour after upload receipt | Implemented (cleanup coordinator + lifecycle template); live-bucket lifecycle rule application remains a separately authorized release action |
+| NFR-02 | Operational logs retain no document-derived data and are kept for 30 days | Logging policy enforced by privacy-safe logger and leakage tests; 30-day retention in production operation |
+| NFR-03 | Backend unit-test coverage floor of 80% | Enforced by CI (measured ~89%) |
+| NFR-04 | One active worker executing one concurrent native job at launch | Worker capacity targets tuned from production observability |
+| NFR-05 | Browser-capable tools remain usable during backend incidents | Design property; tool flows exist and are deployed |
+| NFR-06 | Task status and download authorization complete within bounded, non-extending retention | Implemented; enforced by signed-URL cap and retention deadline |
 | NFR-07 | Healthy Core Web Vitals and fast task completion | Targets; exact numeric targets are set during implementation planning and validated from production observation, not promised in advance |
 | NFR-08 | Reliability, queue latency, and uptime measured on a 90-day operating basis | Target; no production SLO evidence exists today |
 
@@ -330,7 +330,7 @@ Privacy and retention verification is explicit: automated tests assert that pass
 
 ## 16. Architecture status matrix
 
-Status values match the product specification: **Available now**, **Specified**, and **Planned**.
+Status values match the product specification: **Available now**, **Deployed**, **In branch**, **Specified**, and **Planned**.
 
 | Component | Status | Basis |
 | --- | --- | --- |
@@ -338,17 +338,17 @@ Status values match the product specification: **Available now**, **Specified**,
 | FastAPI service foundation (app factory, strict configuration, health and readiness endpoints, request correlation, stable error envelope, validation schemas) | Available now | `backend/` source and tests |
 | Deployment templates (Compose, Nginx, environment, runbook) | Available now | `deploy/` |
 | Continuous integration (19 required checks: quality, security and supply chain, repository QA) | Available now | `.github/workflows/ci.yml` |
-| Shared trilingual shell: locale routing, accessible navigation, supporting route shells, localized 404, and unit and E2E gates | Available now | `frontend/src/app/[locale]/`, `frontend/src/components/`, `frontend/src/lib/i18n.ts`, `frontend/src/proxy.ts` |
-| Legal, support, and status route shells (privacy, terms, cookies and advertising, contact, status, roadmap) | Available now | `frontend/src/app/[locale]/` |
+| Shared trilingual shell: locale routing, accessible navigation, supporting route shells, localized 404, and unit and E2E gates | Deployed | `frontend/src/app/[locale]/`, `frontend/src/components/`, `frontend/src/lib/i18n.ts`, `frontend/src/proxy.ts`; roadmap |
+| Legal, support, and status route shells (privacy, terms, cookies and advertising, contact, status, roadmap) | Deployed | `frontend/src/app/[locale]/`; roadmap |
 | Blog route shell | Available now | `frontend/src/app/[locale]/blog/` |
-| Versioned `/api/v1` contract | Available now | `backend/app/routers/{status,capabilities,download}.py` and their tests; upload and enqueue endpoints remain later phases |
-| Capability and limits contract | Available now | `backend/app/routers/capabilities.py` and its tests |
+| Versioned `/api/v1` contract (capabilities, task status, signed downloads, upload/enqueue admission on all five tool routers, support contact) | Deployed | `backend/app/routers/` and their tests; roadmap |
+| Capability and limits contract | Deployed | `backend/app/routers/capabilities.py` and its tests; roadmap |
 | Server task state machine (pure transition core) | Available now | `backend/app/tasks/state_machine.py` and its tests |
-| Task status API contract | Available now | `backend/app/routers/status.py` and its tests |
-| Redis durable minimal-metadata queue | Available now | `backend/app/queue/` and its tests |
-| Bounded workers and fair scheduling | Available now | `backend/app/worker/`, `backend/app/security/fair_use.py`, and their tests; the admission seam ships allow-all by default until the upload path lands |
-| Ghostscript subprocess boundary for Compress | Specified | Section 8 |
-| R2 object lifecycle and one-hour retention | Available now | `backend/app/utils/r2.py`, `backend/app/tasks/cleanup.py`, `deploy/r2-lifecycle.json`, and their tests; the lifecycle rule is applied during a separately authorized release |
+| Task status API contract | Deployed | `backend/app/routers/status.py` and its tests; roadmap |
+| Redis durable minimal-metadata queue | Deployed | `backend/app/queue/` and its tests; roadmap |
+| Bounded workers and fair scheduling | Deployed | `backend/app/worker/`, `backend/app/security/fair_use.py`, and their tests; roadmap |
+| Ghostscript subprocess boundary for Compress | Deployed | Section 8; roadmap |
+| R2 object lifecycle and one-hour retention | Deployed | `backend/app/utils/r2.py`, `backend/app/tasks/cleanup.py`, `deploy/r2-lifecycle.json`, and their tests; the lifecycle rule is applied during a separately authorized release |
 | Browser versus server routing model | Specified | Section 5 |
 | Threat model and security controls | Specified | Section 10 |
 | Observability and status experience | Specified | Section 11 |

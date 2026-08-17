@@ -1,6 +1,6 @@
 # Self-hosted deployment runbook
 
-This document is a public template for a future, separately authorized deployment. The repository CI does not execute these steps. The feature branch introduces a unified Compose topology (profiles `app`, `edge`, `queue`) covering `api`, `nginx`, `redis`, `workers`, `clamd`, `cleanup`, and `monitor`; activating that full topology in production is a separately authorized release action described below.
+This document is a public template for a separately authorized deployment. The repository CI does not execute these steps. The Phase 5/6 baseline introduced a unified Compose topology (profiles `app`, `edge`, `queue`) covering `api`, `nginx`, `redis`, `workers`, `clamd`, `cleanup`, and `monitor`; the API-only foundation is deployed in production, and activating the full topology (nginx vhost, worker/scanner images, monitor/cleanup services) is a separately authorized release action described below.
 
 ## Prerequisites
 
@@ -87,7 +87,7 @@ docker compose -p papyr-app --env-file "$PAPYR_ENV_FILE" -f deploy/docker-compos
 
 The deploy-time image reference must be immutable: `PAPYR_API_IMAGE` must be the pushed image digest (e.g. `registry/papyr-api@sha256:…`) before `up`. Rolling back to the previous healthy image means re-running the activation command with the previous digest (and, in the full stack, the previous `PAPYR_WORKERS_IMAGE`). The app image digest gate (registry push) is completed by the release procedure, not by this template.
 
-Full-topology activation (Phase 5 branch): the unified topology includes `redis`, `workers`, `clamd`, `cleanup`, `monitor` in profile `queue` plus `nginx` in profile `edge`. After release gates publish `PAPYR_WORKERS_IMAGE` and `PAPYR_CLAMD_IMAGE` digests, a separately authorized deployment runs the stack under the single project name `papyr-app` with all required profiles. Until then, `workers`, `cleanup`, and `monitor` remain off the critical path for foundation-stage API verification.
+Full-topology activation (Phase 5 baseline): the unified topology includes `redis`, `workers`, `clamd`, `cleanup`, `monitor` in profile `queue` plus `nginx` in profile `edge`. After release gates publish `PAPYR_WORKERS_IMAGE` and `PAPYR_CLAMD_IMAGE` digests, a separately authorized deployment runs the stack under the single project name `papyr-app` with all required profiles. Until then, `workers`, `cleanup`, and `monitor` remain off the critical path for foundation-stage API verification.
 
 ## Operations
 
@@ -118,7 +118,7 @@ This template does not provision the host, modify DNS, issue certificates, creat
 
 ## Full-stack Phase 5 topology (separately authorized)
 
-The feature branch introduces `workers`, `clamd`, `cleanup`, and `monitor` services in profile `queue`, plus `nginx` in profile `edge`. A separate authorized release procedure performs these steps:
+The unified topology introduces `workers`, `clamd`, `cleanup`, and `monitor` services in profile `queue`, plus `nginx` in profile `edge`. A separate authorized release procedure performs these steps:
 
 1. **Topology consolidation**: bring up a single compose project with all required profiles (`--profile app --profile queue`) under the established name `papyr-app` per D-1 of the deployment plan; verify Redis resolves from the API container.
 

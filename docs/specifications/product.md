@@ -16,7 +16,7 @@ Every tool follows the same shared workflow and state model, from ready and sele
 
 English, Spanish, and Indonesian are first-class launch languages across every essential surface. Accessibility targets WCAG 2.2 Level AA. The launch catalogue is free to use and requires no account.
 
-Status in one line: the five tools and their shared experience are specified in this document and are not yet implemented; the current repository provides the tested engineering foundation described in the status matrix in Section 13.
+Status in one line: the five tools, their shared experience, and the Phase 6 privacy, analytics, advertising, and support capabilities described in this document are implemented and the Phase 5/6 baseline is deployed to production (release 1767ca8); this document remains the target-behaviour contract, and the implementation state is tracked in the status matrix in Section 13 and the roadmap.
 
 ## 2. Product promise and principles
 
@@ -285,6 +285,8 @@ A launch workflow is complete only when it has all of the following:
 Status values are used consistently across the product and architecture specifications:
 
 - **Available now**: present in the repository and demonstrated by source and automated tests.
+- **Deployed**: merged to `main` and active in production.
+- **In branch**: implementation present in a feature branch and pending the authorized release process.
 - **Specified**: target behaviour fully defined in these specifications; implementation is planned.
 - **Planned**: capability with defined direction whose exact design or implementation schedule is not yet fixed.
 
@@ -297,16 +299,16 @@ Status values are used consistently across the product and architecture specific
 | Shared trilingual shell: English, Spanish, and Indonesian locale routing, accessible navigation, supporting route shells, localized 404, and unit and E2E gates | Available now | Repository `frontend/src/` |
 | Legal, support, and status route shells (privacy, terms, cookies and advertising, contact, status, roadmap) | Available now | Repository `frontend/src/app/[locale]/` |
 | Blog route shell | Available now | Repository `frontend/src/app/[locale]/blog/` |
-| Five-tool launch catalogue | Specified | This document, Section 4; roadmap |
-| Shared workflow and state model | Specified | This document, Section 5 |
-| Trilingual localization (English, Spanish, Indonesian) | Specified | This document, Section 7 |
+| Five-tool launch catalogue | Deployed | This document, Section 4; roadmap |
+| Shared workflow and state model | Deployed | This document, Section 5; roadmap |
+| Trilingual localization (English, Spanish, Indonesian) | Deployed | This document, Section 7; roadmap |
 | Accessibility target (WCAG 2.2 Level AA) | Specified | This document, Section 6 |
-| Anonymous, no-account launch | Specified | This document, Sections 2 and 8 |
-| Privacy and one-hour retention targets | Specified | This document, Section 8; architecture specification |
+| Anonymous, no-account launch | Deployed | This document, Sections 2 and 8; roadmap |
+| Privacy and one-hour retention targets | Deployed | This document, Section 8; architecture specification; roadmap |
 | Browser-first processing | Specified | Architecture specification |
-| Server processing, queue, and bounded workers | Specified | Architecture specification |
-| Compress server path with the Ghostscript subprocess boundary | Specified | Architecture specification |
-| Analytics and error boundaries | Specified | This document, Sections 9 and 10 |
+| Server processing, queue, and bounded workers | Deployed | Architecture specification; roadmap |
+| Compress server path with the Ghostscript subprocess boundary | Deployed | Architecture specification; roadmap |
+| Analytics and error boundaries | Deployed | This document, Sections 9 and 10; roadmap |
 | Full legal, support, and status content and functionality | Planned | Roadmap |
 | Blog publishing programme | Planned | Roadmap |
 
