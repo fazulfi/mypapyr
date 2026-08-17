@@ -85,6 +85,7 @@ audit-outputs/
 /tier3-write-test.txt
 /scout-configs.md
 /snapshot-*.md
+/.sisyphus/
 
 /.wt-*/
 /.worktree-*/
