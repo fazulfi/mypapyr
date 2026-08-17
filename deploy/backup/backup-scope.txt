@@ -1,0 +1,10 @@
+# OP-04 backup scope allowlist (enforceable contract).
+#
+# restic reads ONLY these relative paths from $PAPYR_BACKUP_ROOT via
+# `--files-from`, so document data (filenames, contents, metadata), R2 objects,
+# signed URLs, queue payloads, uploads, results, Redis state, and credentials
+# structurally cannot enter the repository. Add a path here only when it is
+# pure deployment/control configuration with no document-derived content.
+docker-compose.yml
+nginx/conf.d/production.conf
+r2-lifecycle.json
