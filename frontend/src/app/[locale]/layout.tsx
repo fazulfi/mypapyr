@@ -22,6 +22,15 @@ const LOCALE_ROOTS = {
   id: `${SEO_BASE_URL}/id`,
 } as const satisfies Record<Locale, string>;
 
+// PT01-G8 / WS-5 (SEO-03): absolute per-locale canonical/hreflang roots. Next
+// resolves `alternates` against metadataBase, so these are fully qualified
+// budgezen.com URLs; pages may narrow the root per-path via metadata merge (DEC-023).
+const LOCALE_ROOTS = {
+  en: `${METADATA_BASE_URL}/en`,
+  es: `${METADATA_BASE_URL}/es`,
+  id: `${METADATA_BASE_URL}/id`,
+} as const satisfies Record<Locale, string>;
+
 // Mirrored from canonical docs/assets/papyr-hero-light.svg (1200x400, 1.91:1).
 const SOCIAL_IMAGE_URL = "/papyr-hero-light.svg";
 const SOCIAL_IMAGE_WIDTH = 1200;
