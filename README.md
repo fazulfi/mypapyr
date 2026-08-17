@@ -23,7 +23,7 @@
 
 **Fast, private PDF tools.** Compress, merge, split, convert — five focused utilities that respect the user's time, files, and language. No accounts. No cloud history. Browser-first processing, with an explicit server path where native engines are required.
 
-Papyr is a specification-first platform. This repository is the tested engineering foundation for the product: a strict Next.js web application with a shared trilingual shell, a typed FastAPI service, deployment templates, and security-gated continuous integration. The shared trilingual shell is available: English, Spanish, and Indonesian locale routing, accessible navigation, supporting route shells, and a localized 404 are implemented and tested. The five PDF tool workflows (compress, merge, split, JPG to PDF, PDF to JPG) are implemented and tested with localized routes, and the backend service contracts — upload/enqueue endpoints, worker processing, threat scanning, R2 object lifecycle, cleanup coordination, and monitoring services — are implemented and passing local gates. The Phase 5/6 baseline is merged to `main` (PR #24) and deployed to production on 2026-08-15 (release 1767ca8): frontend on Vercel (budgezen.com) and backend on the VPS (api.mypapyr.com). Branch work follows the release process — feature branch → pull request → CI gates → separately authorized release — and this feature branch adds the PT-04 merge-password wiring, ad-placement E2E, SEO, and documentation reconciliation pending that process. Progress is tracked on the [roadmap](docs/roadmap.md).
+Papyr is a specification-first platform. This repository is the tested engineering foundation for the product: a strict Next.js web application with a shared trilingual shell, a typed FastAPI service, deployment templates, and security-gated continuous integration. The shared trilingual shell is available: English, Spanish, and Indonesian locale routing, accessible navigation, supporting route shells, and a localized 404 are implemented and tested. The five PDF tool workflows (compress, merge, split, JPG to PDF, PDF to JPG) are implemented and tested with localized routes, and the backend service contracts — upload/enqueue endpoints, worker processing, threat scanning, R2 object lifecycle, cleanup coordination, and monitoring services — are implemented and passing local gates. The Phase 5/6 baseline is merged to `main` (PR #24) and deployed to production on 2026-08-15 (release 1767ca8). The complete Phase 6 enterprise scope — PT-04 merge-password wiring, ad-placement E2E, SEO/hreflang, and documentation reconciliation — shipped via PR #46 (release p6-complete-1786951216, deployed 2026-08-17): frontend served from the VPS (mypapyr.com) and the backend API on api.mypapyr.com, with budgezen.com continuing on Vercel. Progress is tracked on the [roadmap](docs/roadmap.md).
 
 **Start here:** [Product specification](docs/specifications/product.md) · [Technical architecture specification](docs/specifications/architecture.md)
 
@@ -81,7 +81,7 @@ Papyr labels every claim so the repository can be read honestly: the source tree
 | Privacy-reviewed analytics schema with redaction and leakage tests (PT-01) | Deployed |
 | Reserved-dimension Adsterra ad placement with layout/placement guards (PT-02) | Deployed |
 | Categorized contact form and result-problem report with anti-spam (PT-03) | Deployed |
-| Memory-only encrypted-PDF password handling (PT-04) | In branch |
+| Memory-only encrypted-PDF password handling (PT-04) | Deployed |
 | Backend contact delivery endpoint with server-side validation, rate limiting, Turnstile siteverify, and Cloudflare Email Sending (PT-03) | Deployed |
 | Blog publishing programme | Planned |
 | Redis queue and bounded worker processing | Available now |
@@ -109,7 +109,7 @@ flowchart LR
 
 Native engines never execute on the asynchronous API event loop. Workers run with per-job CPU, memory, wall-clock, file-count, and page-count limits, ephemeral writable directories, no unrelated network access, and no provider credentials. Temporary objects use opaque, non-identifying keys with application-driven deletion and a one-hour retention target.
 
-The versioned backend contracts are implemented and tested: capabilities, task status, signed downloads, and upload/enqueue admission on all five tool routers under `/api/v1`, backed by a Redis durable queue and minimal-metadata task store, a one-worker processing loop, adaptive fair-use controls, cleanup coordinator, tool execution via five executors, ClamAV threat scanning, and R2 lifecycle cleanup. The Phase 5/6 baseline of these contracts is merged and deployed to production (release 1767ca8); the follow-up branch work remains pending the authorized release process.
+The versioned backend contracts are implemented and tested: capabilities, task status, signed downloads, and upload/enqueue admission on all five tool routers under `/api/v1`, backed by a Redis durable queue and minimal-metadata task store, a one-worker processing loop, adaptive fair-use controls, cleanup coordinator, tool execution via five executors, ClamAV threat scanning, and R2 lifecycle cleanup. The Phase 5/6 baseline of these contracts is merged and deployed to production (release 1767ca8), and the Phase 6 enterprise completion (PT-04 passwords, ads E2E, SEO, docs) is released as p6-complete-1786951216 (2026-08-17).
 
 For the complete target contracts, see the [technical architecture specification](docs/specifications/architecture.md) and the [architecture overview](docs/architecture.md).
 
@@ -125,7 +125,7 @@ Papyr is designed around a "documents stay yours" model. The following behaviour
 - **Fail-closed errors.** Invalid, expired, unsupported, or unsafe work returns stable public error categories — never stack traces, engine details, or provider credentials.
 - **Hardened delivery.** CI runs format, lint, coverage, a production build, Playwright E2E, Trivy (critical and high severity), full-history gitleaks, dependency and package audits, and repository QA checks across action pins, Dockerfiles, Compose, YAML, markdown, and shell. Third-party actions are pinned to immutable commit SHAs, jobs use read-only permissions, and CI never deploys.
 
-The Phase 6 privacy, analytics, advertising, and support work extends the "no document data in telemetry" commitment to the client side: a closed-field analytics schema with a redaction pipeline and leakage tests, memory-only password handling for encrypted PDFs (wired into merge on this branch), and an Adsterra ad slot that never appears beside the Download control or on status/legal/support surfaces.
+The Phase 6 privacy, analytics, advertising, and support work extends the "no document data in telemetry" commitment to the client side: a closed-field analytics schema with a redaction pipeline and leakage tests, memory-only password handling for encrypted PDFs (deployed in the merge flow), and an Adsterra ad slot that never appears beside the Download control or on status/legal/support surfaces.
 
 See the [security policy](SECURITY.md) for reporting guidance and the full control inventory.
 
@@ -227,6 +227,6 @@ This repository has no declared license. No `LICENSE` file is present, and the o
 
 ## Limitations
 
-Papyr is under active development. The present source tree is the tested engineering foundation with the Phase 5/6 baseline deployed to production (release 1767ca8); follow-up branch work and remaining platform services are not yet released. Specifications and roadmap entries describe intended behaviour — not guaranteed delivery dates and not currently available features.
+Papyr is under active development. The Phase 5/6 baseline and the Phase 6 enterprise completion (PT-04 passwords, ads E2E, SEO, docs) are deployed to production; remaining platform services (alerting, email/Turnstile credential provisioning, R2 lifecycle application, budgezen.com alias promotion) are tracked as manual operator actions. Specifications and roadmap entries describe intended behaviour — not guaranteed delivery dates and not currently available features.
 
 The project does not claim legal compliance, certification, guaranteed malware removal, or suitability for a particular jurisdiction, security model, or regulated use case. Review the source, tests, and third-party dependencies for your own requirements before deployment.
