@@ -37,6 +37,7 @@ from app.routers.capabilities import router as capabilities_router
 from app.routers.compress import router as compress_router
 from app.routers.download import router as download_router
 from app.routers.image_to_pdf import router as image_to_pdf_router
+from app.routers.merge import MergeWrongPasswordError, merge_password_handler
 from app.routers.merge import router as merge_router
 from app.routers.pdf_to_jpg import router as pdf_to_jpg_router
 from app.routers.split import router as split_router
@@ -131,6 +132,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # subclass — registered after the global handlers so the exact-class
     # lookup wins while all other statuses keep the locked envelope.
     application.add_exception_handler(ContactValidationError, contact_validation_handler)
+    # FR-SHARED-09: the merge endpoint maps a locked file's wrong/missing
+    # password to the distinct ``error.wrongPassword`` messageKey the same
+    # way; every other 400 keeps the locked global envelope.
+    application.add_exception_handler(MergeWrongPasswordError, merge_password_handler)
     return application
 
 

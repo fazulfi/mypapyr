@@ -4,7 +4,6 @@ import { getAllTools, getToolById, type ToolIconName } from "@/lib/catalog";
 import { isLocale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
 import { AdSlot } from "@/components/ads/AdSlot";
-import { LeaderboardAdSlot } from "@/components/ads/LeaderboardAdSlot";
 
 function ArrowRightIcon({ size = 18 }: { size?: number }): React.ReactElement {
   return (
@@ -435,10 +434,6 @@ export default async function LocaleHomePage({
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1200px] px-6 pb-6" aria-label="Advertisement">
-        <LeaderboardAdSlot pageSlug="home" label={copy.ads.label} />
-      </section>
-
       <div className="mx-auto max-w-[1200px] border-t border-slate-200" />
 
       <section className="mx-auto max-w-[1200px] px-6 py-20">
@@ -471,6 +466,10 @@ export default async function LocaleHomePage({
             </a>
           ))}
         </div>
+      </section>
+
+      <section className="mx-auto max-w-[760px] px-6 pb-24" aria-label={copy.ads.label}>
+        <AdSlot pageSlug="home" immediate label={copy.ads.label} />
       </section>
 
       <section className="border-y border-slate-200 bg-slate-100">
@@ -540,10 +539,6 @@ export default async function LocaleHomePage({
             </details>
           ))}
         </div>
-      </section>
-
-      <section className="mx-auto max-w-[760px] px-6 pb-24" aria-label={copy.ads.label}>
-        <AdSlot pageSlug="home" label={copy.ads.label} />
       </section>
     </>
   );

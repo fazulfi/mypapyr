@@ -45,7 +45,7 @@ from app.security.classification import (
     Sanitizer,
     SanitizerStatus,
 )
-from app.security.sanitize import PdfSanitizer
+from app.security.sanitize import PdfSanitizer, SanitizerRefusal
 
 # Hostile marker strings used inside fixtures; none may ever surface in a
 # verdict, its repr, or any category/status string (DEC-175, DEC-169).
@@ -435,6 +435,15 @@ def _empty_user_password_pdf_bytes() -> bytes:
     return buf.getvalue()
 
 
+def _clean_password_protected_pdf_bytes() -> bytes:
+    """Encrypted, active content free — opens only with the user password."""
+    pdf = pikepdf.Pdf.new()
+    pdf.add_blank_page()
+    buf = io.BytesIO()
+    pdf.save(buf, encryption=pikepdf.Encryption(owner="ownerpw", user="userpw"))
+    return buf.getvalue()
+
+
 def _hostile_acroform_pdf_bytes() -> bytes:
     pdf = pikepdf.Pdf.new()
     pdf.add_blank_page()
@@ -639,6 +648,7 @@ def test_password_required_pdf_refused() -> None:
     assert verdict.status is SanitizerStatus.REFUSED
     assert verdict.categories == ()
     assert sanitizer.output_bytes is None
+    assert sanitizer.refusal_reason is SanitizerRefusal.PASSWORD
 
 
 def test_empty_user_password_pdf_sanitized_and_output_unencrypted() -> None:
@@ -655,6 +665,56 @@ def test_empty_user_password_pdf_sanitized_and_output_unencrypted() -> None:
         _assert_no_prohibited_content(out)
 
 
+def test_password_protected_pdf_decrypts_with_correct_password() -> None:
+    # A correct password unlocks the document; the fresh output is always
+    # saved unencrypted (the password is consumed at open time only).
+    sanitizer = PdfSanitizer()
+    verdict = sanitizer.sanitize(_password_protected_pdf_bytes(), password="userpw")
+    assert verdict.status is SanitizerStatus.SANITIZED
+    assert verdict.categories == (SanitizationCategory.JAVASCRIPT,)
+    assert sanitizer.refusal_reason is None
+    output = sanitizer.output_bytes
+    assert output is not None
+    with pikepdf.Pdf.open(io.BytesIO(output)) as out:
+        assert not out.is_encrypted
+        _assert_no_prohibited_content(out)
+
+
+def test_password_protected_clean_pdf_decrypts_to_unencrypted_rewrite() -> None:
+    # An encrypted document with no active content must still be rewritten
+    # unencrypted: the original bytes (still encrypted) are never uploaded.
+    data = _clean_password_protected_pdf_bytes()
+    sanitizer = PdfSanitizer()
+    verdict = sanitizer.sanitize(data, password="userpw")
+    assert verdict.status is SanitizerStatus.SANITIZED
+    assert verdict.categories == ()
+    assert sanitizer.refusal_reason is None
+    output = sanitizer.output_bytes
+    assert output is not None
+    assert output != data
+    with pikepdf.Pdf.open(io.BytesIO(output)) as out:
+        assert not out.is_encrypted
+
+
+def test_password_protected_pdf_wrong_password_refused() -> None:
+    sanitizer = PdfSanitizer()
+    verdict = sanitizer.sanitize(_password_protected_pdf_bytes(), password="not-the-password")
+    assert verdict.status is SanitizerStatus.REFUSED
+    assert verdict.categories == ()
+    assert sanitizer.output_bytes is None
+    assert sanitizer.refusal_reason is SanitizerRefusal.PASSWORD
+
+
+def test_password_protected_pdf_default_password_still_refused() -> None:
+    # The default password stays empty so the other four tool routers are
+    # unchanged: a supplied password is required to open a locked document.
+    sanitizer = PdfSanitizer()
+    verdict = sanitizer.sanitize(_clean_password_protected_pdf_bytes())
+    assert verdict.status is SanitizerStatus.REFUSED
+    assert sanitizer.output_bytes is None
+    assert sanitizer.refusal_reason is SanitizerRefusal.PASSWORD
+
+
 @pytest.mark.parametrize(
     "data",
     [b"", b"not a pdf at all", _truncated_pdf_bytes()],
@@ -666,6 +726,7 @@ def test_malformed_inputs_refused(data: bytes) -> None:
     assert verdict.status is SanitizerStatus.REFUSED
     assert verdict.categories == ()
     assert sanitizer.output_bytes is None
+    assert sanitizer.refusal_reason is SanitizerRefusal.CORRUPT
 
 
 def test_hostile_acroform_fails_closed() -> None:

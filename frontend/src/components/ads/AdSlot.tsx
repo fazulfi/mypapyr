@@ -4,6 +4,12 @@ import { useEffect, useRef, useState } from "react";
 
 import { ADSTERRA_HOST, AD_UNITS, isAdEnabled, type AdUnit, type AdUnitId } from "@/lib/ads";
 
+import {
+  FALLBACK_TIMEOUT_MS,
+  isSlotFilled,
+  resolveClientLocale,
+  showHouseFallback,
+} from "./fallback";
 import { isAfterPrimaryExperience, shouldRenderAd } from "./placement";
 
 interface AdLoadEntry {
@@ -13,6 +19,8 @@ interface AdLoadEntry {
   atOptionsScript?: HTMLScriptElement;
   invokeScript?: HTMLScriptElement;
   finish?: () => void;
+  /** Set by `pumpAdLoadQueue` right after this entry's scripts are appended. */
+  onInjected?: () => void;
 }
 
 const adLoadQueue: AdLoadEntry[] = [];
@@ -31,6 +39,7 @@ function pumpAdLoadQueue(): void {
   activeAdLoad = entry;
   const atOptionsScript = document.createElement("script");
   atOptionsScript.dataset.papyrAtoptions = "true";
+  atOptionsScript.setAttribute("data-cfasync", "false");
   atOptionsScript.text =
     "atOptions = {'key': '" +
     entry.selected.key +
@@ -43,6 +52,7 @@ function pumpAdLoadQueue(): void {
   const invokeScript = document.createElement("script");
   invokeScript.dataset.papyrAdSlot = "true";
   invokeScript.dataset.papyrUnit = entry.selected.id;
+  invokeScript.setAttribute("data-cfasync", "false");
   invokeScript.type = "text/javascript";
   invokeScript.async = false;
   invokeScript.src = `${ADSTERRA_HOST}/${entry.selected.key}/invoke.js`;
@@ -63,6 +73,7 @@ function pumpAdLoadQueue(): void {
   invokeScript.addEventListener("error", finish);
   entry.slotNode.appendChild(atOptionsScript);
   entry.slotNode.appendChild(invokeScript);
+  entry.onInjected?.();
 }
 
 function enqueueAdLoad(slotNode: HTMLDivElement, selected: AdUnit): AdLoadEntry {
@@ -88,7 +99,9 @@ interface AdSlotProps {
    * Current tool interaction phase. When provided AND `immediate` is not
    * set, the slot only renders after the primary tool experience
    * completes (done/error/finalizing), per the original FR/DEC-151
-   * placement. Pages using `immediate` render the placeholder right away.
+   * placement. Omitting `phase` (and `immediate`) fails closed (G12): the
+   * slot does not render, because the caller has not declared its intent.
+   * Static pages with no phase concept must pass `immediate` to opt in.
    */
   phase?: string;
   /**
@@ -102,7 +115,8 @@ interface AdSlotProps {
 }
 
 /**
- * Adsterra ad slot (reserved dimensions, client-side injection).
+ * Adsterra ad slot (reserved dimensions, client-side injection) with a
+ * first-party house-promo fallback (PT-02).
  *
  * - SSR renders only the reserved placeholder so no layout shift occurs.
  * - The owner-approved unit code (PT-02) is injected client-side: the
@@ -111,8 +125,19 @@ interface AdSlotProps {
  *   the exact pattern that displayed ads in production (release 5fe86e6,
  *   2026-08-15 18:42 WIB screenshot) — the only configuration ever proven
  *   to render.
- * - Injected nodes are removed on unmount.
+ * - If the invoke script errors, or no provider iframe appears within
+ *   `FALLBACK_TIMEOUT_MS` of injection, the reserved slot shows a
+ *   localized, clearly labeled Papyr promotion (internal link only — no
+ *   analytics, no external requests, no document metadata). A MutationObserver
+ *   watches for the provider iframe; an iframe cancels the fallback.
+ *   Provider ads are never claimed to be fixed — this is a transparent
+ *   first-party fallback when the provider fails or no-fills.
+ * - Injected nodes, the observer, and the timeout are cleaned up on unmount.
  * - Never renders on non-allowed pages or when ads are disabled (DNT/GPC).
+ * - Undefined `phase` with no `immediate` fails closed (G12): the slot
+ *   does not render at all, because the caller has not declared whether
+ *   the ad may show immediately or only after a primary experience.
+ *   Static pages opt in with `immediate`; tool pages pass their phase.
  */
 const FALLBACK_LABEL = "Advertisement";
 
@@ -129,7 +154,12 @@ export function AdSlot({
   const selected: AdUnit = unit !== undefined ? AD_UNITS[unit] : AD_UNITS["box-300x250"];
   const allowed =
     shouldRenderAd(pageSlug) &&
-    (immediate || phase === undefined || isAfterPrimaryExperience(phase));
+    // G12 explicit phase contract: `immediate` opts a static page in to
+    // the load-time slot; a known phase defers to after the primary
+    // experience. An undefined phase (no `immediate`) fails closed and
+    // renders nothing rather than silently treating the missing phase as
+    // "render now" or collapsing a reserved slot.
+    (immediate || (phase !== undefined && isAfterPrimaryExperience(phase)));
 
   useEffect(() => {
     if (!enabled || !allowed) return;
@@ -139,14 +169,63 @@ export function AdSlot({
     if (slotNode.querySelector("script[data-papyr-ad-slot='true']") !== null) return;
 
     const entry = enqueueAdLoad(slotNode, selected);
+    const locale = resolveClientLocale();
+    let settled = false;
+    let disposed = false;
+    let fallbackTimer: number | null = null;
+    let observer: MutationObserver | null = null;
+    let onInvokeError: (() => void) | null = null;
+
+    const showFallback = (): void => {
+      if (settled || disposed) return;
+      if (isSlotFilled(slotNode)) {
+        settled = true;
+        if (fallbackTimer !== null) window.clearTimeout(fallbackTimer);
+        observer?.disconnect();
+        return;
+      }
+      settled = true;
+      if (fallbackTimer !== null) window.clearTimeout(fallbackTimer);
+      observer?.disconnect();
+      cancelAdLoad(entry);
+      slotNode.innerHTML = "";
+      showHouseFallback(slotNode, locale, selected);
+    };
+
+    if (typeof MutationObserver === "function") {
+      observer = new MutationObserver(() => {
+        if (settled || disposed) return;
+        if (isSlotFilled(slotNode)) {
+          settled = true;
+          if (fallbackTimer !== null) window.clearTimeout(fallbackTimer);
+          observer?.disconnect();
+        }
+      });
+      observer.observe(slotNode, { childList: true, subtree: true });
+    }
+
+    entry.onInjected = () => {
+      if (settled || disposed) return;
+      onInvokeError = () => {
+        showFallback();
+      };
+      entry.invokeScript?.addEventListener("error", onInvokeError);
+      fallbackTimer = window.setTimeout(showFallback, FALLBACK_TIMEOUT_MS);
+    };
+    // The queue injects the first entry synchronously; cover both paths.
+    if (entry.invokeScript !== undefined) entry.onInjected();
+
     return () => {
+      disposed = true;
+      if (fallbackTimer !== null) window.clearTimeout(fallbackTimer);
+      observer?.disconnect();
+      if (onInvokeError !== null) entry.invokeScript?.removeEventListener("error", onInvokeError);
       cancelAdLoad(entry);
       slotNode.innerHTML = "";
     };
   }, [enabled, allowed, selected]);
 
-  if (!enabled || !allowed) return null;
-
+  if (!allowed) return null;
   return (
     <div
       ref={slotRef}

@@ -9,7 +9,6 @@ import { getMessages } from "@/lib/messages";
 import { ToolPageHeader } from "@/components/ToolPageHeader";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { AdSlot } from "@/components/ads/AdSlot";
-import { LeaderboardAdSlot } from "@/components/ads/LeaderboardAdSlot";
 import OtherTools from "@/components/OtherTools";
 import { ResultProblemReport } from "@/components/support/ResultProblemReport";
 import { Dropzone } from "@/components/uploader/Dropzone";
@@ -132,7 +131,6 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
         <div className="mx-auto max-w-3xl">
           <ToolPageHeader locale={locale} toolId="split-pdf" />
           <PrivacyNotice locale={locale} model="client" />
-          <LeaderboardAdSlot pageSlug="split-pdf" label={copy.ads.label} />
           <Dropzone
             files={files}
             onChange={setFiles}
@@ -227,7 +225,6 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
               : copy.tools.split.actions.split}
           </button>
           <OtherTools currentTool="split-pdf" locale={locale} />
-          <AdSlot pageSlug="split-pdf" immediate unit="skyscraper-160x600" label={copy.ads.label} />
         </div>
       </main>
     );
@@ -270,12 +267,10 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
       <div className="mx-auto max-w-3xl">
         <ToolPageHeader locale={locale} toolId="split-pdf" />
         <PrivacyNotice locale={locale} model="client" />
-        <LeaderboardAdSlot pageSlug="split-pdf" label={copy.ads.label} />
         {card}
         <AdSlot pageSlug="split-pdf" phase={phase} label={copy.ads.label} />
         <OtherTools currentTool="split-pdf" locale={locale} />
         <ResultProblemReport locale={locale} page="/split-pdf" localeContext={locale} />
-        <AdSlot pageSlug="split-pdf" immediate unit="skyscraper-160x600" label={copy.ads.label} />
       </div>
     </main>
   );

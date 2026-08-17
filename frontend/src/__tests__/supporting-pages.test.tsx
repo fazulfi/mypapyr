@@ -240,8 +240,8 @@ describe("SH-08 page-shell message resources", () => {
     }
   });
 
-  it("marks every scope statement as an informational shell with content arriving in a later phase", () => {
-    for (const key of pageKeys) {
+  it("marks scope statements of pending pages as informational shells", () => {
+    for (const key of ["terms", "status", "roadmap", "blog"] as const) {
       expect(messages.en.pages[key].description).toContain("informational shell");
       expect(messages.en.pages[key].description).toContain("later phase");
       expect(messages.es.pages[key].description).toContain("marco informativo");
@@ -249,6 +249,15 @@ describe("SH-08 page-shell message resources", () => {
       expect(messages.id.pages[key].description).toContain("kerangka informasi");
       expect(messages.id.pages[key].description).toContain("fase berikutnya");
     }
+  });
+
+  it("describes shipped pages with accurate scope statements", () => {
+    for (const key of ["contact", "cookiesAdvertising"] as const) {
+      expect(messages.en.pages[key].description).not.toContain("informational shell");
+      expect(messages.en.pages[key].description).not.toContain("later phase");
+    }
+    expect(messages.en.pages.contact.description).toContain("contact form");
+    expect(messages.en.pages.cookiesAdvertising.description).toContain("Do Not Track");
   });
 
   it("keeps page copy free of TODO, TBD, placeholder, and lorem markers", () => {

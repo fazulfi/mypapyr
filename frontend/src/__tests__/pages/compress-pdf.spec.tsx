@@ -195,9 +195,9 @@ describe("CompressPdfTool polling / result states", () => {
 
     const copy = getMessages("en");
     const download = await screen.findByRole("button", { name: copy.states.download });
-    // Multiple slots exist (leaderboard + result box + skyscraper). FR/DEC-151
-    // requires the result-area box to follow the download control; pick the
-    // first slot that is document-following the download button.
+    // PT-02: one ad per page (commit 8d9fc04). The single result-area slot
+    // must follow the download control (FR/DEC-151); pick the slot that is
+    // document-following the download button.
     const adSlot = await waitFor(() => {
       const slots = Array.from(document.querySelectorAll('div[data-testid="papyr-ad-slot"]'));
       const following = slots.find(
@@ -239,12 +239,10 @@ describe("CompressPdfTool polling / result states", () => {
 });
 
 describe("CompressPdfTool SSR ad slot markers", () => {
-  it("emits at least one reserved slot marker and defers third-party scripts to the client", () => {
-    idlePolling();
+  it("defers the idle ad until after the primary interaction", () => {
     const markup = renderToStaticMarkup(<CompressPdfTool locale="en" />);
     const markerCount = markup.match(/data-testid="papyr-ad-slot"/g)?.length ?? 0;
-    expect(markerCount).toBeGreaterThanOrEqual(1);
-    // Third-party ad scripts must stay client-only: never present in SSR markup.
+    expect(markerCount).toBe(0);
     expect(markup).not.toContain("highperformanceformat.com");
   });
 });

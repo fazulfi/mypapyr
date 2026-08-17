@@ -459,31 +459,35 @@ describe("T4 rich homepage restore (hero pill, trust badges, card footer, privac
       expect(markup).toContain('<rect x="3" y="11" width="18" height="11" rx="2" ry="2">');
     }
   });
-  it("renders ad slots after the hero and after the FAQ (owner decision 2026-08-15)", async () => {
+  it("renders exactly one ad slot per page", async () => {
     for (const locale of locales) {
       const markup = await renderHome(locale);
-      const adCount = (markup.match(/aria-label="(?:Advertisement|Publicidad|Iklan)"/g) ?? [])
-        .length;
-      expect(adCount).toBeGreaterThanOrEqual(2);
-      const faqIdx = markup.indexOf("Frequently");
+      expect((markup.match(/data-testid="papyr-ad-slot"/g) ?? []).length).toBe(1);
+    }
+  });
+  it("keeps the single ad between the tools grid and the FAQ (owner's moved-higher placement)", async () => {
+    for (const locale of locales) {
+      const copy = getMessages(locale);
+      const markup = await renderHome(locale);
+      const toolsIdx = markup.indexOf(copy.home.toolsHeading);
+      const faqIdx = markup.indexOf(copy.home.faq);
       const label = locale === "es" ? "Publicidad" : locale === "id" ? "Iklan" : "Advertisement";
-      const lastAdIdx = markup.lastIndexOf(`aria-label="${label}"`);
-      expect(lastAdIdx).toBeGreaterThan(faqIdx);
+      const adIdx = markup.lastIndexOf(`aria-label="${label}"`);
+      expect(adIdx).toBeGreaterThan(toolsIdx);
+      expect(adIdx).toBeLessThan(faqIdx);
     }
   });
 });
 describe("SSR ad slot markers: reserved placeholders, client-only scripts", () => {
-  it("emits reserved ad wrapper sections and defers third-party scripts to the client", async () => {
+  it("emits one reserved ad wrapper and defers third-party scripts to the client", async () => {
     for (const locale of locales) {
       const markup = await renderHome(locale);
       const label = locale === "es" ? "Publicidad" : locale === "id" ? "Iklan" : "Advertisement";
       const wrappers = [
         ...markup.matchAll(new RegExp(`<section\\b[^>]*\\baria-label="${label}"[^>]*>`, "g")),
       ].map((match) => match[0]);
-      expect(wrappers.length).toBeGreaterThanOrEqual(1);
-      expect(markup).toContain(`style="width:320px;height:50px;margin:0 auto"`);
+      expect(wrappers).toHaveLength(1);
       expect(markup).toContain(`style="width:300px;height:250px;margin:0 auto"`);
-      // Third-party ad scripts must stay client-only: never present in SSR markup.
       expect(markup).not.toContain("highperformanceformat.com");
     }
   });

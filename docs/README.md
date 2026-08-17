@@ -24,6 +24,9 @@ Status legend:
 | [api-reference.md](api-reference.md) | operators, reviewers | Authoritative | Versioned `/api/v1` endpoint reference: schemas, failure codes, state machine, headers. |
 | [ops-runbook.md](ops-runbook.md) | operators | Operational | Day-to-day operations: monitor probes, cleanup loop, worker health, incident response. |
 | [deploy/runbook-vps.md](../deploy/runbook-vps.md) | operators | Operational | Authoritative VPS deployment, environment provisioning, and rollout/rollback runbook. |
+| [testing.md](testing.md) | contributors, reviewers | Authoritative | Test layers, privacy/security test coverage, gate commands, and measured baselines. |
+| [release-checklist.md](release-checklist.md) | operators, release managers | Operational | End-to-end release checklist: gates, CI, release build, activation, post-deploy verification. |
+| [p6-completion-report.md](p6-completion-report.md) | contributors, operators, reviewers | Operational | Phase 6 enterprise completion: workstreams, evidence, deployment, verification, and known limitations. |
 | [CHANGELOG.md](../CHANGELOG.md) | contributors, operators, reviewers | Operational | User- and operator-facing change history. |
 | [licensing.md](licensing.md) | contributors, reviewers | Authoritative | Licensing decision record: no license granted yet (all rights reserved), inbound=outbound note. |
 

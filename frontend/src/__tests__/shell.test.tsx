@@ -150,6 +150,34 @@ describe("SH-03 per-locale metadata", () => {
     }
   });
 
+  it("emits an absolute per-locale canonical link for every locale", async () => {
+    for (const locale of locales) {
+      const metadata = await generateMetadata({ params: Promise.resolve({ locale }) });
+      expect(metadata.alternates?.canonical).toBe(`https://budgezen.com/${locale}`);
+    }
+  });
+
+  it("emits hreflang alternates for all locales with x-default to EN", async () => {
+    for (const locale of locales) {
+      const metadata = await generateMetadata({ params: Promise.resolve({ locale }) });
+      const languages = metadata.alternates?.languages ?? {};
+      expect(languages.en).toBe("https://budgezen.com/en");
+      expect(languages.es).toBe("https://budgezen.com/es");
+      expect(languages.id).toBe("https://budgezen.com/id");
+      expect(languages["x-default"]).toBe("https://budgezen.com/en");
+    }
+  });
+
+  it("keeps alternates free of relative and other-host URLs", async () => {
+    for (const locale of locales) {
+      const metadata = await generateMetadata({ params: Promise.resolve({ locale }) });
+      const raw = JSON.stringify([metadata.alternates, metadata.openGraph, metadata.twitter]);
+      expect(raw).not.toContain("mypapyr.com");
+      expect(raw).not.toMatch(/https:\/\/(?!budgezen\.com)/);
+      expect(raw).toContain(`https://budgezen.com/${locale}`);
+    }
+  });
+
   it("carries localized title and description for every locale", async () => {
     for (const locale of locales) {
       const metadata = await generateMetadata({ params: Promise.resolve({ locale }) });

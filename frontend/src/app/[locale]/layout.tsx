@@ -1,11 +1,10 @@
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
+import { PrivacyAnalytics } from "@/components/PrivacyAnalytics";
 import { SkipLink } from "@/components/SkipLink";
 import { fontVariables } from "@/lib/fonts";
 import { isLocale, locales, type Locale } from "@/lib/i18n";
@@ -14,6 +13,15 @@ import { getMessages } from "@/lib/messages";
 import "../globals.css";
 
 const METADATA_BASE_URL = "https://budgezen.com";
+
+// PT01-G8 / WS-5 (SEO-03): absolute per-locale canonical/hreflang roots. Next
+// resolves `alternates` against metadataBase, so these are fully qualified
+// budgezen.com URLs; pages may narrow the root per-path via metadata merge (DEC-023).
+const LOCALE_ROOTS = {
+  en: `${METADATA_BASE_URL}/en`,
+  es: `${METADATA_BASE_URL}/es`,
+  id: `${METADATA_BASE_URL}/id`,
+} as const satisfies Record<Locale, string>;
 
 // Mirrored from canonical docs/assets/papyr-hero-light.svg (1200x400, 1.91:1).
 const SOCIAL_IMAGE_URL = "/papyr-hero-light.svg";
@@ -50,6 +58,13 @@ export async function generateMetadata({
     title: copy.metadata.title,
     description: copy.metadata.description,
     icons: "/favicon.ico",
+    alternates: {
+      canonical: LOCALE_ROOTS[locale],
+      languages: {
+        ...LOCALE_ROOTS,
+        "x-default": LOCALE_ROOTS.en,
+      },
+    },
     openGraph: {
       type: "website",
       locale: OG_LOCALES[locale],
@@ -99,8 +114,7 @@ export default async function LocaleLayout({
           {children}
         </main>
         <Footer locale={locale} />
-        <Analytics />
-        <SpeedInsights />
+        <PrivacyAnalytics />
       </body>
     </html>
   );

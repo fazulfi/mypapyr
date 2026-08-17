@@ -30,7 +30,7 @@ assets: `deploy/docker-compose.yml`, `deploy/runbook-vps.md`, and
 
 ## Target (Phase 5)
 
-The current `feat/phase-5-production-readiness` branch unifies the topology:
+The unified topology (Phase 5/6 baseline) consolidates the services:
 
 - **One Compose project named `papyr-app`** (`name: papyr-app` in
   `deploy/docker-compose.yml`), one internal bridge network `papyr`.

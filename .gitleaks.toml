@@ -7,6 +7,9 @@ useDefault = true
 # document. All six zone keys live in frontend/src/lib/ads.ts and are
 # allowlisted by file+pattern so the secret-scan gate reflects reality.
 # The ad tests assert the same public keys verbatim, so they are covered too.
+# frontend/public/adtest.html was a temporary raw-embed diagnostic page (PR
+# #43) carrying the same public keys; it has since been removed from the tree
+# but remains in git history, so it is allowlisted as well.
 [allowlist]
 description = "Adsterra publisher ad-unit keys in the ad registry (public client-side by design)"
-paths = ['''frontend/src/lib/ads\.ts|frontend/src/__tests__/ad-placement\.test\.ts''']
+paths = ['''frontend/src/lib/ads\.ts|frontend/src/__tests__/ad-placement\.test\.ts|frontend/public/adtest\.html''']

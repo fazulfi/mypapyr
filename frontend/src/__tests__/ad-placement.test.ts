@@ -132,7 +132,7 @@ describe("ads config", () => {
     });
   });
 
-  it("allowedAdPages covers home, tools, and supporting pages; status stays ad-free (owner decision 2026-08-15)", () => {
+  it("allowedAdPages covers home, tools, and every supporting page (owner decisions 2026-08-15 + 2026-08-17)", () => {
     expect(allowedAdPages).toEqual([
       "home",
       "compress-pdf",
@@ -146,8 +146,9 @@ describe("ads config", () => {
       "cookies-advertising",
       "roadmap",
       "faq",
+      "status",
+      "blog",
     ]);
-    expect(allowedAdPages).not.toContain("status");
   });
 });
 
@@ -228,8 +229,8 @@ describe("shouldRenderAd()", () => {
     }
   });
 
-  it("returns false for status, legal, and support surfaces", () => {
-    const nonAllowed = ["status", "blog", "tool-unavailable", "unknown-page"];
+  it("returns false for non-page slugs", () => {
+    const nonAllowed = ["tool-unavailable", "unknown-page", "does-not-exist"];
     for (const slug of nonAllowed) {
       expect(shouldRenderAd(slug)).toBe(false);
     }
@@ -306,7 +307,9 @@ describe("isSeparatedFromDownload()", () => {
 
 describe("AdSlot component", () => {
   it("renders the reserved placeholder with 300x250 dimensions when enabled and allowed", () => {
-    const { container } = render(React.createElement(AdSlot, { pageSlug: "compress-pdf" }));
+    const { container } = render(
+      React.createElement(AdSlot, { pageSlug: "compress-pdf", immediate: true }),
+    );
 
     const placeholder = container.querySelector('[aria-label="Advertisement"]');
     expect(placeholder).not.toBeNull();
@@ -317,12 +320,15 @@ describe("AdSlot component", () => {
     expect(htmlEl.style.height).toBe("250px");
   });
 
-  it("renders nothing when ads are disabled via _papyrAdsDisabled", () => {
+  it("keeps a reserved slot but disables scripts via _papyrAdsDisabled", () => {
     const w = window as Window & { _papyrAdsDisabled?: unknown };
     w._papyrAdsDisabled = true;
 
-    const { container } = render(React.createElement(AdSlot, { pageSlug: "compress-pdf" }));
-    expect(container.querySelector('[aria-label="Advertisement"]')).toBeNull();
+    const { container } = render(
+      React.createElement(AdSlot, { pageSlug: "compress-pdf", immediate: true }),
+    );
+    expect(container.querySelector('[aria-label="Advertisement"]')).not.toBeNull();
+    expect(container.querySelector("script")).toBeNull();
   });
 
   it("renders the localized label passed as a prop (Publicidad/Iklan)", () => {
@@ -337,14 +343,16 @@ describe("AdSlot component", () => {
     expect(id.querySelector('[aria-label="Iklan"]')).not.toBeNull();
   });
 
-  it("renders nothing on a non-allowed page (status)", () => {
-    const { container } = render(React.createElement(AdSlot, { pageSlug: "status" }));
+  it("renders nothing on a non-allowed page (unknown-page)", () => {
+    const { container } = render(React.createElement(AdSlot, { pageSlug: "unknown-page" }));
     expect(container.querySelector('[aria-label="Advertisement"]')).toBeNull();
   });
 
   it("renders on supporting content pages per the 2026-08-15 owner decision (terms, faq)", () => {
     for (const slug of ["terms", "faq", "contact", "privacy", "roadmap", "cookies-advertising"]) {
-      const { container } = render(React.createElement(AdSlot, { pageSlug: slug }));
+      const { container } = render(
+        React.createElement(AdSlot, { pageSlug: slug, immediate: true }),
+      );
       expect(container.querySelector('[aria-label="Advertisement"]')).not.toBeNull();
       cleanup();
     }
@@ -389,28 +397,46 @@ describe("AdSlot component", () => {
     // and script injection does nothing — the component should not crash.
     vi.stubGlobal("IntersectionObserver", undefined);
     // Suppress console noise from the intentionally removed window prop.
-    const { container } = render(React.createElement(AdSlot, { pageSlug: "merge-pdf" }));
+    const { container } = render(
+      React.createElement(AdSlot, { pageSlug: "merge-pdf", immediate: true }),
+    );
     expect(container.querySelector('[aria-label="Advertisement"]')).not.toBeNull();
   });
 
-  it("renders nothing when ad disabled (DNT)", () => {
+  it("keeps a reserved slot while DNT disables ad scripts", () => {
     Object.defineProperty(navigator, "doNotTrack", {
       value: "1",
       configurable: true,
     });
 
-    const { container } = render(React.createElement(AdSlot, { pageSlug: "compress-pdf" }));
-    expect(container.querySelector('[aria-label="Advertisement"]')).toBeNull();
+    const { container } = render(
+      React.createElement(AdSlot, { pageSlug: "compress-pdf", immediate: true }),
+    );
+    expect(container.querySelector('[aria-label="Advertisement"]')).not.toBeNull();
+    expect(container.querySelector("script")).toBeNull();
   });
 
-  it("renders nothing when ad disabled (GPC)", () => {
+  it("keeps a reserved slot while GPC disables ad scripts", () => {
     Object.defineProperty(navigator, "globalPrivacyControl", {
       value: true,
       configurable: true,
     });
 
-    const { container } = render(React.createElement(AdSlot, { pageSlug: "compress-pdf" }));
-    expect(container.querySelector('[aria-label="Advertisement"]')).toBeNull();
+    const { container } = render(
+      React.createElement(AdSlot, { pageSlug: "compress-pdf", immediate: true }),
+    );
+    expect(container.querySelector('[aria-label="Advertisement"]')).not.toBeNull();
+    expect(container.querySelector("script")).toBeNull();
+  });
+  it("keeps the reserved slot while privacy signals block ad scripts", () => {
+    Object.defineProperty(navigator, "doNotTrack", { value: "1", configurable: true });
+    const { container } = render(
+      React.createElement(AdSlot, { pageSlug: "compress-pdf", immediate: true }),
+    );
+    const slot = container.querySelector('[data-testid="papyr-ad-slot"]') as HTMLElement | null;
+    expect(slot).not.toBeNull();
+    expect(slot?.style.width).toBe("300px");
+    expect(slot?.querySelector("script")).toBeNull();
   });
 });
 
@@ -420,7 +446,9 @@ describe("AdSlot component", () => {
 
 describe("AdSlot lazy script injection", () => {
   it("injects atOptions + invoke.js inside the slot div on mount (P6 verified)", () => {
-    const { container } = render(React.createElement(AdSlot, { pageSlug: "jpg-to-pdf" }));
+    const { container } = render(
+      React.createElement(AdSlot, { pageSlug: "jpg-to-pdf", immediate: true }),
+    );
 
     const placeholder = container.querySelector('[aria-label="Advertisement"]');
     expect(placeholder).not.toBeNull();
@@ -442,7 +470,9 @@ describe("AdSlot lazy script injection", () => {
   });
 
   it("removes injected scripts on unmount", () => {
-    const { unmount, container } = render(React.createElement(AdSlot, { pageSlug: "split-pdf" }));
+    const { unmount, container } = render(
+      React.createElement(AdSlot, { pageSlug: "split-pdf", immediate: true }),
+    );
     expect(container.querySelector('script[data-papyr-ad-slot="true"]')).not.toBeNull();
 
     unmount();
@@ -453,7 +483,9 @@ describe("AdSlot lazy script injection", () => {
   it("falls back immediately when IntersectionObserver is undefined (e.g. jsdom)", () => {
     vi.stubGlobal("IntersectionObserver", undefined);
 
-    const { container } = render(React.createElement(AdSlot, { pageSlug: "pdf-to-jpg" }));
+    const { container } = render(
+      React.createElement(AdSlot, { pageSlug: "pdf-to-jpg", immediate: true }),
+    );
 
     // The slot should render immediately because the fallback path fires.
     const placeholder = container.querySelector('[aria-label="Advertisement"]');
@@ -465,7 +497,7 @@ describe("AdSlot lazy script injection", () => {
   it("does NOT inject the script on a non-allowed page", () => {
     const { fire } = installIntersectionObserver();
 
-    render(React.createElement(AdSlot, { pageSlug: "status" }));
+    render(React.createElement(AdSlot, { pageSlug: "unknown-page" }));
 
     act(() => {
       fire(true);
@@ -499,12 +531,12 @@ describe("ad placement guards integration", () => {
     expect(shouldRender).toBe(true);
   });
 
-  it("status page returns shouldRenderAd false even if phase is done", () => {
-    expect(shouldRenderAd("status")).toBe(false);
+  it("non-page slug returns shouldRenderAd false even if phase is done", () => {
+    expect(shouldRenderAd("unknown-page")).toBe(false);
     expect(isAfterPrimaryExperience("done")).toBe(true);
 
-    // The page guard takes precedence — no ad on non-tool pages.
-    const shouldRender = shouldRenderAd("status") && isAfterPrimaryExperience("done");
+    // The page guard takes precedence — no ad on non-page surfaces.
+    const shouldRender = shouldRenderAd("unknown-page") && isAfterPrimaryExperience("done");
     expect(shouldRender).toBe(false);
   });
 
@@ -527,7 +559,9 @@ describe("ad placement guards integration", () => {
 
     for (const slug of allowedAdPages) {
       cleanup();
-      const { container } = render(React.createElement(AdSlot, { pageSlug: slug }));
+      const { container } = render(
+        React.createElement(AdSlot, { pageSlug: slug, immediate: true }),
+      );
       const placeholder = container.querySelector('[aria-label="Advertisement"]');
       expect(placeholder).not.toBeNull();
       const el = placeholder as HTMLElement;
@@ -638,7 +672,9 @@ describe("AdSlot per-slot P6 embed (proven pattern)", () => {
   });
 
   it("removes injected scripts on unmount", () => {
-    const { unmount, container } = render(React.createElement(AdSlot, { pageSlug: "split-pdf" }));
+    const { unmount, container } = render(
+      React.createElement(AdSlot, { pageSlug: "split-pdf", immediate: true }),
+    );
     expect(container.querySelector('script[data-papyr-ad-slot="true"]')).not.toBeNull();
 
     unmount();
