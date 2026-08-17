@@ -14,6 +14,15 @@ import "../globals.css";
 
 const METADATA_BASE_URL = "https://budgezen.com";
 
+// PT01-G8 / WS-5 (SEO-03): absolute per-locale canonical/hreflang roots. Next
+// resolves `alternates` against metadataBase, so these are fully qualified
+// budgezen.com URLs; pages may narrow the root per-path via metadata merge (DEC-023).
+const LOCALE_ROOTS = {
+  en: `${METADATA_BASE_URL}/en`,
+  es: `${METADATA_BASE_URL}/es`,
+  id: `${METADATA_BASE_URL}/id`,
+} as const satisfies Record<Locale, string>;
+
 // Mirrored from canonical docs/assets/papyr-hero-light.svg (1200x400, 1.91:1).
 const SOCIAL_IMAGE_URL = "/papyr-hero-light.svg";
 const SOCIAL_IMAGE_WIDTH = 1200;
@@ -49,6 +58,13 @@ export async function generateMetadata({
     title: copy.metadata.title,
     description: copy.metadata.description,
     icons: "/favicon.ico",
+    alternates: {
+      canonical: LOCALE_ROOTS[locale],
+      languages: {
+        ...LOCALE_ROOTS,
+        "x-default": LOCALE_ROOTS.en,
+      },
+    },
     openGraph: {
       type: "website",
       locale: OG_LOCALES[locale],

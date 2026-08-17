@@ -3,72 +3,106 @@ import { describe, expect, it } from "vitest";
 import sitemap, { BASE_URL } from "../sitemap";
 import robots from "../robots";
 import { toolCatalog } from "../../lib/catalog";
-import { LEGACY_ROUTING_PATHS } from "../../lib/i18n";
+import { LEGACY_ROUTING_PATHS, locales } from "../../lib/i18n";
+
+const SUPPORTING_SLUGS = [
+  "faq",
+  "privacy",
+  "terms",
+  "cookies-advertising",
+  "contact",
+  "status",
+  "roadmap",
+  "blog",
+] as const;
 
 describe("T8 sitemap", () => {
-  it("uses the canonical production base URL", () => {
+  it("uses the canonical production base URL for every entry", () => {
     expect(BASE_URL).toBe("https://budgezen.com");
     for (const entry of sitemap()) {
-      expect(entry.url.startsWith(BASE_URL)).toBe(true);
+      expect(entry.url.startsWith(`${BASE_URL}/`)).toBe(true);
+      expect(new URL(entry.url).host).toBe("budgezen.com");
     }
   });
 
-  it("contains exactly 17 URLs", () => {
+  it("contains 42 URLs = 14 public routes × 3 locales", () => {
     const entries = sitemap();
-    expect(entries).toHaveLength(17);
+    expect(entries).toHaveLength(42);
   });
 
-  it("leads with the homepage at priority 1", () => {
+  it("leads with the homepage for all three locales at priority 1", () => {
     const entries = sitemap();
-    expect(entries[0].url).toBe(`${BASE_URL}`);
-    expect(entries[0].priority).toBe(1);
+    const urls = entries.map((entry) => entry.url);
+    expect(urls.slice(0, 3)).toEqual([`${BASE_URL}/en`, `${BASE_URL}/es`, `${BASE_URL}/id`]);
+    for (const entry of entries.slice(0, 3)) {
+      expect(entry.priority).toBe(1);
+    }
+    expect(urls).not.toContain(BASE_URL);
   });
 
-  it("includes the tool-unavailable base page", () => {
-    const urls = sitemap().map((entry) => entry.url);
-    expect(urls).toContain(`${BASE_URL}/tool-unavailable`);
-  });
-
-  it("includes all five active tool EN slugs", () => {
+  it("includes every active tool slug in all three locales", () => {
     const urls = sitemap().map((entry) => entry.url);
     for (const tool of toolCatalog) {
-      expect(urls).toContain(`${BASE_URL}${tool.hrefs.en}`);
-    }
-  });
-
-  it("includes the 8 deferred legacy tool URLs as tool-unavailable pages", () => {
-    const urls = sitemap().map((entry) => entry.url);
-    const legacyIds = [
-      "rotate",
-      "protect",
-      "unlock",
-      "watermark",
-      "sign",
-      "pdf-to-word",
-      "ocr",
-      "pdf-to-excel",
-    ];
-    expect(legacyIds).toHaveLength(8);
-    for (const id of legacyIds) {
-      expect(urls).toContain(`${BASE_URL}/tool-unavailable?tool=${id}`);
-    }
-  });
-
-  it("includes /faq and /privacy entries", () => {
-    const urls = sitemap().map((entry) => entry.url);
-    expect(urls).toContain(`${BASE_URL}/faq`);
-    expect(urls).toContain(`${BASE_URL}/privacy`);
-  });
-
-  it("does not include legacy locale-less tool routes directly (410-excluded per DEC-194)", () => {
-    const urls = sitemap().map((entry) => entry.url);
-    for (const path of LEGACY_ROUTING_PATHS) {
-      // /faq and /privacy are the only non-tool legacy paths that are canonical
-      if (path === "/faq" || path === "/privacy") {
-        continue;
+      for (const locale of locales) {
+        expect(urls).toContain(`${BASE_URL}${tool.hrefs[locale]}`);
       }
+    }
+  });
+
+  it("includes every supporting public route in all three locales", () => {
+    const urls = sitemap().map((entry) => entry.url);
+    for (const slug of SUPPORTING_SLUGS) {
+      for (const locale of locales) {
+        expect(urls).toContain(`${BASE_URL}/${locale}/${slug}`);
+      }
+    }
+  });
+
+  it("excludes tool-unavailable and the 8 deferred legacy query variants (DEC-194)", () => {
+    const urls = sitemap().map((entry) => entry.url);
+    for (const url of urls) {
+      expect(url).not.toContain("/tool-unavailable");
+    }
+  });
+
+  it("excludes locale-less redirecting entry paths", () => {
+    const urls = sitemap().map((entry) => entry.url);
+    expect(urls).not.toContain(BASE_URL);
+    for (const path of LEGACY_ROUTING_PATHS) {
       expect(urls).not.toContain(`${BASE_URL}${path}`);
     }
+  });
+
+  it("emits per-entry hreflang alternates for all locales with x-default to EN", () => {
+    for (const entry of sitemap()) {
+      const languages = entry.alternates?.languages ?? {};
+      for (const locale of locales) {
+        const target = languages[locale];
+        expect(target).toBeDefined();
+        expect(String(target).startsWith(`${BASE_URL}/${locale}`)).toBe(true);
+      }
+      expect(languages["x-default"]).toBe(languages.en);
+    }
+  });
+
+  it("keeps each entry self-referencing and cross-referenced within its group", () => {
+    const urls = sitemap().map((item) => item.url);
+    for (const entry of sitemap()) {
+      const languages = entry.alternates?.languages ?? {};
+      const targets = [languages.en, languages.es, languages.id];
+      expect(targets).toContain(entry.url);
+      expect(languages["x-default"]).toBe(languages.en);
+      for (const target of targets) {
+        expect(urls).toContain(target);
+      }
+    }
+  });
+
+  it("carries no other-host or relative URL leakage", () => {
+    const raw = JSON.stringify(sitemap());
+    expect(raw).not.toMatch(/https:\/\/(?!budgezen\.com)/);
+    expect(raw).not.toContain("mypapyr.com");
+    expect(raw).not.toContain("http://");
   });
 });
 
