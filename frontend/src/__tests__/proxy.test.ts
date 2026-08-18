@@ -44,7 +44,7 @@ describe("canonical host proxy", () => {
       const response = proxy(
         makeRequest(
           "/en/compress-pdf?utm_source=legacy",
-          { "x-forwarded-host": legacyHost },
+          { host: legacyHost },
           "https://internal.vercel.app",
         ),
       );
@@ -55,11 +55,11 @@ describe("canonical host proxy", () => {
     },
   );
 
-  it("uses the forwarded host before the URL or Host header", () => {
+  it("uses the canonical Host header before the forwarded host", () => {
     const response = proxy(
       makeRequest(
         "/en",
-        { host: "attacker.example", "x-forwarded-host": "www.mypapyr.com" },
+        { host: "www.mypapyr.com", "x-forwarded-host": "attacker.example" },
         "https://internal.vercel.app",
       ),
     );

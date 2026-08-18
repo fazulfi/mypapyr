@@ -16,11 +16,13 @@ export const CANONICAL_ORIGIN = "https://budgezen.com";
 export const TRUSTED_LEGACY_HOSTS = new Set(["mypapyr.com", "www.mypapyr.com"]);
 
 function requestHost(request: NextRequest): string {
-  const forwardedHost = request.headers.get("x-forwarded-host");
-  if (forwardedHost !== null) {
-    return forwardedHost.trim().toLowerCase();
-  }
-  return request.nextUrl.hostname.toLowerCase();
+  return (
+    request.headers.get("host") ??
+    request.headers.get("x-forwarded-host") ??
+    request.nextUrl.hostname
+  )
+    .trim()
+    .toLowerCase();
 }
 
 export function isSafeRedirectPath(path: string): boolean {
