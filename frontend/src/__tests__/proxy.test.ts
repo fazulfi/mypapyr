@@ -106,12 +106,22 @@ describe("SH-01 locale proxy", () => {
     expect(headerValue(response, "location")).toBe("http://localhost/en?utm_source=test");
   });
 
-  it("passes the conservative /faq and /privacy paths through untouched", () => {
-    for (const path of ["/faq", "/privacy"]) {
-      const response = proxy(makeRequest(path));
-      expect(headerValue(response, "location")).toBeNull();
-      expect(response.status).not.toBe(410);
-    }
+  it.each(["/faq", "/privacy"])("redirects %s to the default locale", (path) => {
+    const response = proxy(makeRequest(`${path}?utm_source=test`));
+    expect(response.status).toBe(307);
+    expect(headerValue(response, "location")).toBe(`http://localhost/en${path}?utm_source=test`);
+  });
+
+  it.each(["/faq", "/privacy"])("redirects %s using the locale cookie", (path) => {
+    const response = proxy(makeRequest(path, { cookie: `${LOCALE_COOKIE}=es` }));
+    expect(response.status).toBe(307);
+    expect(headerValue(response, "location")).toBe(`http://localhost/es${path}`);
+  });
+
+  it.each(["/faq", "/privacy"])("redirects %s using Accept-Language", (path) => {
+    const response = proxy(makeRequest(path, { "accept-language": "id" }));
+    expect(response.status).toBe(307);
+    expect(headerValue(response, "location")).toBe(`http://localhost/id${path}`);
   });
 
   it("passes a scheme-relative pathname through without shaping a redirect", () => {

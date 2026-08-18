@@ -3,12 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { LOCALE_COOKIE, getLocaleRedirectPath, isLocale, resolveLocale } from "./lib/i18n";
 import { SEO_BASE_URL } from "./lib/seo/alternates";
 import { getMessages } from "./lib/messages";
-import {
-  deferredToolId,
-  isConservativePassThrough,
-  localizedToolLabel,
-  redirectTargetFor,
-} from "./lib/seo-redirects";
+import { deferredToolId, localizedToolLabel, redirectTargetFor } from "./lib/seo-redirects";
 import { resolveRouteAlias } from "./lib/route-aliases";
 
 export const config = {
@@ -84,10 +79,6 @@ export function proxy(request: NextRequest): NextResponse {
   const toolId = deferredToolId(pathname);
   if (toolId !== null) {
     return buildGoneResponse(request, toolId);
-  }
-
-  if (isConservativePassThrough(pathname)) {
-    return NextResponse.next();
   }
 
   // The redirect Location is shaped from the raw pathname; refuse pathnames
