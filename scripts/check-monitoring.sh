@@ -289,8 +289,17 @@ print("check-monitoring: signals PASS — %s" % ok_surfaces)
 print("check-monitoring: netdata PASS — internal-only digest-pinned companion (%s)" % image)
 PY
 
+# yamllint must use the repository .yamllint (document-start and line-length
+# disabled for this companion compose), not the default profile: the OP-01
+# regression fixture is a temp-dir tree with no config, if yamllint were run
+# plainly there default rules would reject the digest-pinned fixture.
 if command -v yamllint >/dev/null 2>&1; then
-    yamllint "$NETDATA_COMPOSE" || fail "yamllint reported violations"
+    YAMLLINT_CONFIG=$(CDPATH='' cd -- "$(dirname -- "$0")/.." 2>/dev/null && pwd)/.yamllint
+    if [ -f "$YAMLLINT_CONFIG" ]; then
+        yamllint -c "$YAMLLINT_CONFIG" "$NETDATA_COMPOSE" || fail "yamllint reported violations"
+    else
+        yamllint "$NETDATA_COMPOSE" || fail "yamllint reported violations"
+    fi
 fi
 
 printf 'check-monitoring: PASS\n'

@@ -28,7 +28,6 @@ SCRIPTS="$ROOT/scripts"
 GUARD="$SCRIPTS/check-backup.sh"
 SCRIPT="$ROOT/deploy/backup/restic-backup.sh"
 DRILL="$ROOT/deploy/backup/restore-drill.md"
-SCOPE="$ROOT/deploy/backup/backup-scope.txt"
 [ -f "$GUARD" ] || fail "check-backup.sh absent: $GUARD"
 
 FIXTURE=$(mktemp -d) || fail "cannot create temp fixture"
