@@ -38,6 +38,47 @@ describe("canonical host proxy", () => {
     );
   });
 
+  it.each(["mypapyr.com", "www.mypapyr.com"])(
+    "redirects trusted legacy forwarded host %s even when NextRequest URL uses an internal host",
+    (legacyHost) => {
+      const response = proxy(
+        makeRequest(
+          "/en/compress-pdf?utm_source=legacy",
+          { "x-forwarded-host": legacyHost },
+          "https://internal.vercel.app",
+        ),
+      );
+      expect(response.status).toBe(308);
+      expect(headerValue(response, "location")).toBe(
+        "https://budgezen.com/en/compress-pdf?utm_source=legacy",
+      );
+    },
+  );
+
+  it("uses the forwarded host before the URL or Host header", () => {
+    const response = proxy(
+      makeRequest(
+        "/en",
+        { host: "attacker.example", "x-forwarded-host": "www.mypapyr.com" },
+        "https://internal.vercel.app",
+      ),
+    );
+    expect(response.status).toBe(308);
+    expect(headerValue(response, "location")).toBe("https://budgezen.com/en");
+  });
+
+  it.each([
+    { host: "attacker.example", forwarded: "mypapyr.com.evil.example" },
+    { host: "attacker.example", forwarded: "https://mypapyr.com" },
+    { host: "attacker.example", forwarded: "mypapyr.com, attacker.example" },
+  ])("does not trust malformed or ambiguous forwarded hosts", ({ host, forwarded }) => {
+    const response = proxy(
+      makeRequest("/en", { host, "x-forwarded-host": forwarded }, "https://internal.vercel.app"),
+    );
+    expect(response.status).not.toBe(308);
+    expect(headerValue(response, "location")).toBeNull();
+  });
+
   it("passes the canonical host through without a host redirect", () => {
     const response = proxy(makeRequest("/en", undefined, "https://budgezen.com"));
     expect(response.status).not.toBe(308);
