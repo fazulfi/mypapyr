@@ -1,12 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { LOCALE_COOKIE, getLocaleRedirectPath, isLocale, resolveLocale } from "./lib/i18n";
+import { getMessages } from "./lib/messages";
 import {
-  LEGACY_ROUTING_PATHS,
-  LOCALE_COOKIE,
-  getLocaleRedirectPath,
-  isLocale,
-  resolveLocale,
-} from "./lib/i18n";
+  deferredToolId,
+  isConservativePassThrough,
+  localizedToolLabel,
+  redirectTargetFor,
+} from "./lib/seo-redirects";
 import { resolveRouteAlias } from "./lib/route-aliases";
 
 export const config = {
@@ -21,10 +22,62 @@ export function isSafeRedirectPath(path: string): boolean {
   );
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function buildGoneResponse(request: NextRequest, toolId: string): NextResponse {
+  const locale = resolveLocale(
+    request.cookies.get(LOCALE_COOKIE)?.value,
+    request.headers.get("accept-language"),
+  );
+  const copy = getMessages(locale);
+  const toolLabel = localizedToolLabel(locale, toolId);
+  const home = `/${locale}`;
+  const title = escapeHtml(copy.notFound.title);
+  const html = [
+    "<!doctype html>",
+    `<html lang="${locale}">`,
+    "<head>",
+    '<meta charset="utf-8">',
+    `<title>${title}</title>`,
+    "</head>",
+    "<body>",
+    `<h1>${title}</h1>`,
+    `<p>${escapeHtml(toolLabel)} ${escapeHtml(copy.notFound.description)}</p>`,
+    `<a href="${home}">${escapeHtml(copy.nav.home)}</a>`,
+    "</body>",
+    "</html>",
+  ].join("");
+  return new NextResponse(html, {
+    status: 410,
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "no-store, no-cache, must-revalidate",
+    },
+  });
+}
+
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
 
-  if (LEGACY_ROUTING_PATHS.has(pathname)) {
+  const activeTarget = redirectTargetFor(pathname);
+  if (activeTarget !== null) {
+    const url = request.nextUrl.clone();
+    url.pathname = activeTarget;
+    return NextResponse.redirect(url, 301);
+  }
+
+  const toolId = deferredToolId(pathname);
+  if (toolId !== null) {
+    return buildGoneResponse(request, toolId);
+  }
+
+  if (isConservativePassThrough(pathname)) {
     return NextResponse.next();
   }
 

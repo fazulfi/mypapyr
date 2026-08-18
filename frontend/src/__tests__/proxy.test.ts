@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 
-import { LEGACY_ROUTING_PATHS, LOCALE_COOKIE } from "../lib/i18n";
+import { ACTIVE_ALIAS_REDIRECTS, DEFERRED_GONE_PATHS } from "../lib/seo-redirects";
+import { LOCALE_COOKIE } from "../lib/i18n";
 import { config, isSafeRedirectPath, proxy } from "../proxy";
 
 function makeRequest(pathname: string, headers?: Record<string, string>): NextRequest {
@@ -91,10 +92,11 @@ describe("SH-01 locale proxy", () => {
     expect(headerValue(response, "location")).toBe("http://localhost/en?utm_source=test");
   });
 
-  it("leaves every legacy routing path untouched for the URL-disposition task", () => {
-    for (const path of LEGACY_ROUTING_PATHS) {
+  it("passes the conservative /faq and /privacy paths through untouched", () => {
+    for (const path of ["/faq", "/privacy"]) {
       const response = proxy(makeRequest(path));
       expect(headerValue(response, "location")).toBeNull();
+      expect(response.status).not.toBe(410);
     }
   });
 
@@ -160,6 +162,99 @@ describe("SH-01 proxy matcher", () => {
   it("matches locale-less and localized application paths", () => {
     for (const path of ["/", "/en", "/es/compress-pdf", "/fr", "/compress-pdf"]) {
       expect(matches(path)).toBe(true);
+    }
+  });
+});
+
+describe("SEO-02 active tool alias 301s", () => {
+  it.each(Object.entries(ACTIVE_ALIAS_REDIRECTS))(
+    "redirects %s with a direct one-hop 301 to %s",
+    (alias, target) => {
+      const response = proxy(makeRequest(alias));
+      expect(response.status).toBe(301);
+      expect(headerValue(response, "location")).toBe(`http://localhost${target}`);
+    },
+  );
+
+  it("resolves the 301 target without any further legacy redirecting", () => {
+    for (const target of Object.values(ACTIVE_ALIAS_REDIRECTS)) {
+      const response = proxy(makeRequest(target));
+      expect(headerValue(response, "location")).toBeNull();
+      expect(response.status).not.toBe(301);
+      expect(response.status).not.toBe(410);
+    }
+  });
+
+  it("preserves query strings on the active alias 301", () => {
+    const response = proxy(makeRequest("/compress?utm_source=seo&page=2"));
+    expect(response.status).toBe(301);
+    expect(headerValue(response, "location")).toBe(
+      "http://localhost/en/compress-pdf?utm_source=seo&page=2",
+    );
+  });
+});
+
+describe("SEO-02 deferred tool 410 handling", () => {
+  it("returns an intentional localized 410 with no-store for every deferred path", () => {
+    for (const path of DEFERRED_GONE_PATHS) {
+      const response = proxy(makeRequest(path));
+      expect(response.status).toBe(410);
+      expect(headerValue(response, "cache-control")).toContain("no-store");
+      expect(headerValue(response, "cache-control")).toContain("no-cache");
+      expect(headerValue(response, "content-type")).toContain("text/html");
+    }
+  });
+
+  it("renders the localized 410 body with an accessible document and a home link", async () => {
+    const response = proxy(makeRequest("/rotate"));
+    const body = await response.text();
+    expect(body).toContain('lang="en"');
+    expect(body).toContain("<h1");
+    expect(body).toContain("Rotate PDF");
+    expect(body).toContain('href="/en"');
+  });
+
+  it("localizes the 410 body from a resolved locale preference", async () => {
+    const response = proxy(
+      makeRequest("/rotate", {
+        cookie: `${LOCALE_COOKIE}=es`,
+        "accept-language": "en;q=0.9",
+      }),
+    );
+    expect(response.status).toBe(410);
+    const body = await response.text();
+    expect(body).toContain('lang="es"');
+    expect(body).toContain("Rotar PDF");
+  });
+});
+
+describe("SEO-02 edge-case matrix", () => {
+  it("redirects only to closed internal paths, never a user-controlled destination", () => {
+    for (const path of ["//evil.com", "/\\evil.com", "/compress?next=https://evil.com"]) {
+      const response = proxy(makeRequest(path));
+      const location = headerValue(response, "location");
+      if (location !== null) {
+        const url = new URL(location);
+        expect(url.origin).toBe("http://localhost");
+        expect(url.pathname).toMatch(/^\/(en|es|id)\//);
+      }
+    }
+    expect(headerValue(proxy(makeRequest("//evil.com")), "location")).toBeNull();
+    expect(headerValue(proxy(makeRequest("/\\evil.com")), "location")).toBeNull();
+  });
+
+  it("does not redirect active aliases that are already inside a locale segment", () => {
+    for (const path of ["/en/compress", "/es/merge", "/id/split"]) {
+      const response = proxy(makeRequest(path));
+      expect(headerValue(response, "location")).toBeNull();
+    }
+  });
+
+  it("serves a single-hop 410 without rewriting to an indexable route", () => {
+    for (const path of DEFERRED_GONE_PATHS) {
+      const response = proxy(makeRequest(path));
+      expect(response.status).toBe(410);
+      expect(headerValue(response, "location")).toBeNull();
     }
   });
 });
