@@ -55,11 +55,11 @@ describe("canonical host proxy", () => {
     },
   );
 
-  it("uses the canonical Host header before the forwarded host", () => {
+  it("uses the forwarded host before the URL or Host header", () => {
     const response = proxy(
       makeRequest(
         "/en",
-        { host: "www.mypapyr.com", "x-forwarded-host": "attacker.example" },
+        { host: "attacker.example", "x-forwarded-host": "www.mypapyr.com" },
         "https://internal.vercel.app",
       ),
     );

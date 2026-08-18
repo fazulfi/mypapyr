@@ -17,8 +17,8 @@ export const TRUSTED_LEGACY_HOSTS = new Set(["mypapyr.com", "www.mypapyr.com"]);
 
 function requestHost(request: NextRequest): string {
   return (
-    request.headers.get("host") ??
     request.headers.get("x-forwarded-host") ??
+    request.headers.get("host") ??
     request.nextUrl.hostname
   )
     .trim()
