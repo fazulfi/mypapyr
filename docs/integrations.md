@@ -16,8 +16,9 @@ This public inventory lists the external services and dependencies the repositor
 | ClamAV (clamd) | Threat scanning of uploads | Implemented in repository: scanner gate wired via `CLAMD_HOST`/`CLAMD_PORT`/`SCANNER_ENABLED` |
 | AI gateway | Planned model gateway for explicitly specified server features | Environment contract only |
 | Sentry | Planned sanitized application error reporting | Environment contract only |
-| Telegram | Planned operational incident alerts | Environment contract only |
-| S3-compatible backup storage | Planned encrypted operational backups | Environment contract only |
+| Netdata | Internal-only digest-pinned monitoring of health signals | Implemented in repository: `deploy/monitoring/netdata-compose.yml` (profiles `monitoring`, no published port), closed privacy-safe signal vocabulary in `health-signals.md`, guard `scripts/check-monitoring.sh`; operator access via SSH tunnel, never a public port |
+| Telegram | Operational incident relay (OP-03) | Implemented in repository: `deploy/monitoring/telegram-relay.py` (stdlib-only) + `alerts.md` contract + guard `scripts/check-telegram-relay.sh`; live bot token/chat id remain owner-gated and out of band, and the relay may stay skipped |
+| S3-compatible backup storage | Encrypted operational backups (OP-04, restic) | Implemented in repository: `deploy/backup/restic-backup.sh` (allowlist scope manifest), monthly restore drill, guard `scripts/check-backup.sh`; encrypted repository and credentials remain owner-gated, never committed |
 | Adsterra | Native advertising units, frontend-only | Implemented in repository: reserved-dimension slots, lazy client injection, placement guards, house-promo fallback |
 
 ## Integration rules

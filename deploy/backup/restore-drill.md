@@ -13,7 +13,7 @@ This is a procedure only; it has not been run against production. The operator m
 ## Monthly sequence
 
 1. Create a temporary isolated restore target with mode `0700`; do not mount production paths.
-2. Run `RESTIC_PASSWORD_FILE=/path/to/password RESTIC_REPOSITORY=s3:REDACTED PAPYR_BACKUP_ROOT=/srv/papyr PAPYR_BACKUP_SCOPE=/srv/papyr/deploy/backup/backup-scope.txt plan deploy/backup/restic-backup.sh` to validate the configuration shape without invoking restic.
+2. Run `RESTIC_PASSWORD_FILE=/path/to/password RESTIC_REPOSITORY=s3:REDACTED PAPYR_BACKUP_ROOT=/srv/papyr PAPYR_BACKUP_SCOPE=/srv/papyr/deploy/backup/backup-scope.txt deploy/backup/restic-backup.sh plan` to validate the configuration shape without invoking restic.
 3. On the isolated host, run a structural repository check: `restic check --password-file "$RESTIC_PASSWORD_FILE" --repo "$RESTIC_REPOSITORY"`.
 4. Read a bounded data subset: `restic check --read-data-subset=1/30 ...` (rotate the subset each month; this is not a full restore).
 5. Restore into the temporary target only: `restic restore latest --target "$RESTORE_TARGET" ...`.
