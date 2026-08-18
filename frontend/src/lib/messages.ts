@@ -178,6 +178,10 @@ export const messages = {
       title: "Page not found",
       description: "The page you are looking for does not exist.",
     },
+    gone: {
+      title: "Tool no longer available",
+      description: "This tool is no longer available.",
+    },
     tools: {
       compress: {
         title: "Compress PDF",
@@ -601,6 +605,10 @@ export const messages = {
     notFound: {
       title: "Página no encontrada",
       description: "La página que buscas no existe.",
+    },
+    gone: {
+      title: "Herramienta no disponible",
+      description: "Esta herramienta ya no está disponible.",
     },
     tools: {
       compress: {
@@ -1028,6 +1036,10 @@ export const messages = {
     notFound: {
       title: "Halaman tidak ditemukan",
       description: "Halaman yang Anda cari tidak ada.",
+    },
+    gone: {
+      title: "Alat tidak lagi tersedia",
+      description: "Alat ini tidak lagi tersedia.",
     },
     tools: {
       compress: {
