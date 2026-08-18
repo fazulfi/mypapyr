@@ -61,11 +61,12 @@ bash scripts/check-ci.sh
 
 Pushing a branch runs the same CI pipeline that gates merges to `main` (`.github/workflows/ci.yml`). CI is **CI-without-CD**: it never deploys, and every job uses read-only permissions and no real secrets.
 
-The pipeline runs **19 checks**, grouped as follows.
+The pipeline runs **23 checks**, grouped as follows.
 
 ### Frontend
 
 - Frontend (Lint + Format)
+- Frontend (TypeScript typecheck)
 - Frontend (Vitest + Coverage), gated at the project's coverage thresholds (\`npm run test:coverage\`)
 - Frontend (Next.js production build)
 - Frontend (Playwright E2E)
@@ -96,8 +97,11 @@ The pipeline runs **19 checks**, grouped as follows.
 - QA (yamllint CI YAML)
 - QA (markdownlint)
 - QA (shellcheck)
+- QA (monitoring guards)
+- QA (Telegram relay guard)
+- QA (backup guard)
 
-**18 of 19** checks also run on every push to `main`; the **supply chain dependency review** runs only on pull requests. A merge to `main` is a squash merge, and it requires **all jobs that apply to the event to pass** (the PR-only dependency review applies to the PR itself, so effectively all 19 pass before merge).
+**22 of 23** checks also run on every push to `main`; the **supply chain dependency review** runs only on pull requests. A merge to `main` is a squash merge, and it requires **all jobs that apply to the event to pass** (the PR-only dependency review applies to the PR itself, so effectively all 23 pass before merge).
 
 The shared [repository guard](scripts/check-ci.sh) runs the local equivalents of these gates; keep it green before opening a PR, and never weaken CI, coverage thresholds, Trivy, or gitleaks to make a change pass.
 

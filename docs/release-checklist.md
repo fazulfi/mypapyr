@@ -39,7 +39,7 @@ Repo guard (root):
 - [ ] Security: Trivy (critical/high), gitleaks full-history.
 - [ ] Supply chain: dependency review, npm audit, pip-audit.
 - [ ] QA: action-pin truth, compose structural, hadolint, markdownlint, production API image build + non-root smoke, shellcheck, yamllint.
-- [ ] All 20 CI jobs pass on the PR (19 on pushes to main; 7 status checks required by branch protection).
+- [ ] All 23 CI jobs pass on the PR (22 on pushes to main; 7 status checks required by branch protection).
 
 ## 4. Release build (VPS)
 
