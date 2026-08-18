@@ -9,12 +9,9 @@ import { locales, type Locale } from "../i18n";
  * canonical host cannot drift between the `<head>`, `sitemap.xml`, and
  * `robots.txt`.
  *
- * Host decision: this repo pins `https://budgezen.com` as the canonical origin
- * (the value historically asserted by the test suite). Deployment docs also
- * reference `mypapyr.com` (VPS frontend serving), so the true primary host is
- * an owner-gated call (see full-p8-plan §7.1 Canonical host, NOT_VERIFIED). No
- * fabrication of host evidence here; this constant retains the repo's pinned
- * value until the owner selects the primary host.
+ * Host decision: `https://budgezen.com` is the confirmed primary production
+ * and canonical origin. `mypapyr.com` remains a legacy domain; edge redirect
+ * coverage is an external deployment concern and must be verified independently.
  */
 export const SEO_BASE_URL = "https://budgezen.com";
 

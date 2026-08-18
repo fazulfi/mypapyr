@@ -16,10 +16,11 @@ canonical set stable. There is intentionally **no second slug table** anywhere i
 
 ## 1. Canonical host
 
-The code-pinned canonical base is `https://budgezen.com` (via `SEO_BASE_URL`, imported by
-`sitemap.ts`, `robots.ts`, and `[locale]/layout.tsx` metadata). Deployment documentation also identifies
-`mypapyr.com` as the VPS frontend host. The true primary/canonical host is **NOT_VERIFIED**; this table
-records the current code value, not owner approval or live host resolution.
+The canonical base is `https://budgezen.com` (via `SEO_BASE_URL`, imported by
+`sitemap.ts`, `robots.ts`, and `[locale]/layout.tsx` metadata). The owner has confirmed
+`budgezen.com` as the primary production and canonical frontend host. `mypapyr.com` is
+legacy/redirect-only; redirect completeness remains an external edge concern and is not inferred
+from this source table.
 
 ## 2. Locale set
 
