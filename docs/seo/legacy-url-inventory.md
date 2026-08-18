@@ -51,7 +51,7 @@ owner evidence per R-25 — **NOT_VERIFIED**, none on record, so the 410-default
 - 301 targets are always locale-prefixed (`/compress` → `/{locale}/compress-pdf`), so the redirect
   resolves in **one hop** and never re-enters the legacy dispatcher (`getLocaleRedirectPath` returns
   `null` for already-localized paths).
-- 501 legacy path resolves to another legacy path (no chains).
+- No legacy path resolves to another legacy path (no chains).
 - 410 bodies are returned directly; they never consult the redirect builder.
 - The 8 deferred tools carry **no per-URL 301 exception** in the absence of owner traffic data
   (R-25 / DEC-114 hard gate).

@@ -1,5 +1,5 @@
 import type { Locale } from "./i18n";
-import { getLegacyTools } from "./catalog";
+import { getLegacyTools, toolCatalog } from "./catalog";
 
 // SEO-02 redirect map. The SH-01 legacy inventory is partitioned into three
 // disjoint dispositions (DEC-023, DEC-042, DEC-047, DEC-194):
@@ -40,8 +40,14 @@ export const DEFERRED_TOOL_IDS: Readonly<Record<string, string>> = {
 
 export const CONSERVATIVE_PATHS: ReadonlySet<string> = new Set(["/faq", "/privacy"]);
 
-export function redirectTargetFor(pathname: string): string | null {
-  return ACTIVE_ALIAS_REDIRECTS[pathname] ?? null;
+export function redirectTargetFor(pathname: string, locale: Locale = "en"): string | null {
+  const target = ACTIVE_ALIAS_REDIRECTS[pathname];
+  if (target === undefined) {
+    return null;
+  }
+  const enSlug = target.slice(4);
+  const tool = toolCatalog.find((entry) => entry.hrefs.en.endsWith(`/${enSlug}`));
+  return tool?.hrefs[locale] ?? `/${locale}/${enSlug}`;
 }
 
 export function deferredToolId(pathname: string): string | null {
