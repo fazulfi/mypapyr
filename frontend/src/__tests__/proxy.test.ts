@@ -1,12 +1,26 @@
 import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 
-import { ACTIVE_ALIAS_REDIRECTS, DEFERRED_GONE_PATHS } from "../lib/seo-redirects";
+import {
+  ACTIVE_ALIAS_REDIRECTS,
+  DEFERRED_GONE_PATHS,
+  redirectTargetFor,
+} from "../lib/seo-redirects";
 import { LOCALE_COOKIE } from "../lib/i18n";
 import { config, isSafeRedirectPath, proxy } from "../proxy";
 
-function makeRequest(pathname: string, headers?: Record<string, string>): NextRequest {
-  return new NextRequest(`http://localhost${pathname}`, { headers });
+function makeRequest(
+  pathname: string,
+  headers?: Record<string, string>,
+  origin = "http://localhost",
+): NextRequest {
+  return new NextRequest(`${origin}${pathname}`, { headers });
+}
+
+function redirectTargetForForTest(alias: string): string {
+  const target = redirectTargetFor(alias);
+  if (target === null) throw new Error(`Missing target for ${alias}`);
+  return target;
 }
 
 function headerValue(response: Response, name: string): string | null {
@@ -168,13 +182,34 @@ describe("SH-01 proxy matcher", () => {
 
 describe("SEO-02 active tool alias 301s", () => {
   it.each(Object.entries(ACTIVE_ALIAS_REDIRECTS))(
-    "redirects %s with a direct one-hop 301 to %s",
-    (alias, target) => {
+    "redirects %s with a direct one-hop 301 to the resolved English target",
+    (alias) => {
       const response = proxy(makeRequest(alias));
       expect(response.status).toBe(301);
-      expect(headerValue(response, "location")).toBe(`http://localhost${target}`);
+      expect(headerValue(response, "location")).toBe(
+        `https://budgezen.com${redirectTargetForForTest(alias)}`,
+      );
     },
   );
+
+  it.each([
+    ["es", "es", "/es/comprimir-pdf"],
+    ["id", "id", "/id/kompres-pdf"],
+  ])("resolves %s aliases using the locale cookie", (locale, cookie, target) => {
+    const response = proxy(makeRequest("/compress", { cookie: `${LOCALE_COOKIE}=${cookie}` }));
+    expect(headerValue(response, "location")).toBe(`https://budgezen.com${target}`);
+    expect(response.cookies.get(LOCALE_COOKIE)).toBeUndefined();
+  });
+
+  it("resolves an Indonesian alias from Accept-Language", () => {
+    const response = proxy(makeRequest("/pdf-to-image", { "accept-language": "id" }));
+    expect(headerValue(response, "location")).toBe("https://budgezen.com/id/pdf-ke-gambar");
+  });
+
+  it("uses a trusted canonical origin for alias redirects", () => {
+    const response = proxy(makeRequest("/compress", undefined, "https://attacker.example"));
+    expect(headerValue(response, "location")).toBe("https://budgezen.com/en/compress-pdf");
+  });
 
   it("resolves the 301 target without any further legacy redirecting", () => {
     for (const target of Object.values(ACTIVE_ALIAS_REDIRECTS)) {
@@ -189,7 +224,7 @@ describe("SEO-02 active tool alias 301s", () => {
     const response = proxy(makeRequest("/compress?utm_source=seo&page=2"));
     expect(response.status).toBe(301);
     expect(headerValue(response, "location")).toBe(
-      "http://localhost/en/compress-pdf?utm_source=seo&page=2",
+      "https://budgezen.com/en/compress-pdf?utm_source=seo&page=2",
     );
   });
 });
@@ -209,8 +244,12 @@ describe("SEO-02 deferred tool 410 handling", () => {
     const response = proxy(makeRequest("/rotate"));
     const body = await response.text();
     expect(body).toContain('lang="en"');
+    expect(body).toContain('<main id="main-content"');
     expect(body).toContain("<h1");
     expect(body).toContain("Rotate PDF");
+    expect(body).toContain("This tool is no longer available.");
+    expect(body).not.toContain("The page you are looking for does not exist.");
+    expect(body).toContain('name="robots" content="noindex, nofollow"');
     expect(body).toContain('href="/en"');
   });
 
@@ -224,6 +263,7 @@ describe("SEO-02 deferred tool 410 handling", () => {
     expect(response.status).toBe(410);
     const body = await response.text();
     expect(body).toContain('lang="es"');
+    expect(body).toContain("Esta herramienta ya no está disponible.");
     expect(body).toContain("Rotar PDF");
   });
 });
@@ -235,7 +275,7 @@ describe("SEO-02 edge-case matrix", () => {
       const location = headerValue(response, "location");
       if (location !== null) {
         const url = new URL(location);
-        expect(url.origin).toBe("http://localhost");
+        expect(url.origin).toBe("https://budgezen.com");
         expect(url.pathname).toMatch(/^\/(en|es|id)\//);
       }
     }

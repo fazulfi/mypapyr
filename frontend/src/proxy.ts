@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { LOCALE_COOKIE, getLocaleRedirectPath, isLocale, resolveLocale } from "./lib/i18n";
+import { SEO_BASE_URL } from "./lib/seo/alternates";
 import { getMessages } from "./lib/messages";
 import {
   deferredToolId,
@@ -38,18 +39,21 @@ function buildGoneResponse(request: NextRequest, toolId: string): NextResponse {
   const copy = getMessages(locale);
   const toolLabel = localizedToolLabel(locale, toolId);
   const home = `/${locale}`;
-  const title = escapeHtml(copy.notFound.title);
+  const title = escapeHtml(copy.gone.title);
   const html = [
     "<!doctype html>",
     `<html lang="${locale}">`,
     "<head>",
     '<meta charset="utf-8">',
     `<title>${title}</title>`,
+    '<meta name="robots" content="noindex, nofollow">',
     "</head>",
     "<body>",
+    '<main id="main-content" tabindex="-1">',
     `<h1>${title}</h1>`,
-    `<p>${escapeHtml(toolLabel)} ${escapeHtml(copy.notFound.description)}</p>`,
+    `<p>${escapeHtml(toolLabel)} ${escapeHtml(copy.gone.description)}</p>`,
     `<a href="${home}">${escapeHtml(copy.nav.home)}</a>`,
+    "</main>",
     "</body>",
     "</html>",
   ].join("");
@@ -65,10 +69,15 @@ function buildGoneResponse(request: NextRequest, toolId: string): NextResponse {
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
 
-  const activeTarget = redirectTargetFor(pathname);
+  const locale = resolveLocale(
+    request.cookies.get(LOCALE_COOKIE)?.value,
+    request.headers.get("accept-language"),
+  );
+
+  const activeTarget = redirectTargetFor(pathname, locale);
   if (activeTarget !== null) {
-    const url = request.nextUrl.clone();
-    url.pathname = activeTarget;
+    const url = new URL(activeTarget, SEO_BASE_URL);
+    url.search = request.nextUrl.search;
     return NextResponse.redirect(url, 301);
   }
 
@@ -99,11 +108,6 @@ export function proxy(request: NextRequest): NextResponse {
     }
     return NextResponse.next();
   }
-
-  const locale = resolveLocale(
-    request.cookies.get(LOCALE_COOKIE)?.value,
-    request.headers.get("accept-language"),
-  );
 
   const targetPath = getLocaleRedirectPath(pathname, locale);
   if (targetPath === null) {
