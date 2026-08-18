@@ -27,6 +27,38 @@ function headerValue(response: Response, name: string): string | null {
   return response.headers.get(name);
 }
 
+describe("canonical host proxy", () => {
+  it("redirects the trusted legacy host to budgezen.com with path and query", () => {
+    const response = proxy(
+      makeRequest("/en/compress-pdf?utm_source=legacy", undefined, "https://mypapyr.com"),
+    );
+    expect(response.status).toBe(308);
+    expect(headerValue(response, "location")).toBe(
+      "https://budgezen.com/en/compress-pdf?utm_source=legacy",
+    );
+  });
+
+  it("passes the canonical host through without a host redirect", () => {
+    const response = proxy(makeRequest("/en", undefined, "https://budgezen.com"));
+    expect(response.status).not.toBe(308);
+    expect(headerValue(response, "location")).toBeNull();
+  });
+
+  it.each(["http://localhost", "https://preview.example.vercel.app", "https://attacker.example"])(
+    "does not redirect untrusted host %s",
+    (origin) => {
+      const response = proxy(makeRequest("/en", undefined, origin));
+      expect(response.status).not.toBe(308);
+      expect(headerValue(response, "location")).toBeNull();
+    },
+  );
+
+  it("does not loop when the legacy host is already the redirect target", () => {
+    const response = proxy(makeRequest("/en", undefined, "https://budgezen.com"));
+    expect(headerValue(response, "location")).toBeNull();
+  });
+});
+
 describe("SH-01 locale proxy", () => {
   it("redirects the locale-less root with 307 to the default locale", () => {
     const response = proxy(makeRequest("/"));

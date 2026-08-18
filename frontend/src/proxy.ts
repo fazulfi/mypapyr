@@ -12,6 +12,9 @@ export const config = {
   ],
 };
 
+export const CANONICAL_ORIGIN = "https://budgezen.com";
+export const TRUSTED_LEGACY_HOSTS = new Set(["mypapyr.com"]);
+
 export function isSafeRedirectPath(path: string): boolean {
   return (
     path.startsWith("/") && !path.startsWith("//") && !path.includes("\\") && !/[\r\n]/.test(path)
@@ -63,6 +66,13 @@ function buildGoneResponse(request: NextRequest, toolId: string): NextResponse {
 
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
+  const requestHost = request.nextUrl.hostname.toLowerCase();
+  if (TRUSTED_LEGACY_HOSTS.has(requestHost)) {
+    const canonicalUrl = new URL(CANONICAL_ORIGIN);
+    canonicalUrl.pathname = pathname;
+    canonicalUrl.search = request.nextUrl.search;
+    return NextResponse.redirect(canonicalUrl, 308);
+  }
 
   const locale = resolveLocale(
     request.cookies.get(LOCALE_COOKIE)?.value,
