@@ -48,7 +48,11 @@ for WF in $WORKFLOW_FILES; do
     # workspace path such as `${{ github.workspace }}/deploy` in a job `env:`
     # must therefore be expressible literally — `deploy` is not scanned as a
     # bare substring here, so no shell obfuscation is ever needed.
-    STRUCTURAL_KEYWORDS='workflow_dispatch|environments:|id-token:|registry-push|registry|publish|docker[[:space:]]+login|docker[[:space:]]+push|docker[[:space:]]+buildx'
+    # `workflow_dispatch` is deliberately ABSENT here: as an `on:` trigger it
+    # is additive and non-deploying (a manual CI re-run). Its placement is
+    # enforced by the Python no-CD block — allowed ONLY as an `on:` trigger
+    # key, forbidden anywhere else.
+    STRUCTURAL_KEYWORDS='environments:|id-token:|registry-push|registry|publish|docker[[:space:]]+login|docker[[:space:]]+push|docker[[:space:]]+buildx'
     MATCH=$(printf '%s\n' "$STRIPPED" | grep -nE -i "($STRUCTURAL_KEYWORDS)" || true)
     [ -z "$MATCH" ] || fail "forbidden deployment/structural keyword detected in $WF"
 
@@ -122,9 +126,11 @@ path = sys.argv[1]
 text = open(path, encoding="utf-8").read()
 workflow = yaml.safe_load(text)
 
-# Structural CD markers may never appear anywhere in the file.
+# Structural CD markers may never appear anywhere in the file. `workflow_dispatch`
+# is deliberately excluded: it is an additive, non-deploying manual-re-run
+# trigger, and its placement is enforced separately below (on:-key only).
 STRUCTURAL = re.compile(
-    r"workflow_dispatch|environments:|id-token:|registry|publish|"
+    r"environments:|id-token:|registry|publish|"
     r"docker[ \t]+login|docker[ \t]+push|docker[ \t]+buildx",
     re.IGNORECASE,
 )
@@ -132,6 +138,38 @@ stripped = re.sub(r"(?m)^[ \t]*#.*$", "", text)
 sm = STRUCTURAL.search(stripped)
 if sm:
     raise SystemExit("forbidden deployment/structural keyword: " + sm.group(0))
+
+# `workflow_dispatch` trigger allowance: every occurrence in the comment-
+# stripped file must lie inside the top-level `on:` mapping. Any other
+# placement — env value, job/step name, `if:` expression, run body — is
+# still a rejected structural marker.
+_dispatch = re.findall(r"workflow_dispatch", stripped, re.IGNORECASE)
+if _dispatch:
+    _lines = text.splitlines()
+    _on_start = None
+    for _i, _ln in enumerate(_lines):
+        if re.match(r"^[ \t]*on:", _ln):
+            _on_start = _i
+            break
+    if _on_start is None:
+        raise SystemExit("workflow_dispatch appears without an `on:` trigger block")
+    _indent = len(_lines[_on_start]) - len(_lines[_on_start].lstrip())
+    _region = [_lines[_on_start]]
+    _j = _on_start + 1
+    while _j < len(_lines):
+        _ln = _lines[_j]
+        if not _ln.strip() or re.match(r"^[ \t]*#", _ln):
+            _region.append(_ln)
+        else:
+            _depth = len(_ln) - len(_ln.lstrip())
+            if _depth > _indent:
+                _region.append(_ln)
+            else:
+                break
+        _j += 1
+    _region_text = "\n".join(re.sub(r"^[ \t]*#.*$", "", _ln) for _ln in _region)
+    if len(re.findall(r"workflow_dispatch", _region_text, re.IGNORECASE)) != len(_dispatch):
+        raise SystemExit("workflow_dispatch is permitted only as an `on:` trigger key")
 
 # Deployment commands are forbidden inside run-step bodies only.
 RUN_CMD = re.compile(
