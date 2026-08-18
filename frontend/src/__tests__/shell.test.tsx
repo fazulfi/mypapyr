@@ -30,6 +30,12 @@ vi.mock("next/navigation", () => ({
 import { notFound } from "next/navigation";
 
 import LocaleLayout, { generateMetadata, generateStaticParams } from "../app/[locale]/layout";
+import { generateMetadata as compressPdfMetadata } from "../app/[locale]/compress-pdf/layout";
+import { generateMetadata as splitPdfMetadata } from "../app/[locale]/split-pdf/layout";
+import { generateMetadata as faqMetadata } from "../app/[locale]/faq/layout";
+import { generateMetadata as privacyMetadata } from "../app/[locale]/privacy/page";
+import { toolCatalog } from "../lib/catalog";
+import { SEO_BASE_URL } from "../lib/seo/alternates";
 import { locales } from "../lib/i18n";
 import { getMessages, messages } from "../lib/messages";
 
@@ -316,5 +322,74 @@ describe("T8 analytics instrumentation", () => {
 
     expect(analyticsMock).toHaveBeenCalled();
     expect(speedMock).toHaveBeenCalled();
+  });
+});
+
+describe("SEO-03 / P8-E per-route canonical and hreflang", () => {
+  it("emits a self-referencing canonical for a tool route in every locale", async () => {
+    const tool = toolCatalog.find((entry) => entry.id === "compress-pdf");
+    expect(tool).toBeDefined();
+    for (const locale of locales) {
+      const metadata = await compressPdfMetadata({ params: Promise.resolve({ locale }) });
+      expect(metadata.alternates?.canonical).toBe(`${SEO_BASE_URL}${tool!.hrefs[locale]}`);
+    }
+  });
+
+  it("emits bidirectional hreflang with x-default to EN for a tool route", async () => {
+    for (const locale of locales) {
+      const metadata = await compressPdfMetadata({ params: Promise.resolve({ locale }) });
+      const languages = metadata.alternates?.languages ?? {};
+      expect(languages.en).toBe(`${SEO_BASE_URL}/en/compress-pdf`);
+      expect(languages.es).toBe(`${SEO_BASE_URL}/es/comprimir-pdf`);
+      expect(languages.id).toBe(`${SEO_BASE_URL}/id/kompres-pdf`);
+      expect(languages["x-default"]).toBe(languages.en);
+    }
+  });
+
+  it("emits per-locale canonical/hreflang for a second tool", async () => {
+    const tool = toolCatalog.find((entry) => entry.id === "split-pdf");
+    expect(tool).toBeDefined();
+    for (const locale of locales) {
+      const metadata = await splitPdfMetadata({ params: Promise.resolve({ locale }) });
+      expect(metadata.alternates?.canonical).toBe(`${SEO_BASE_URL}${tool!.hrefs[locale]}`);
+      const languages = metadata.alternates?.languages ?? {};
+      expect(languages["x-default"]).toBe(languages.en);
+    }
+  });
+
+  it("emits self-referencing canonical/hreflang for the faq route in every locale", async () => {
+    for (const locale of locales) {
+      const metadata = await faqMetadata({ params: Promise.resolve({ locale }) });
+      const languages = metadata.alternates?.languages ?? {};
+      expect(metadata.alternates?.canonical).toBe(`${SEO_BASE_URL}/${locale}/faq`);
+      expect(languages.en).toBe(`${SEO_BASE_URL}/en/faq`);
+      expect(languages["x-default"]).toBe(languages.en);
+    }
+  });
+
+  it("emits self-referencing canonical/hreflang for a supporting route", async () => {
+    for (const locale of locales) {
+      const metadata = await privacyMetadata({ params: Promise.resolve({ locale }) });
+      const languages = metadata.alternates?.languages ?? {};
+      expect(metadata.alternates?.canonical).toBe(`${SEO_BASE_URL}/${locale}/privacy`);
+      expect(languages.es).toBe(`${SEO_BASE_URL}/es/privacy`);
+      expect(languages["x-default"]).toBe(languages.en);
+    }
+  });
+
+  it("keeps per-route alternates free of es-419 and other-host leakage", async () => {
+    const samples = [
+      () => compressPdfMetadata({ params: Promise.resolve({ locale: "en" }) }),
+      () => faqMetadata({ params: Promise.resolve({ locale: "es" }) }),
+      () => privacyMetadata({ params: Promise.resolve({ locale: "id" }) }),
+    ];
+    for (const sample of samples) {
+      const metadata = await sample();
+      const raw = JSON.stringify(metadata.alternates);
+      expect(raw).not.toContain("es-419");
+      expect(raw).not.toContain("mypapyr.com");
+      expect(raw).not.toContain("http://");
+      expect(raw).not.toMatch(/(?:https:\/\/)(?!budgezen\.com)/);
+    }
   });
 });

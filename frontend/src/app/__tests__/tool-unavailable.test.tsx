@@ -17,7 +17,7 @@ vi.mock("next/navigation", () => ({
 
 import { notFound } from "next/navigation";
 
-import ToolUnavailablePage from "../[locale]/tool-unavailable/page";
+import ToolUnavailablePage, { generateMetadata } from "../[locale]/tool-unavailable/page";
 import { getLegacyTools } from "../../lib/catalog";
 import { locales } from "../../lib/i18n";
 import { getMessages } from "../../lib/messages";
@@ -41,6 +41,23 @@ describe("T3 localized 410 tool-unavailable page (DEC-194)", () => {
         expect(markup).toContain(`href="/${locale}"`);
         expect(markup).toContain(copy.nav.home);
       }
+    }
+  });
+
+  it("declares noindex and no canonical on the non-indexable 410 surface", async () => {
+    for (const locale of locales) {
+      const metadata = await generateMetadata({
+        params: Promise.resolve({ locale }),
+        searchParams: Promise.resolve({ tool: "rotate" }),
+      });
+      const robots = metadata.robots;
+      expect(robots).not.toBeUndefined();
+      expect(robots).not.toBeNull();
+      if (typeof robots === "string") {
+        throw new Error("robots must be an object for the 410 surface");
+      }
+      expect(robots?.index).toBe(false);
+      expect(metadata.alternates?.canonical).toBeUndefined();
     }
   });
 
