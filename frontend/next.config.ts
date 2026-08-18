@@ -11,6 +11,22 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.mypapy
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "mypapyr.com" }],
+        destination: "https://budgezen.com/:path*",
+        permanent: true,
+      },
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.mypapyr.com" }],
+        destination: "https://budgezen.com/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {

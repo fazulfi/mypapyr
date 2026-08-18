@@ -13,17 +13,6 @@ export const config = {
 };
 
 export const CANONICAL_ORIGIN = "https://budgezen.com";
-export const TRUSTED_LEGACY_HOSTS = new Set(["mypapyr.com", "www.mypapyr.com"]);
-
-function requestHost(request: NextRequest): string {
-  return (
-    request.headers.get("x-forwarded-host") ??
-    request.headers.get("host") ??
-    request.nextUrl.hostname
-  )
-    .trim()
-    .toLowerCase();
-}
 
 export function isSafeRedirectPath(path: string): boolean {
   return (
@@ -76,13 +65,6 @@ function buildGoneResponse(request: NextRequest, toolId: string): NextResponse {
 
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
-  const host = requestHost(request);
-  if (TRUSTED_LEGACY_HOSTS.has(host)) {
-    const canonicalUrl = new URL(CANONICAL_ORIGIN);
-    canonicalUrl.pathname = pathname;
-    canonicalUrl.search = request.nextUrl.search;
-    return NextResponse.redirect(canonicalUrl, 308);
-  }
 
   const locale = resolveLocale(
     request.cookies.get(LOCALE_COOKIE)?.value,
