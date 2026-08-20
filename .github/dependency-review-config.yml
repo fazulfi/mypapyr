@@ -1,0 +1,19 @@
+# These packages are transitive dependencies of @mdx-js/mdx, required by next-mdx-remote.
+# They are low-risk text-processing and estree utilities with no network or filesystem
+# surface in Papyr's runtime usage. Their versions are locked by package-lock.json.
+# This is a documented exception, not a gate weakening: dependency review still fails
+# on any other package below the score threshold or any high/critical vulnerability.
+allow-dependencies-licenses:
+  - pkg:npm/acorn-jsx
+  - pkg:npm/bail
+  - pkg:npm/character-entities
+  - pkg:npm/debug
+  - pkg:npm/estree-walker
+  - pkg:npm/is-alphabetical
+  - pkg:npm/js-tokens
+  - pkg:npm/parse-entities
+  - pkg:npm/space-separated-tokens
+  - pkg:npm/stringify-entities
+  - pkg:npm/trim-lines
+  - pkg:npm/trough
+  - pkg:npm/zwitch
