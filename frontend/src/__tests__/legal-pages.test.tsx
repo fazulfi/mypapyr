@@ -34,6 +34,7 @@ describe("legal page copy (internal compliance audit, decision 4)", () => {
     const claims = {
       en: {
         retention: "Cloudflare R2",
+        retentionDuration: "deleted within 1 hour",
         browser: "Merge PDF, Split PDF",
         analytics: "anonymous, aggregated page views without cookies",
         optOut: "Do Not Track and Global Privacy Control",
@@ -41,6 +42,7 @@ describe("legal page copy (internal compliance audit, decision 4)", () => {
       },
       es: {
         retention: "Cloudflare R2",
+        retentionDuration: "en un plazo de 1 hora",
         browser: "Unir PDF y Dividir PDF",
         analytics: "visitas anónimas y agregadas sin cookies",
         optOut: "Do Not Track y Global Privacy Control",
@@ -48,6 +50,7 @@ describe("legal page copy (internal compliance audit, decision 4)", () => {
       },
       id: {
         retention: "Cloudflare R2",
+        retentionDuration: "dihapus dalam 1 jam",
         browser: "Gabung PDF, Pisah PDF",
         analytics: "kunjungan halaman secara anonim dan agregat tanpa cookie",
         optOut: "Do Not Track serta Global Privacy Control",
@@ -63,6 +66,7 @@ describe("legal page copy (internal compliance audit, decision 4)", () => {
         .flatMap((section) => section.paragraphs)
         .join(" ");
       expect(privacy).toContain(copy.retention);
+      expect(privacy).toContain(copy.retentionDuration);
       expect(privacy).toContain(copy.browser);
       expect(privacy).toContain(copy.analytics);
       expect(privacy).toContain("privacy@mypapyr.com");
