@@ -7,6 +7,22 @@ import { LegalVersionFooter } from "@/components/legal-version-footer";
 
 export type LegalSectionsKey = "privacy" | "terms" | "cookiesAdvertising";
 
+function renderParagraph(paragraph: string): React.ReactNode {
+  const parts = paragraph.split("privacy@mypapyr.com");
+  if (parts.length === 1) return paragraph;
+
+  return parts.flatMap((part, index) =>
+    index === parts.length - 1
+      ? [part]
+      : [
+          part,
+          <a key={`privacy-email-${index}`} href="mailto:privacy@mypapyr.com">
+            privacy@mypapyr.com
+          </a>,
+        ],
+  );
+}
+
 export function LegalPageContent({
   copy,
   locale,
@@ -17,6 +33,7 @@ export function LegalPageContent({
   sectionsKey: LegalSectionsKey;
 }): React.ReactElement {
   const sections = getMessages(locale).legal.sections[sectionsKey];
+  const adSlug = sectionsKey === "cookiesAdvertising" ? "cookies-advertising" : sectionsKey;
   return (
     <article className="mx-auto max-w-3xl">
       <h1>{copy.title}</h1>
@@ -31,22 +48,14 @@ export function LegalPageContent({
           <h2>{section.heading}</h2>
           {section.paragraphs.map((paragraph, index) => (
             <p key={index} className="mt-2">
-              {paragraph.includes("privacy@mypapyr.com") ? (
-                <>
-                  {paragraph.split("privacy@mypapyr.com")[0]}
-                  <a href="mailto:privacy@mypapyr.com">privacy@mypapyr.com</a>
-                  {paragraph.split("privacy@mypapyr.com")[1]}
-                </>
-              ) : (
-                paragraph
-              )}
+              {renderParagraph(paragraph)}
             </p>
           ))}
         </section>
       ))}
       <LegalVersionFooter locale={locale} />
       <div className="mt-10 max-w-full overflow-hidden" aria-label={copy.adLabel}>
-        <AdSlot pageSlug={sectionsKey} immediate unit="banner-468x60" label={copy.adLabel} />
+        <AdSlot pageSlug={adSlug} immediate unit="banner-468x60" label={copy.adLabel} />
       </div>
     </article>
   );

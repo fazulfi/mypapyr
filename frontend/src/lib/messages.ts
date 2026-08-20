@@ -392,7 +392,7 @@ export const messages = {
           {
             heading: "Security",
             paragraphs: [
-              "All transfers use HTTPS. Download links are signed and expire within 1 hour. Our servers never log file contents, object keys, or signed URLs.",
+              "All transfers use HTTPS. Download links are signed and expire within 5 minutes. Our servers never log file contents, object keys, or signed URLs.",
             ],
           },
           {
@@ -404,7 +404,7 @@ export const messages = {
           {
             heading: "Service",
             paragraphs: [
-              "Papyr provides free browser-based PDF utilities at budgezen.com: compress, merge, split, JPG to PDF, and PDF to JPG.",
+              "Papyr provides browser-based PDF utilities at budgezen.com with no account or payment required: compress, merge, split, JPG to PDF, and PDF to JPG.",
             ],
           },
           {
@@ -892,7 +892,7 @@ export const messages = {
           {
             heading: "Seguridad",
             paragraphs: [
-              "Todas las transferencias usan HTTPS. Los enlaces de descarga están firmados y caducan en un plazo de 1 hora. Nuestros servidores nunca registran el contenido de los archivos, las claves de objetos ni las URL firmadas.",
+              "Todas las transferencias usan HTTPS. Los enlaces de descarga están firmados y caducan en un plazo de 5 minutos. Nuestros servidores nunca registran el contenido de los archivos, las claves de objetos ni las URL firmadas.",
             ],
           },
           {
@@ -904,7 +904,7 @@ export const messages = {
           {
             heading: "Servicio",
             paragraphs: [
-              "Papyr ofrece herramientas PDF gratuitas basadas en el navegador en budgezen.com: comprimir, unir, dividir, JPG a PDF y PDF a JPG.",
+              "Papyr ofrece herramientas PDF basadas en el navegador en budgezen.com sin cuenta ni pago: comprimir, unir, dividir, JPG a PDF y PDF a JPG.",
             ],
           },
           {
@@ -1397,7 +1397,7 @@ export const messages = {
           {
             heading: "Keamanan",
             paragraphs: [
-              "Semua transfer menggunakan HTTPS. Link unduhan ditandatangani dan kedaluwarsa dalam 1 jam. Server kami tidak pernah mencatat isi file, kunci objek, atau signed URL.",
+              "Semua transfer menggunakan HTTPS. Link unduhan ditandatangani dan kedaluwarsa dalam 5 menit. Server kami tidak pernah mencatat isi file, kunci objek, atau signed URL.",
             ],
           },
           {
@@ -1409,7 +1409,7 @@ export const messages = {
           {
             heading: "Layanan",
             paragraphs: [
-              "Papyr menyediakan alat PDF gratis berbasis browser di budgezen.com: kompres, gabung, pisah, gambar ke PDF, dan PDF ke gambar.",
+              "Papyr menyediakan alat PDF berbasis browser di budgezen.com tanpa akun atau biaya: kompres, gabung, pisah, gambar ke PDF, dan PDF ke gambar.",
             ],
           },
           {
