@@ -8,6 +8,12 @@
 - [Integration inventory](../integrations.md)
 - [Product roadmap](../roadmap.md)
 
+## SEO governance
+
+- [SEO SLOs](../seo/seo-slo.md)
+- [Canonical slug table (57 indexable URLs)](../seo/slug-table.md)
+- [Legacy URL disposition inventory](../seo/legacy-url-inventory.md)
+
 ## Engineering policies
 
 - [Security policy](../../SECURITY.md)

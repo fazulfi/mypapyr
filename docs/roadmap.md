@@ -89,7 +89,7 @@ P9 is implemented on this feature branch and pending the authorized release proc
 - Fifteen localized articles covering 5 topics × 3 locales, each dated 2026-08-20 and attributed to Papyr Team.
 - `/blog` listing with five localized articles per locale, plus article sitemap entries; the sitemap now contains 57 URLs with per-article real `lastmod` values.
 
-Status: **In branch (PR #49)**. External indexing, ranking, and deployment remain NOT_VERIFIED.
+Status: **In branch (PR #49)**; the branch head `da6e94e` is additionally deployed to the VPS frontend as release `p9-da6e94e` (BUILD_ID `2nIWv0nNRIdkFQbh92Ueh`) ahead of merge, per the authorized release process. External indexing, ranking, and search-engine presence remain NOT_VERIFIED.
 
 ## Changelog notes
 
