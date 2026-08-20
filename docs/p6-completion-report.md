@@ -23,7 +23,7 @@
 
 - Backend: 1360 passed / 44 opt-in skips; coverage 89.38% (gate 80%); ruff check + format clean; mypy strict clean — verified locally and in isolated VPS containers at the CI pins.
 - Frontend: 780 tests / 52 files; coverage stmts 91.27% / branches 86.15% / funcs 91.71% / lines 93.10%; lint, format, typecheck, production build clean; Playwright E2E green (including the new ad-behavior spec and the ad-isolated a11y spec).
-- CI: all 20 jobs green on PR #46 — Backend trio, Frontend five (incl. new typecheck), Security (Trivy, gitleaks), Supply chain (dependency review, npm audit, pip-audit), QA (pins, compose, hadolint, markdownlint, image build+non-root smoke, shellcheck, yamllint).
+- CI at PR #46: all 20 jobs green — Backend trio, Frontend five (incl. new typecheck), Security (Trivy, gitleaks), Supply chain (dependency review, npm audit, pip-audit), QA (pins, compose, hadolint, markdownlint, image build+non-root smoke, shellcheck, yamllint). The current workflow has 23 jobs (22 on pushes to `main`) after later P7/P8 guard additions.
 - gitleaks full-history: clean (after allowlisting the retired `frontend/public/adtest.html` diagnostic page and renaming a test fixture variable).
 - markdownlint: clean on all tracked docs.
 

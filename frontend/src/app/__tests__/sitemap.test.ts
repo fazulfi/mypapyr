@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import sitemap, { BASE_URL } from "../sitemap";
+import sitemap, { BASE_URL, LAST_MODIFIED } from "../sitemap";
 import robots from "../robots";
+import { SEO_BASE_URL } from "../../lib/seo/alternates";
 import { toolCatalog } from "../../lib/catalog";
 import { LEGACY_ROUTING_PATHS, locales } from "../../lib/i18n";
+import { BLOG_ARTICLES } from "../../../content/blog/manifest";
 
 const SUPPORTING_SLUGS = [
   "faq",
@@ -19,15 +21,31 @@ const SUPPORTING_SLUGS = [
 describe("T8 sitemap", () => {
   it("uses the canonical production base URL for every entry", () => {
     expect(BASE_URL).toBe("https://budgezen.com");
+    expect(BASE_URL).toBe(SEO_BASE_URL);
     for (const entry of sitemap()) {
       expect(entry.url.startsWith(`${BASE_URL}/`)).toBe(true);
       expect(new URL(entry.url).host).toBe("budgezen.com");
     }
   });
 
-  it("contains 42 URLs = 14 public routes × 3 locales", () => {
+  it("contains 57 URLs = 19 public routes × 3 locales", () => {
     const entries = sitemap();
-    expect(entries).toHaveLength(42);
+    expect(entries).toHaveLength(57);
+  });
+
+  it("includes every blog article URL in all three locales with per-entry hreflang", () => {
+    const urls = sitemap().map((entry) => entry.url);
+    for (const article of BLOG_ARTICLES) {
+      for (const locale of locales) {
+        const url = `${BASE_URL}/${locale}/blog/${article.slugs[locale]}`;
+        expect(urls).toContain(url);
+        const entry = sitemap().find((candidate) => candidate.url === url);
+        expect(entry?.alternates?.languages?.["x-default"]).toBe(
+          `${BASE_URL}/en/blog/${article.slugs.en}`,
+        );
+        expect(entry?.lastModified).toBe(article.date);
+      }
+    }
   });
 
   it("leads with the homepage for all three locales at priority 1", () => {
@@ -103,6 +121,48 @@ describe("T8 sitemap", () => {
     expect(raw).not.toMatch(/https:\/\/(?!budgezen\.com)/);
     expect(raw).not.toContain("mypapyr.com");
     expect(raw).not.toContain("http://");
+  });
+
+  it("emits a committed, deterministic real lastmod on every entry", () => {
+    const first = sitemap();
+    const second = sitemap();
+    const articleLastModified = new Map<string, string>(
+      BLOG_ARTICLES.flatMap((article) =>
+        locales.map(
+          (locale) =>
+            [`${BASE_URL}/${locale}/blog/${article.slugs[locale]}`, article.date] as const,
+        ),
+      ),
+    );
+    for (const [index, entry] of first.entries()) {
+      const expectedLastModified = articleLastModified.get(entry.url) ?? LAST_MODIFIED;
+      expect(entry.lastModified).toBe(expectedLastModified);
+      expect(second[index].lastModified).toBe(expectedLastModified);
+    }
+  });
+
+  it("keeps lastModified as a valid ISO date string", () => {
+    for (const entry of sitemap()) {
+      const modified = entry.lastModified;
+      expect(typeof modified).toBe("string");
+      const parsed = new Date(String(modified));
+      expect(Number.isNaN(parsed.getTime())).toBe(false);
+      expect(String(modified).split("T")[0]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
+  });
+
+  it("never emits es-419 anywhere in the sitemap", () => {
+    const raw = JSON.stringify(sitemap());
+    expect(raw).not.toContain("es-419");
+  });
+
+  it("keeps locale vocabulary to exactly en/es/id with x-default to EN", () => {
+    for (const entry of sitemap()) {
+      const languages = entry.alternates?.languages ?? {};
+      const keys = Object.keys(languages).sort();
+      expect(keys).toEqual(["en", "es", "id", "x-default"]);
+      expect(languages["x-default"]).toBe(languages.en);
+    }
   });
 });
 

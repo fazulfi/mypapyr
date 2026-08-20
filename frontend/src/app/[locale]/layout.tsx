@@ -9,18 +9,17 @@ import { SkipLink } from "@/components/SkipLink";
 import { fontVariables } from "@/lib/fonts";
 import { isLocale, locales, type Locale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
+import { SEO_BASE_URL } from "@/lib/seo/alternates";
 
 import "../globals.css";
 
-const METADATA_BASE_URL = "https://budgezen.com";
-
-// PT01-G8 / WS-5 (SEO-03): absolute per-locale canonical/hreflang roots. Next
-// resolves `alternates` against metadataBase, so these are fully qualified
-// budgezen.com URLs; pages may narrow the root per-path via metadata merge (DEC-023).
+// PT01-G8 / WS-5 / P8-E (SEO-03): absolute per-locale canonical/hreflang roots.
+// Next resolves `alternates` against metadataBase, so these are fully qualified
+// budgezen.com URLs; nested pages narrow the root per-path via metadata merge.
 const LOCALE_ROOTS = {
-  en: `${METADATA_BASE_URL}/en`,
-  es: `${METADATA_BASE_URL}/es`,
-  id: `${METADATA_BASE_URL}/id`,
+  en: `${SEO_BASE_URL}/en`,
+  es: `${SEO_BASE_URL}/es`,
+  id: `${SEO_BASE_URL}/id`,
 } as const satisfies Record<Locale, string>;
 
 // Mirrored from canonical docs/assets/papyr-hero-light.svg (1200x400, 1.91:1).
@@ -54,7 +53,7 @@ export async function generateMetadata({
   }
   const copy = getMessages(locale);
   return {
-    metadataBase: new URL(METADATA_BASE_URL),
+    metadataBase: new URL(SEO_BASE_URL),
     title: copy.metadata.title,
     description: copy.metadata.description,
     icons: "/favicon.ico",

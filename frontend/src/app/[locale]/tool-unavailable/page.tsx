@@ -16,7 +16,11 @@ export async function generateMetadata({ params }: ToolUnavailablePageProps): Pr
     return {};
   }
   const copy = getMessages(locale);
-  return { title: copy.notFound.title, description: copy.notFound.description };
+  return {
+    title: copy.notFound.title,
+    description: copy.notFound.description,
+    robots: { index: false },
+  };
 }
 
 export default async function ToolUnavailablePage({

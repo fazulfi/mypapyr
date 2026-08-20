@@ -295,7 +295,7 @@ Status values are used consistently across the product and architecture specific
 | Frontend application foundation (shell, strict TypeScript, tooling, tests, build) | Available now | Repository `frontend/` |
 | Backend service foundation (app factory, strict configuration, health and readiness endpoints, request correlation, stable error envelope, validation schemas, server task state machine) | Available now | Repository `backend/` |
 | Deployment templates and environment placeholders | Available now | Repository `deploy/` |
-| Continuous integration with 20 required checks (quality, security and supply chain, repository QA) | Available now | Repository `.github/workflows/ci.yml` |
+| Continuous integration with 22 required checks (22 on pushes to `main`; quality, security and supply chain, repository QA) | Available now | Repository `.github/workflows/ci.yml` |
 | Shared trilingual shell: English, Spanish, and Indonesian locale routing, accessible navigation, supporting route shells, localized 404, and unit and E2E gates | Available now | Repository `frontend/src/` |
 | Legal, support, and status route shells (privacy, terms, cookies and advertising, contact, status, roadmap) | Available now | Repository `frontend/src/app/[locale]/` |
 | Blog route shell | Available now | Repository `frontend/src/app/[locale]/blog/` |
@@ -309,8 +309,14 @@ Status values are used consistently across the product and architecture specific
 | Server processing, queue, and bounded workers | Deployed | Architecture specification; roadmap |
 | Compress server path with the Ghostscript subprocess boundary | Deployed | Architecture specification; roadmap |
 | Analytics and error boundaries | Deployed | This document, Sections 9 and 10; roadmap |
+| PT-01 privacy-reviewed analytics schema, redaction, and leakage tests | Deployed | PR #46; release `p6-ads-all-1786954951`; roadmap |
+| PT-02 reserved-dimension advertising placement and gating | Deployed | PR #46; release `p6-ads-all-1786954951`; roadmap |
+| PT-03 categorized contact and result-problem support path | Deployed | PR #46; release `p6-complete-1786951216`; roadmap |
+| PT-04 memory-only encrypted-PDF password handling | Deployed | PR #46; releases `p6-complete-1786951216` / `p6-ads-all-1786954951`; roadmap |
+| P7 operational observability, alerts, relay, and backup work | In branch | `feat/full-p7-enterprise-completion`, PR #47 open/conflicted; not merged or deployed |
+| P8 SEO-01/02/03 URL governance and metadata implementation | In branch | `feat/full-p8-seo-url-migration`; no commit/PR/release/deployment in this work |
+| P9 — Content, Legal & Blog | In branch | PR #49 |
 | Full legal, support, and status content and functionality | Planned | Roadmap |
-| Blog publishing programme | Planned | Roadmap |
 
 ## 14. Non-goals for the launch catalogue
 

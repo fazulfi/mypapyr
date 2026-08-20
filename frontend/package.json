@@ -15,11 +15,13 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@swc/helpers": "0.5.23",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "fflate": "0.8.2",
     "next": "^16.2.12",
     "next-intl": "^4.13.5",
+    "next-mdx-remote": "6.0.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "sharp": "^0.35.0"
@@ -27,6 +29,7 @@
   "devDependencies": {
     "@playwright/test": "1.62.1",
     "@tailwindcss/postcss": "4.3.3",
+    "@tailwindcss/typography": "0.5.20",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "22.10.0",

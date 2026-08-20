@@ -6,7 +6,7 @@
 </picture>
 
 <p align="center">
-  <a href=".github/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/fazulfi/mypapyr/ci.yml?branch=main&label=CI&logo=github" alt="CI: 20 quality, security, and repository QA checks (19 on pushes to main)"></a>
+  <a href=".github/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/fazulfi/mypapyr/ci.yml?branch=main&label=CI&logo=github" alt="CI: 23 quality, security, and repository QA checks (22 on pushes to main)"></a>
   <img src="https://img.shields.io/badge/backend%20coverage-%E2%89%A580%25%20gate-2F855A" alt="Backend coverage gate — at least 80 percent">
   <img src="https://img.shields.io/badge/Trivy-CRITICAL%2FHIGH%20scan-34495E" alt="Trivy scans for critical and high severity findings">
   <img src="https://img.shields.io/badge/gitleaks-full%20history%20scan-34495E" alt="gitleaks scans full repository history for secrets">
@@ -23,7 +23,7 @@
 
 **Fast, private PDF tools.** Compress, merge, split, convert — five focused utilities that respect the user's time, files, and language. No accounts. No cloud history. Browser-first processing, with an explicit server path where native engines are required.
 
-Papyr is a specification-first platform. This repository is the tested engineering foundation for the product: a strict Next.js web application with a shared trilingual shell, a typed FastAPI service, deployment templates, and security-gated continuous integration. The shared trilingual shell is available: English, Spanish, and Indonesian locale routing, accessible navigation, supporting route shells, and a localized 404 are implemented and tested. The five PDF tool workflows (compress, merge, split, JPG to PDF, PDF to JPG) are implemented and tested with localized routes, and the backend service contracts — upload/enqueue endpoints, worker processing, threat scanning, R2 object lifecycle, cleanup coordination, and monitoring services — are implemented and passing local gates. The Phase 5/6 baseline is merged to `main` (PR #24) and deployed to production on 2026-08-15 (release 1767ca8). The complete Phase 6 enterprise scope — PT-04 merge-password wiring, ad-placement E2E, SEO/hreflang, and documentation reconciliation — shipped via PR #46, deployed 2026-08-17: frontend release `p6-ads-all-1786954951` (BUILD_ID `HHzujraVbxQa5Q0LcI4dZ`) served from the VPS (mypapyr.com) and backend release `p6-complete-1786951216` on api.mypapyr.com, with budgezen.com continuing on Vercel. Progress is tracked on the [roadmap](docs/roadmap.md).
+Papyr is a specification-first platform. This repository is the tested engineering foundation for the product: a strict Next.js web application with a shared trilingual shell, a typed FastAPI service, deployment templates, and security-gated continuous integration. The shared trilingual shell is available: English, Spanish, and Indonesian locale routing, accessible navigation, supporting route shells, and a localized 404 are implemented and tested. The five PDF tool workflows (compress, merge, split, JPG to PDF, PDF to JPG) are implemented and tested with localized routes, and the backend service contracts — upload/enqueue endpoints, worker processing, threat scanning, R2 object lifecycle, cleanup coordination, and monitoring services — are implemented and passing local gates. The Phase 5/6 baseline is merged to `main` (PR #24) and deployed to production on 2026-08-15 (release 1767ca8). The complete Phase 6 enterprise scope — PT-04 merge-password wiring, ad-placement E2E, SEO/hreflang, and documentation reconciliation — shipped via PR #46 and remains the deployed baseline. PR #48 adds the canonical SEO/URL migration: `budgezen.com` is the confirmed primary production target, while `mypapyr.com` remains a legacy alias until fresh redirect evidence proves otherwise. The API origin remains `api.mypapyr.com`. Phase 9 (PR #49, in branch) delivers the legal revision with versioned footers, a pure-MDX trilingual blog with 15 localized articles, article and listing routes, sitemap entries, and content CI gates. Progress is tracked on the [roadmap](docs/roadmap.md).
 
 **Start here:** [Product specification](docs/specifications/product.md) · [Technical architecture specification](docs/specifications/architecture.md)
 
@@ -64,7 +64,7 @@ Papyr labels every claim so the repository can be read honestly: the source tree
 | Next.js application foundation with strict TypeScript, lint, format, unit-test, E2E, and build gates | Available now |
 | Shared trilingual shell: English, Spanish, and Indonesian locale routing with persistent preference, Navbar, Footer, LanguageSwitcher, and SkipLink navigation, a localized homepage, supporting route shells, and a localized 404, with unit and Playwright E2E gates | Available now |
 | Legal, support, and status route shells (privacy, terms, cookies and advertising, contact, status, roadmap) | Available now |
-| Blog route shell | Available now |
+| Blog publishing programme: 15 trilingual MDX articles (5 topics × en/es/id), listing, article pages, sitemap entries, and content CI gates | In branch |
 | Typed FastAPI service foundation: app factory, strict configuration, request correlation, stable error envelope, validation schemas, task state machine, and health and readiness endpoints | Available now |
 | Public-safe Docker Compose, Nginx, and environment templates | Available now |
 | CI quality, security, and repository QA gates: format, lint, coverage, build, Playwright E2E, Trivy, gitleaks, dependency and package audits, and QA checks for action pins, Dockerfiles, Compose, YAML, markdown, and shell | Available now |
@@ -83,7 +83,7 @@ Papyr labels every claim so the repository can be read honestly: the source tree
 | Categorized contact form and result-problem report with anti-spam (PT-03) | Deployed |
 | Memory-only encrypted-PDF password handling (PT-04) | Deployed |
 | Backend contact delivery endpoint with server-side validation, rate limiting, Turnstile siteverify, and Cloudflare Email Sending (PT-03) | Deployed |
-| Blog publishing programme | Planned |
+| Blog publishing programme: 15 trilingual MDX articles (5 topics × en/es/id), listing, article pages, sitemap entries, and content CI gates | In branch |
 | Redis queue and bounded worker processing | Available now |
 | Privacy-safe structured logging and minimal-metadata task records | Available now |
 | Production deployment and release procedures | Deployed |
@@ -94,7 +94,7 @@ Papyr separates four concerns: the web application, the API control plane, the p
 
 ```mermaid
 flowchart LR
-    U["User browser"] --> W["Next.js web application (VPS-served at mypapyr.com; budgezen.com on Vercel)"]
+    U["User browser"] --> W["Next.js web application (canonical production host: budgezen.com)"]
     W -->|"browser-capable operations"| B["PDF libraries in the browser"]
     W -->|"server path, disclosed before upload"| E["Cloudflare edge (DNS, TLS, routing)"]
     E --> A["FastAPI control plane behind Nginx"]
@@ -185,7 +185,7 @@ The unified Compose topology (`deploy/docker-compose.yml`) declares `api` (profi
 
 Papyr deploys in two parts, and CI is never the deployment mechanism.
 
-- **Frontend — a VPS behind Nginx (mypapyr.com).** The Next.js application runs on the VPS via a systemd unit (`mypapyr-web`) serving on port 3017, with Nginx terminating the public `mypapyr.com` origin. The client always issues **same-origin** `/api/v1/*` requests; `frontend/next.config.ts` rewrites them to the backend origin from the build-time `NEXT_PUBLIC_API_BASE_URL` variable (default `https://api.mypapyr.com`). No CORS is needed in production because requests never leave the frontend origin. The older `budgezen.com` build remains served from Vercel.
+- **Frontend — canonical production host `budgezen.com`.** The Next.js application is served by the existing Vercel project and Cloudflare edge under `budgezen.com`. The client issues **same-origin** `/api/v1/*` requests; `frontend/next.config.ts` rewrites them to the backend origin from the build-time `NEXT_PUBLIC_API_BASE_URL` variable (default `https://api.mypapyr.com`). No CORS is needed in production because requests never leave the frontend origin. `mypapyr.com` is retained as a legacy domain; its redirect behavior is an external edge concern and is NOT_VERIFIED unless directly observed.
 - **Backend — a VPS behind Nginx.** The FastAPI service runs on the same VPS via Docker Compose (project `papyr-app`, port 3016 → 3000) with immutable digest images. Nginx terminates the public `api.mypapyr.com` origin and proxies to FastAPI on port 3000. Images are supplied at deploy time as immutable digest-form references (`PAPYR_API_IMAGE`, `PAPYR_WORKERS_IMAGE`, `PAPYR_CLAMD_IMAGE`); no digest is stored in source.
 - **Rollback.** A rollout is a pointer move: redeploy the previous digest for the affected service. No database migration is involved in the current topology.
 
@@ -229,4 +229,4 @@ This repository has no declared license. No `LICENSE` file is present, and the o
 
 Papyr is under active development. The Phase 5/6 baseline and the Phase 6 enterprise completion (PT-04 passwords, ads E2E, SEO, docs) are deployed to production; remaining platform services (alerting, email/Turnstile credential provisioning, R2 lifecycle application, budgezen.com alias promotion) are tracked as manual operator actions. Specifications and roadmap entries describe intended behaviour — not guaranteed delivery dates and not currently available features.
 
-The project does not claim legal compliance, certification, guaranteed malware removal, or suitability for a particular jurisdiction, security model, or regulated use case. Review the source, tests, and third-party dependencies for your own requirements before deployment.
+The project does not claim legal compliance, certification, guaranteed malware removal, or suitability for a particular jurisdiction, security model, or regulated use case. External indexing, ranking, and R-25 traffic remain NOT_VERIFIED. Review the source, tests, and third-party dependencies for your own requirements before deployment.

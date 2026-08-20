@@ -110,7 +110,7 @@ describe("SH-08 supporting surface shells", () => {
     for (const { Component } of supportingPages) {
       for (const locale of locales) {
         const markup = await renderPage(Component, locale);
-        expect(markup).not.toMatch(/<a\b/);
+        expect(markup).not.toMatch(/href="#"/);
         expect(markup).not.toContain('href="#');
       }
     }
@@ -144,7 +144,7 @@ describe("SH-08 supporting surface shells", () => {
         const nav = markup.indexOf("<nav");
         const main = markup.indexOf("<main");
         const mainClose = markup.indexOf("</main>");
-        const footer = markup.indexOf("<footer");
+        const footer = markup.lastIndexOf("<footer");
         expect(nav).toBeGreaterThan(-1);
         expect(nav).toBeLessThan(main);
         expect(footer).toBeGreaterThan(mainClose);
@@ -240,19 +240,19 @@ describe("SH-08 page-shell message resources", () => {
     }
   });
 
-  it("marks scope statements of pending pages as informational shells", () => {
+  it("keeps legal and supporting scope statements free of shell wording", () => {
     for (const key of ["terms", "status", "roadmap", "blog"] as const) {
-      expect(messages.en.pages[key].description).toContain("informational shell");
-      expect(messages.en.pages[key].description).toContain("later phase");
-      expect(messages.es.pages[key].description).toContain("marco informativo");
-      expect(messages.es.pages[key].description).toContain("fase posterior");
-      expect(messages.id.pages[key].description).toContain("kerangka informasi");
-      expect(messages.id.pages[key].description).toContain("fase berikutnya");
+      expect(messages.en.pages[key].description).not.toContain("informational shell");
+      expect(messages.en.pages[key].description).not.toContain("later phase");
+      expect(messages.es.pages[key].description).not.toContain("marco informativo");
+      expect(messages.es.pages[key].description).not.toContain("fase posterior");
+      expect(messages.id.pages[key].description).not.toContain("kerangka informasi");
+      expect(messages.id.pages[key].description).not.toContain("fase berikutnya");
     }
   });
 
   it("describes shipped pages with accurate scope statements", () => {
-    for (const key of ["contact", "cookiesAdvertising"] as const) {
+    for (const key of ["terms", "contact", "cookiesAdvertising"] as const) {
       expect(messages.en.pages[key].description).not.toContain("informational shell");
       expect(messages.en.pages[key].description).not.toContain("later phase");
     }

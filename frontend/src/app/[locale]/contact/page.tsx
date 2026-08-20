@@ -1,6 +1,20 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+
+import { isLocale } from "@/lib/i18n";
+import { supportingPageMetadata } from "@/lib/seo/alternates";
 import { resolveSupportingPageCopy, type SupportingPageProps } from "@/components/supporting-page";
 import { ContactForm } from "@/components/support/ContactForm";
 import { AdSlot } from "@/components/ads/AdSlot";
+
+export async function generateMetadata({ params }: SupportingPageProps): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) {
+    notFound();
+  }
+  const copy = await resolveSupportingPageCopy(params, "contact");
+  return supportingPageMetadata(locale, "contact", copy.title, copy.description);
+}
 
 /**
  * PT-03 Contact page.

@@ -2,6 +2,14 @@
 
 All notable changes to this project are tracked here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once a release version is cut. Branch-level work during a release cycle is recorded here before merge.
 
+## [Unreleased] — Phase 9 (Content, Legal & Blog)
+
+- Phase 9 (in branch): legal page revision with version footers (DEC-045), pure-MDX blog with 15 localized articles, CI blog-content gates, /blog listing, article sitemap entries.
+
+## [Unreleased] — Phase 8 (SEO and URL migration)
+
+Phase 8 (SEO-01 governance, SEO-02 redirects/localized 410, SEO-03 canonical/hreflang/lastmod polish, documentation reconciliation, and the VPS legacy-host cutover) is implemented on branch `feat/full-p8-seo-url-migration`. The VPS cutover is live: `mypapyr.com` and `www.mypapyr.com` return host-level 308 responses to `https://budgezen.com$request_uri`; `budgezen.com` remains on Vercel and untouched. External indexing, ranking, and R-25 traffic evidence remain NOT_VERIFIED. CI is **22 jobs (22 on pushes to main)**, including the `qa-seo-inventory` guard for `docs/seo/` drift and the `qa-blog-content` guard for `frontend/content/blog/` drift. Phase 7 (ops guard jobs `qa-monitoring`, `qa-telegram-relay`, `qa-backup`) remains in branch `feat/full-p7-enterprise-completion`, PR #47 open, unmerged; its guard jobs are counted in the 23-job total per the documentation audit's ground-truth measurement.
+
 ## [Unreleased] — Phase 6 enterprise completion
 
 Phase 6 enterprise completion closes the remaining Phase 6 scope: PT-04 merge-password wiring, ad-placement E2E, SEO/hreflang, and documentation reconciliation. Merged via PR #46 and deployed 2026-08-17 as backend release `p6-complete-1786951216` and frontend release `p6-ads-all-1786954951` (BUILD_ID `HHzujraVbxQa5Q0LcI4dZ`). Verified by 780 frontend tests across 52 files (statements 91.27%, branches 86.15%, functions 91.71%, lines 93.10%) and 1360 backend tests with 44 opt-in skips (coverage 89.38%, gate 80%).
@@ -12,13 +20,13 @@ Phase 6 enterprise completion closes the remaining Phase 6 scope: PT-04 merge-pa
 - **Ad-placement E2E and all-pages ad policy** — `e2e/ad-behavior.spec.ts` (presence/absence, DNT/GPC gating, house-promo fallback) plus an a11y E2E spec isolated from the third-party ad network. One symmetric ad slot per page (owner decision 2026-08-17): box-300x250 on the homepage (immediate) and on the five tool pages after the result phase, banner-468x60 on the supporting pages (contact, privacy, terms, cookies-advertising, roadmap, faq, status, blog).
 - **SEO (ADR-06)** — hreflang alternates + canonical in `generateMetadata`, per-locale sitemap (42 URLs), robots alignment, and tests.
 - **Privacy leakage suite refresh** — `frontend/src/__tests__/leakage.test.ts` holds 26 tests covering the closed-field schema and redaction contracts (PT-01).
-- **Typecheck hardening (ADR-09)** — fixed 5 pre-existing `tsc --noEmit` errors and added a new `frontend-typecheck` CI job (CI is now 20 jobs, 19 on pushes to main).
+- **Typecheck hardening (ADR-09)** — fixed 5 pre-existing `tsc --noEmit` errors and added a new `frontend-typecheck` CI job (CI is 22 jobs, all on pushes to main).
 - **Documentation reconciliation** — roadmap self-contradiction removed; README capability table and legend, product/architecture specifications, AGENTS.md facts, integrations inventory, API reference (merge `password_<i>` fields), and SECURITY.md aligned with the deployed state.
 
 ### Changed
 
 - **All-pages advertising policy** — supersedes the prior status/legal/support exclusion (DEC-130): the 8 supporting pages render a banner-468x60 immediately via the shared `SupportingPageContent` container; ads remain gated by DNT/GPC (`isAdEnabled`) and never appear beside the Download control.
-- **CI** — 20 jobs (19 on pushes to main, +1 `frontend-typecheck`); branch protection requires 7 status checks.
+- **CI** — 22 jobs (22 on pushes to main, including `frontend-typecheck`, `qa-seo-inventory`, and `qa-blog-content`); branch protection requires 7 status checks.
 
 ## [Unreleased] — branch `feat/phase-5-production-readiness`
 
@@ -47,7 +55,7 @@ Phase 5 hardens the platform toward production readiness: five-tool completion e
 
 ### Changed
 
-- **CI** — aligned the frontend build/e2e env var name to `NEXT_PUBLIC_API_BASE_URL` (was the mismatched `NEXT_PUBLIC_API_URL`, which never reached the rewrite). 20 CI jobs, CI-without-CD.
+- **CI** — aligned the frontend build/e2e env var name to `NEXT_PUBLIC_API_BASE_URL` (was the mismatched `NEXT_PUBLIC_API_URL`, which never reached the rewrite). 20 CI jobs, CI-without-CD (count at the time; later 23 incl. P7 ops guards per the documentation audit).
 - README/SECURITY capability claims aligned with branch state; roadmap records branch and correction note.
 
 ### Removed

@@ -53,7 +53,7 @@ Server job:
 | Storage | Cloudflare R2 client with opaque keys, presigned downloads, cleanup coordination, and a lifecycle rule template; live lifecycle rule applied at release | One-hour temporary-object lifecycle safety net in production |
 | Edge and proxy | Nginx server-block template with `__SET_ME__` placeholders only | Hardened Nginx reverse proxy behind Cloudflare |
 | Monitoring | Monitor and cleanup operations entrypoints; incident alerting not yet configured | Host resource monitoring, external uptime checks, automated status experience, incident alerts |
-| Delivery | CI with 20 required checks (19 on pushes to main, where the PR-only dependency review is skipped) and no deployment steps | Twenty required CI checks with no deployment steps; separately authorized release and deployment procedures |
+| Delivery | CI with 23 required checks (22 on pushes to main, where the PR-only dependency review is skipped) and no deployment steps | Twenty-three required CI checks with no deployment steps; separately authorized release and deployment procedures |
 
 ## 4. Component boundaries
 
@@ -275,7 +275,7 @@ The target backend topology is Nginx, FastAPI, Redis, and bounded workers in one
 CI is continuous integration only. The repository CI:
 
 - Runs on every push and pull request to the main branch.
-- Requires 20 checks on pull requests (19 on pushes to main, where the PR-only dependency review is skipped), across three groups: core quality (frontend format and lint, frontend unit tests with coverage, frontend production build, Playwright E2E, backend lint and format, backend strict mypy, backend tests with an 80 percent coverage floor), security and supply chain (Trivy filesystem and configuration scan, gitleaks full-history secret scan, dependency review, npm audit, pip audit), and repository QA (action pin verification, Dockerfile lint, production-image build and non-root smoke, Compose structural validation, workflow YAML lint, markdownlint, shellcheck).
+- Requires 23 checks on pull requests (22 on pushes to main, where the PR-only dependency review is skipped), across three groups: core quality (frontend format and lint, frontend unit tests with coverage, frontend production build, Playwright E2E, backend lint and format, backend strict mypy, backend tests with an 80 percent coverage floor), security and supply chain (Trivy filesystem and configuration scan, gitleaks full-history secret scan, dependency review, npm audit, pip audit), and repository QA (action pin verification, Dockerfile lint, production-image build and non-root smoke, Compose structural validation, workflow YAML lint, markdownlint, shellcheck).
 - Third-party actions are pinned to immutable commit SHAs.
 - Jobs use least-privilege read-only permissions and do not persist checkout credentials.
 - Contains no deployment steps and consumes no production credentials.

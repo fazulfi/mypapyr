@@ -1,12 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import {
-  LEGACY_ROUTING_PATHS,
-  LOCALE_COOKIE,
-  getLocaleRedirectPath,
-  isLocale,
-  resolveLocale,
-} from "./lib/i18n";
+import { LOCALE_COOKIE, getLocaleRedirectPath, isLocale, resolveLocale } from "./lib/i18n";
+import { SEO_BASE_URL } from "./lib/seo/alternates";
+import { getMessages } from "./lib/messages";
+import { deferredToolId, localizedToolLabel, redirectTargetFor } from "./lib/seo-redirects";
 import { resolveRouteAlias } from "./lib/route-aliases";
 
 export const config = {
@@ -15,17 +12,75 @@ export const config = {
   ],
 };
 
+export const CANONICAL_ORIGIN = "https://budgezen.com";
+
 export function isSafeRedirectPath(path: string): boolean {
   return (
     path.startsWith("/") && !path.startsWith("//") && !path.includes("\\") && !/[\r\n]/.test(path)
   );
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function buildGoneResponse(request: NextRequest, toolId: string): NextResponse {
+  const locale = resolveLocale(
+    request.cookies.get(LOCALE_COOKIE)?.value,
+    request.headers.get("accept-language"),
+  );
+  const copy = getMessages(locale);
+  const toolLabel = localizedToolLabel(locale, toolId);
+  const home = `/${locale}`;
+  const title = escapeHtml(copy.gone.title);
+  const html = [
+    "<!doctype html>",
+    `<html lang="${locale}">`,
+    "<head>",
+    '<meta charset="utf-8">',
+    `<title>${title}</title>`,
+    '<meta name="robots" content="noindex, nofollow">',
+    "</head>",
+    "<body>",
+    '<main id="main-content" tabindex="-1">',
+    `<h1>${title}</h1>`,
+    `<p>${escapeHtml(toolLabel)} ${escapeHtml(copy.gone.description)}</p>`,
+    `<a href="${home}">${escapeHtml(copy.nav.home)}</a>`,
+    "</main>",
+    "</body>",
+    "</html>",
+  ].join("");
+  return new NextResponse(html, {
+    status: 410,
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "no-store, no-cache, must-revalidate",
+    },
+  });
+}
+
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
 
-  if (LEGACY_ROUTING_PATHS.has(pathname)) {
-    return NextResponse.next();
+  const locale = resolveLocale(
+    request.cookies.get(LOCALE_COOKIE)?.value,
+    request.headers.get("accept-language"),
+  );
+
+  const activeTarget = redirectTargetFor(pathname, locale);
+  if (activeTarget !== null) {
+    const url = new URL(activeTarget, SEO_BASE_URL);
+    url.search = request.nextUrl.search;
+    return NextResponse.redirect(url, 301);
+  }
+
+  const toolId = deferredToolId(pathname);
+  if (toolId !== null) {
+    return buildGoneResponse(request, toolId);
   }
 
   // The redirect Location is shaped from the raw pathname; refuse pathnames
@@ -46,11 +101,6 @@ export function proxy(request: NextRequest): NextResponse {
     }
     return NextResponse.next();
   }
-
-  const locale = resolveLocale(
-    request.cookies.get(LOCALE_COOKIE)?.value,
-    request.headers.get("accept-language"),
-  );
 
   const targetPath = getLocaleRedirectPath(pathname, locale);
   if (targetPath === null) {

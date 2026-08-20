@@ -158,6 +158,26 @@ Browser ── /api/v1/* (same-origin) ──> Next.js rewrite (next.config.ts)
 - Retain the fail-closed `default_server → 444` block so an unknown Host is dropped.
 - Keep the VPS firewall (e.g. `ufw`/Cloudflare) open only on `:443` (TLS) for the origin.
 
+### Legacy frontend host cutover
+
+The live frontend vhost is `/etc/nginx/sites-available/mypapyr` (enabled as
+`/etc/nginx/sites-enabled/mypapyr`) and proxies `mypapyr.com` and
+`www.mypapyr.com` to the systemd Next.js service on `:3017`. The final legacy
+cutover is intentionally host-scoped: both its HTTP and HTTPS server blocks
+must contain exactly `location / { return 308 https://budgezen.com$request_uri; }`.
+Do not add `budgezen.com` to the VPS config, redirect `api.mypapyr.com`, change
+DNS/Cloudflare, or use a path-specific destination. Preserve the existing
+`/etc/nginx/sites-available/mypapyr.bak-cutover-<UTC timestamp>` backup.
+
+Run `sudo nginx -t` and capture its output before `sudo systemctl reload nginx`.
+If the test fails, do not reload; restore the timestamped backup and retest.
+After reload, verify both apex and `www` through the Cloudflare edge with
+`curl -I --max-redirs 0`, including a path with a query, `/faq`, and `/rotate`.
+Each HTTPS request must return 308 with `Location: https://budgezen.com$request_uri`.
+HTTP requests may first receive Cloudflare's HTTP-to-HTTPS redirect; follow the
+HTTPS hop separately. Verify `budgezen.com` root, `/en`, a tool page,
+`/sitemap.xml`, and `/robots.txt` remain healthy and do not loop.
+
 ### Verification
 
 After both sides are deployed:
