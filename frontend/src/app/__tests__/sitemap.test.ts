@@ -126,15 +126,18 @@ describe("T8 sitemap", () => {
   it("emits a committed, deterministic real lastmod on every entry", () => {
     const first = sitemap();
     const second = sitemap();
-    // Deterministic across calls — never build-time `new Date()`.
+    const articleLastModified = new Map<string, string>(
+      BLOG_ARTICLES.flatMap((article) =>
+        locales.map(
+          (locale) =>
+            [`${BASE_URL}/${locale}/blog/${article.slugs[locale]}`, article.date] as const,
+        ),
+      ),
+    );
     for (const [index, entry] of first.entries()) {
-      if (index < 42) {
-        expect(entry.lastModified).toBe(LAST_MODIFIED);
-        expect(second[index].lastModified).toBe(LAST_MODIFIED);
-      } else {
-        expect(entry.lastModified).toBe("2026-08-20");
-        expect(second[index].lastModified).toBe("2026-08-20");
-      }
+      const expectedLastModified = articleLastModified.get(entry.url) ?? LAST_MODIFIED;
+      expect(entry.lastModified).toBe(expectedLastModified);
+      expect(second[index].lastModified).toBe(expectedLastModified);
     }
   });
 

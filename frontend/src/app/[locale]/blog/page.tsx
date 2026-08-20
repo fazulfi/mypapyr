@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { AdSlot } from "@/components/ads/AdSlot";
+import type { SupportingPageProps } from "@/components/supporting-page";
 import { getArticlesByLocale, BLOG_AUTHOR } from "@/lib/blog";
 import { isLocale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
 import { supportingPageMetadata } from "@/lib/seo/alternates";
-import type { SupportingPageProps } from "@/components/supporting-page";
 
 export async function generateMetadata({ params }: SupportingPageProps): Promise<Metadata> {
   const { locale } = await params;
@@ -25,7 +26,9 @@ export default async function BlogListingPage({
     notFound();
   }
   const articles = getArticlesByLocale(locale);
-  const copy = getMessages(locale).pages.blog;
+  const messages = getMessages(locale);
+  const copy = messages.pages.blog;
+  const adLabel = messages.ads.label;
   return (
     <div className="mx-auto max-w-3xl">
       <h1>{copy.title}</h1>
@@ -46,6 +49,9 @@ export default async function BlogListingPage({
           </li>
         ))}
       </ul>
+      <div className="mt-8 max-w-full overflow-hidden" aria-label={adLabel}>
+        <AdSlot pageSlug="blog" immediate unit="banner-468x60" label={adLabel} />
+      </div>
     </div>
   );
 }
