@@ -1,6 +1,6 @@
 # Phase 8 SEO / URL Migration Completion Report
 
-- **Status:** In branch; documentation reconciliation complete in this worktree.
+- **Status:** In branch; documentation reconciliation complete in this worktree. DNS/Cloudflare configuration verified read-only, and the R-25 traffic baseline was captured on 2026-08-20; see [`docs/seo/seo-slo.md`](../seo/seo-slo.md).
 - **Branch:** `feat/full-p8-seo-url-migration`.
 - **Scope:** SEO-01 governance, SEO-02 legacy URL behavior, SEO-03 metadata/sitemap polish, and evidence-based documentation reconciliation.
 - **Release status:** No P8 commit, push, PR, or deployment was performed. P8 is not merged to `main` and is not a production release.
