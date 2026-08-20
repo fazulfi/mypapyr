@@ -40,31 +40,25 @@ describe("T8 full privacy page", () => {
     }
   });
 
-  it("renders exactly seven sections with localized headings for every locale", async () => {
+  it("renders the localized legal sections for every locale", async () => {
     for (const locale of locales) {
       const markup = await renderPrivacy(locale);
+      const sections = getMessages(locale).legal.sections.privacy;
       const sectionCount = (markup.match(/<section/g) ?? []).length;
-      expect(sectionCount).toBe(7);
-      const copy = getMessages(locale).privacyPage.sections;
-      const headings = [
-        copy.whatWeCollect.title,
-        copy.whatWeDontCollect.title,
-        copy.howLong.title,
-        copy.analytics.title,
-        copy.security.title,
-        copy.contact.title,
-      ];
-      for (const heading of headings) {
-        expect(markup).toContain(heading);
+      expect(sectionCount).toBe(sections.length);
+      for (const section of sections) {
+        expect(markup).toContain(section.heading);
       }
     }
   });
 
-  it("renders the intro paragraph for every locale", async () => {
+  it("renders the description and legal paragraphs for every locale", async () => {
     for (const locale of locales) {
       const markup = await renderPrivacy(locale);
+      const copy = getMessages(locale);
+      expect(textContent(markup)).toContain(textContent(copy.pages.privacy.description));
       expect(textContent(markup)).toContain(
-        textContent(getMessages(locale).privacyPage.sections.intro),
+        textContent(copy.legal.sections.privacy[0].paragraphs[0]),
       );
     }
   });
@@ -84,17 +78,10 @@ describe("T8 full privacy page", () => {
     }
   });
 
-  it("renders list items for collect, don't-collect, analytics, and security sections", async () => {
+  it("renders legal section content as paragraphs instead of list items", async () => {
     for (const locale of locales) {
       const markup = await renderPrivacy(locale);
-      const copy = getMessages(locale).privacyPage.sections;
-      const liCount = (markup.match(/<li/g) ?? []).length;
-      const expected =
-        copy.whatWeCollect.items.length +
-        copy.whatWeDontCollect.items.length +
-        copy.analytics.items.length +
-        copy.security.items.length;
-      expect(liCount).toBe(expected);
+      expect(markup).not.toContain("<li");
     }
   });
 

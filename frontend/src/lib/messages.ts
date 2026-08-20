@@ -124,7 +124,7 @@ export const messages = {
       terms: {
         title: "Terms of Service",
         description:
-          "The terms that govern your use of the free Papyr PDF tools: acceptable use, no warranty, and how to contact us.",
+          "The terms that govern your use of the Papyr PDF tools: acceptable use, no warranty, and how to contact us.",
       },
       cookiesAdvertising: {
         title: "Cookies & Advertising",
@@ -620,7 +620,7 @@ export const messages = {
       terms: {
         title: "Términos de servicio",
         description:
-          "Los términos que rigen el uso de las herramientas PDF gratuitas de Papyr: uso aceptable, ausencia de garantías y cómo contactarnos.",
+          "Los términos que rigen el uso de las herramientas PDF de Papyr: uso aceptable, ausencia de garantías y cómo contactarnos.",
       },
       cookiesAdvertising: {
         title: "Cookies y publicidad",
@@ -1123,7 +1123,7 @@ export const messages = {
       terms: {
         title: "Ketentuan Layanan",
         description:
-          "Ketentuan yang mengatur penggunaan alat PDF gratis Papyr: penggunaan yang dapat diterima, tanpa jaminan, dan cara menghubungi kami.",
+          "Ketentuan yang mengatur penggunaan alat PDF Papyr: penggunaan yang dapat diterima, tanpa jaminan, dan cara menghubungi kami.",
       },
       cookiesAdvertising: {
         title: "Cookie dan Iklan",
