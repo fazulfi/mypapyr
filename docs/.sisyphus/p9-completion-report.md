@@ -29,11 +29,10 @@ Phase 9 remains **in branch** pending PR review and merge. No deployment, indexi
 ## CI verification
 
 - PR: [#49](https://github.com/fazulfi/mypapyr/pull/49).
-- CI run URL: <https://github.com/fazulfi/mypapyr/actions/runs/32404838025>.
-- CI status: **failed; do not claim green**.
-- Green jobs: backend lint/type/test; frontend lint/typecheck/test/build/Playwright E2E; SEO and blog gates; action pins; Docker, Compose, hadolint, production API, shell, and YAML QA; Trivy; gitleaks; pip-audit.
-- Failed jobs: markdownlint (`MD012` at this report's former line 29), npm audit (high-severity `next-mdx-remote` advisory `GHSA-g4xw-jxrg-5f6m`), and dependency review (transitive MDX packages below the OpenSSF Scorecard threshold).
-- CI fixes prepared: upgraded `next-mdx-remote` from 5.0.0 to 6.0.0 to remove the high-severity advisory upstream; the `MDXRemote` RSC renderer API remains compatible. Added a documented dependency-review allowlist for exactly the 13 low-risk transitive `@mdx-js/mdx` text-processing and estree utilities, with locked versions and the high/critical gate unchanged.
+- CI run URL: <https://github.com/fazulfi/mypapyr/actions/runs/32407800421>.
+- CI status: **green** — all 22 jobs passed.
+- Green jobs: Frontend (Lint + Format); Frontend (TypeScript typecheck); Frontend (Vitest + Coverage); Frontend (Next.js production build); Frontend (Playwright E2E); Backend (Ruff lint + format); Backend (Strict mypy); Backend (Pytest + coverage threshold); Security (Trivy filesystem/config scan); Security (gitleaks secret scan); Supply chain (dependency review on PRs); Supply chain (npm audit); Supply chain (pip-audit); QA (action pin truth); QA (Dockerfile structure); QA (compose structural gate); QA (production API image build + non-root smoke + compose config); QA (yamllint CI YAML); QA (markdownlint); QA (shellcheck); QA (SEO inventory guard); QA (blog content gate).
+- CI fixes: upgraded `next-mdx-remote` from 5.0.0 to 6.0.0 to remove the high-severity advisory upstream; the `MDXRemote` RSC renderer API remains compatible. Added a documented dependency-review allowlist for exactly the 13 low-risk transitive `@mdx-js/mdx` text-processing and estree utilities, using v5's `allow-dependencies-licenses` PURL key; versions remain locked and the high/critical gate is unchanged.
 
 ## Concerns and boundaries
 
