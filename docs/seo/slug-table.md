@@ -62,19 +62,35 @@ rendered under every locale (`/{locale}/{slug}`). Machine-parse key: `| supporti
 | supporting | roadmap | /{locale}/roadmap |
 | supporting | blog | /{locale}/blog |
 
-## 5. Home route
+## 5. Blog article slugs (5 topics × 3 locales = 15 URL paths)
+
+Source of truth: `frontend/content/blog/manifest.ts` `BLOG_ARTICLES` (topics + per-locale slugs) and
+`frontend/src/lib/blog.ts` `getArticlesByLocale()`. Machine-parse key: each article row is
+`| article | <EN slug> | <en> | <es> | <id> |`; the manifest's localized slug map is authoritative
+for the per-locale path forms.
+
+| Type | EN slug | `/en/...` | `/es/...` | `/id/...` |
+| --- | --- | --- | --- | --- |
+| article | compress-pdf-guide | /en/blog/compress-pdf-guide | /es/blog/guia-comprimir-pdf | /id/blog/panduan-kompres-pdf |
+| article | merge-pdf-guide | /en/blog/merge-pdf-guide | /es/blog/guia-combinar-pdf | /id/blog/panduan-gabungkan-pdf |
+| article | split-pdf-guide | /en/blog/split-pdf-guide | /es/blog/guia-dividir-pdf | /id/blog/panduan-pisahkan-pdf |
+| article | jpg-to-pdf-guide | /en/blog/jpg-to-pdf-guide | /es/blog/guia-jpg-a-pdf | /id/blog/panduan-gambar-ke-pdf |
+| article | pdf-to-jpg-guide | /en/blog/pdf-to-jpg-guide | /es/blog/guia-pdf-a-jpg | /id/blog/panduan-pdf-ke-gambar |
+
+## 6. Home route
 
 | Type | Form |
 | --- | --- |
 | home | /{locale} (EN default `/en`) |
 
-## 6. Count invariant
+## 7. Count invariant
 
-**42 indexable URLs** = 15 tool paths (5 tools × 3 locales) + 24 supporting paths (8 supporting ×
-3 locales) + 3 home paths (3 locales). This invariant is asserted by `frontend/src/app/sitemap.ts`
-and `frontend/src/app/__tests__/sitemap.test.ts` and must not regress.
+**57 indexable URLs** = 15 tool paths (5 tools × 3 locales) + 24 supporting paths (8 supporting ×
+3 locales) + 15 article paths (5 articles × 3 locales) + 3 home paths (3 locales). This invariant
+is asserted by `frontend/src/app/sitemap.ts` and `frontend/src/app/__tests__/sitemap.test.ts` and
+must not regress.
 
-## 7. Non-indexable surfaces (excluded)
+## 8. Non-indexable surfaces (excluded)
 
 The following are **not** in this slug table and must never appear in the sitemap, canonical, or
 hreflang sets (DEC-194):

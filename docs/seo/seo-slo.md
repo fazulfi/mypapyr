@@ -14,7 +14,7 @@
 | --- | --- |
 | Target | All indexable `budgezen.com` pages are indexed by Google within 30 days of publication or canonical availability. |
 | Measurement source | Google Search Console Coverage and Performance reports. |
-| Baseline as of 2026-08-20 | **NOT_VERIFIED.** The `budgezen.com/sitemap.xml` read succeeded with 42 pages, based on the owner-provided screenshot read on 20 August 2026. Sitemap availability and count do not prove external indexing. |
+| Baseline as of 2026-08-20 | **NOT_VERIFIED.** The `budgezen.com/sitemap.xml` read succeeded with 57 pages (42 P8 routes + 15 P9 blog articles), based on the owner-provided screenshot read on 20 August 2026. Sitemap availability and count do not prove external indexing. |
 | Cadence | Weekly during the first 30 days after release, then monthly. |
 | Owner | Repository: maintainers verify the sitemap inventory and record evidence. Account owner: confirms GSC indexing and timing. |
 
@@ -26,7 +26,7 @@
 | --- | --- |
 | Target | Zero soft-404 responses and zero unintended `noindex` exclusions among pages designated as indexable. |
 | Measurement source | Google Search Console Coverage exclusions, plus the repository SEO inventory and crawl audit. |
-| Baseline as of 2026-08-20 | **NOT_VERIFIED.** Repository inventory records 42 intended indexable URLs, but no owner-confirmed GSC exclusion export or external crawl audit result is recorded here. |
+| Baseline as of 2026-08-20 | **NOT_VERIFIED.** Repository inventory records 57 intended indexable URLs (42 P8 routes + 15 P9 blog articles), but no owner-confirmed GSC exclusion export or external crawl audit result is recorded here. |
 | Cadence | Weekly while the migration settles, then monthly. |
 | Owner | Repository: maintainers run `scripts/check-seo-inventory.sh` and preserve crawl-audit results. Account owner: confirms GSC exclusions and any manual actions. |
 
@@ -85,7 +85,7 @@ These numbers are data only. They do not establish that legacy paths received tr
 
 - **NOT_VERIFIED:** Path-level traffic for each legacy URL. The supplied zone-level daily totals cannot identify traffic to `/compress`, `/merge`, `/split`, `/image-to-pdf`, `/pdf-to-image`, retired paths, or locale-less supporting paths.
 - **NOT_VERIFIED:** Complete 301/308/410 response coverage and loop-free behavior in production. The repository inventory and guard are not a production crawl.
-- **NOT_VERIFIED:** Google indexing, ranking, crawl timing, or search performance. The sitemap success with 42 pages is not indexing evidence.
+- **NOT_VERIFIED:** Google indexing, ranking, crawl timing, or search performance. The sitemap success with 57 pages is not indexing evidence.
 - **Owner-confirmable:** The account owner can run the recommended Cloudflare path query, provide GSC and GA cross-checks, and confirm production edge responses. Repository maintainers can then update this baseline with dated evidence without changing DNS or Cloudflare configuration.
 
 ## 3. DNS and Cloudflare read-only verification

@@ -83,7 +83,7 @@ Papyr labels every claim so the repository can be read honestly: the source tree
 | Categorized contact form and result-problem report with anti-spam (PT-03) | Deployed |
 | Memory-only encrypted-PDF password handling (PT-04) | Deployed |
 | Backend contact delivery endpoint with server-side validation, rate limiting, Turnstile siteverify, and Cloudflare Email Sending (PT-03) | Deployed |
-| Blog publishing programme | Planned |
+| Blog publishing programme: 15 trilingual MDX articles (5 topics × en/es/id), listing, article pages, sitemap entries, and content CI gates | In branch |
 | Redis queue and bounded worker processing | Available now |
 | Privacy-safe structured logging and minimal-metadata task records | Available now |
 | Production deployment and release procedures | Deployed |
