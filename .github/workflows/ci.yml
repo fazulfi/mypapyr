@@ -613,3 +613,19 @@ jobs:
 
       - name: Run SEO inventory guard
         run: bash scripts/check-seo-inventory.sh
+
+  qa-blog-content:
+    name: QA (blog content gate)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run blog content gate self-test
+        run: bash scripts/test-check-blog-content.sh
+
+      - name: Run blog content gate
+        run: bash scripts/check-blog-content.sh
