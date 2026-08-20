@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 
+import { BLOG_ARTICLES } from "../../content/blog/manifest";
 import { toolCatalog } from "../lib/catalog";
 import { locales, type Locale } from "../lib/i18n";
 import { SEO_BASE_URL } from "../lib/seo/alternates";
@@ -38,6 +39,7 @@ interface SitemapGroup {
   changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"];
   priority: number;
   paths: Record<Locale, string>;
+  lastModified?: string;
 }
 
 function group(
@@ -81,13 +83,21 @@ const SITEMAP_GROUPS: readonly SitemapGroup[] = [
   supportingGroup("status", "monthly", 0.3),
   supportingGroup("roadmap", "monthly", 0.3),
   supportingGroup("blog", "weekly", 0.5),
+  ...BLOG_ARTICLES.map((article) => ({
+    changeFrequency: "weekly" as const,
+    priority: 0.5,
+    paths: Object.fromEntries(
+      locales.map((locale) => [locale, `/${locale}/blog/${article.slugs[locale]}`]),
+    ) as Record<Locale, string>,
+    lastModified: article.date,
+  })),
 ];
 
 function buildEntry(groupEntry: SitemapGroup, locale: Locale): MetadataRoute.Sitemap[number] {
   const u = (target: Locale): string => `${BASE_URL}${groupEntry.paths[target]}`;
   return {
     url: u(locale),
-    lastModified: LAST_MODIFIED,
+    lastModified: groupEntry.lastModified ?? LAST_MODIFIED,
     changeFrequency: groupEntry.changeFrequency,
     priority: groupEntry.priority,
     alternates: {

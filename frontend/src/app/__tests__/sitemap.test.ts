@@ -5,6 +5,7 @@ import robots from "../robots";
 import { SEO_BASE_URL } from "../../lib/seo/alternates";
 import { toolCatalog } from "../../lib/catalog";
 import { LEGACY_ROUTING_PATHS, locales } from "../../lib/i18n";
+import { BLOG_ARTICLES } from "../../../content/blog/manifest";
 
 const SUPPORTING_SLUGS = [
   "faq",
@@ -27,9 +28,24 @@ describe("T8 sitemap", () => {
     }
   });
 
-  it("contains 42 URLs = 14 public routes × 3 locales", () => {
+  it("contains 57 URLs = 19 public routes × 3 locales", () => {
     const entries = sitemap();
-    expect(entries).toHaveLength(42);
+    expect(entries).toHaveLength(57);
+  });
+
+  it("includes every blog article URL in all three locales with per-entry hreflang", () => {
+    const urls = sitemap().map((entry) => entry.url);
+    for (const article of BLOG_ARTICLES) {
+      for (const locale of locales) {
+        const url = `${BASE_URL}/${locale}/blog/${article.slugs[locale]}`;
+        expect(urls).toContain(url);
+        const entry = sitemap().find((candidate) => candidate.url === url);
+        expect(entry?.alternates?.languages?.["x-default"]).toBe(
+          `${BASE_URL}/en/blog/${article.slugs.en}`,
+        );
+        expect(entry?.lastModified).toBe(article.date);
+      }
+    }
   });
 
   it("leads with the homepage for all three locales at priority 1", () => {
@@ -112,8 +128,13 @@ describe("T8 sitemap", () => {
     const second = sitemap();
     // Deterministic across calls — never build-time `new Date()`.
     for (const [index, entry] of first.entries()) {
-      expect(entry.lastModified).toBe(LAST_MODIFIED);
-      expect(second[index].lastModified).toBe(LAST_MODIFIED);
+      if (index < 42) {
+        expect(entry.lastModified).toBe(LAST_MODIFIED);
+        expect(second[index].lastModified).toBe(LAST_MODIFIED);
+      } else {
+        expect(entry.lastModified).toBe("2026-08-20");
+        expect(second[index].lastModified).toBe("2026-08-20");
+      }
     }
   });
 

@@ -147,7 +147,8 @@ export const messages = {
       },
       blog: {
         title: "Blog",
-        description: "General information about the Papyr blog and its publishing programme.",
+        description:
+          "Guides for every Papyr PDF tool: compress, merge, split, JPG to PDF, and PDF to JPG.",
       },
     },
     footer: {
@@ -643,7 +644,8 @@ export const messages = {
       },
       blog: {
         title: "Blog",
-        description: "Información general sobre el blog de Papyr y su programa de publicaciones.",
+        description:
+          "Guías para todas las herramientas PDF de Papyr: comprimir, combinar, dividir, JPG a PDF y PDF a JPG.",
       },
     },
     footer: {
@@ -1146,7 +1148,8 @@ export const messages = {
       },
       blog: {
         title: "Blog",
-        description: "Informasi umum tentang blog Papyr dan program penerbitannya.",
+        description:
+          "Panduan untuk setiap alat PDF Papyr: kompres, gabungkan, pisahkan, JPG ke PDF, dan PDF ke JPG.",
       },
     },
     footer: {
