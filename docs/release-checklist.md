@@ -39,7 +39,18 @@ Repo guard (root):
 - [ ] Security: Trivy (critical/high), gitleaks full-history.
 - [ ] Supply chain: dependency review, npm audit, pip-audit.
 - [ ] QA: action-pin truth, compose structural, hadolint, markdownlint, production API image build + non-root smoke, shellcheck, yamllint.
-- [ ] All 23 CI jobs pass on the PR (22 on pushes to main; 7 status checks required by branch protection).
+- [ ] All 22 CI jobs pass on the PR (22 on pushes to main; 7 status checks required by branch protection).
+
+## P9. Content, legal, and blog evidence
+
+- [ ] Legal Version 1.0 footer with effective date is rendered on Privacy, Terms, and Cookies & Advertising in all 3 locales.
+- [ ] Legal pages contain no informational-shell or "later phase" copy.
+- [ ] `npm test` is green, including blog and legal tests.
+- [ ] `bash scripts/check-blog-content.sh` is green.
+- [ ] Sitemap contains 57 entries, including all 15 localized article URLs with real per-article `lastmod` values.
+- [ ] `/blog` lists 5 articles per locale (15 total) with publication date and "Papyr Team" author text.
+- [ ] Article pages expose canonical and hreflang metadata on `budgezen.com`.
+- [ ] No deployment, indexing, or ranking claim is made from branch-only evidence.
 
 ## 4. Release build (VPS)
 
