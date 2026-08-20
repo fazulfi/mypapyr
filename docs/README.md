@@ -30,6 +30,7 @@ Status legend:
 | [.sisyphus/p8-completion-report.md](.sisyphus/p8-completion-report.md) | contributors, operators, reviewers | Operational | Evidence-based Phase 8 SEO/URL migration completion report; explicitly separates in-branch evidence from NOT_VERIFIED release and external-SEO boundaries. |
 | [seo/slug-table.md](seo/slug-table.md) | contributors, reviewers | Authoritative (in branch) | SEO-01 indexable localized slug and canonical-route inventory. |
 | [seo/legacy-url-inventory.md](seo/legacy-url-inventory.md) | contributors, reviewers | Authoritative (in branch) | SEO-01 exact 15-path legacy disposition inventory for SEO-02 behavior. |
+| [seo/seo-slo.md](seo/seo-slo.md) | contributors, operators, reviewers | Operational (in branch) | Phase 8 SEO SLO definitions, measurement baselines, R-25 traffic data, and NOT_VERIFIED boundaries. |
 | [CHANGELOG.md](../CHANGELOG.md) | contributors, operators, reviewers | Operational | User- and operator-facing change history. |
 | [licensing.md](licensing.md) | contributors, reviewers | Authoritative | Licensing decision record: no license granted yet (all rights reserved), inbound=outbound note. |
 
