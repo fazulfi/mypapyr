@@ -26,12 +26,14 @@ Phase 9 remains **in branch** pending PR review and merge. No deployment, indexi
 - Scoped secret grep: documented fixture/test matches only; no live secret material.
 - Markdownlint: PASS — 0 issues in 0 files.
 
-
 ## CI verification
 
-- PR: pending creation; expected PR reference is #49 unless GitHub assigns another number.
-- CI run URL: pending PR creation.
-- Green job list: pending CI completion.
+- PR: [#49](https://github.com/fazulfi/mypapyr/pull/49).
+- CI run URL: <https://github.com/fazulfi/mypapyr/actions/runs/32404838025>.
+- CI status: **failed; do not claim green**.
+- Green jobs: backend lint/type/test; frontend lint/typecheck/test/build/Playwright E2E; SEO and blog gates; action pins; Docker, Compose, hadolint, production API, shell, and YAML QA; Trivy; gitleaks; pip-audit.
+- Failed jobs: markdownlint (`MD012` at this report's former line 29), npm audit (high-severity `next-mdx-remote` advisory `GHSA-g4xw-jxrg-5f6m`), and dependency review (transitive MDX packages below the OpenSSF Scorecard threshold).
+- CI fixes prepared: upgraded `next-mdx-remote` from 5.0.0 to 6.0.0 to remove the high-severity advisory upstream; the `MDXRemote` RSC renderer API remains compatible. Added a documented dependency-review allowlist for exactly the 13 low-risk transitive `@mdx-js/mdx` text-processing and estree utilities, with locked versions and the high/critical gate unchanged.
 
 ## Concerns and boundaries
 
