@@ -4,7 +4,7 @@ All notable changes to this project are tracked here. The format follows [Keep a
 
 ## [Unreleased] — Phase 8 (SEO and URL migration)
 
-Phase 8 (SEO-01 governance, SEO-02 redirects/localized 410, SEO-03 canonical/hreflang/lastmod polish, and documentation reconciliation) is implemented on branch `feat/full-p8-seo-url-migration` and **not yet merged or deployed** (no commit/PR/release exists; external indexing, ranking, and deployed-state evidence are NOT_VERIFIED). CI is now **23 jobs (22 on pushes to main)**, including the `qa-seo-inventory` guard for `docs/seo/` drift. Phase 7 (ops guard jobs `qa-monitoring`, `qa-telegram-relay`, `qa-backup`) remains in branch `feat/full-p7-enterprise-completion`, PR #47 open, unmerged; its guard jobs are counted in the 23-job total per the documentation audit's ground-truth measurement.
+Phase 8 (SEO-01 governance, SEO-02 redirects/localized 410, SEO-03 canonical/hreflang/lastmod polish, documentation reconciliation, and the VPS legacy-host cutover) is implemented on branch `feat/full-p8-seo-url-migration`. The VPS cutover is live: `mypapyr.com` and `www.mypapyr.com` return host-level 308 responses to `https://budgezen.com$request_uri`; `budgezen.com` remains on Vercel and untouched. External indexing, ranking, and R-25 traffic evidence remain NOT_VERIFIED. CI is **23 jobs (22 on pushes to main)**, including the `qa-seo-inventory` guard for `docs/seo/` drift. Phase 7 (ops guard jobs `qa-monitoring`, `qa-telegram-relay`, `qa-backup`) remains in branch `feat/full-p7-enterprise-completion`, PR #47 open, unmerged; its guard jobs are counted in the 23-job total per the documentation audit's ground-truth measurement.
 
 ## [Unreleased] — Phase 6 enterprise completion
 
