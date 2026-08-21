@@ -4,11 +4,15 @@ All notable changes to this project are tracked here. The format follows [Keep a
 
 ## [Unreleased] — Phase 9 (Content, Legal & Blog)
 
-- Phase 9 (in branch): legal page revision with version footers (DEC-045), pure-MDX blog with 15 localized articles, CI blog-content gates, /blog listing, article sitemap entries.
+- Phase 9: legal page revision with version footers (DEC-045), pure-MDX blog with 15 localized articles, CI blog-content gates, /blog listing, article sitemap entries. Merged via PR #49 (`31af3694`, 2026-08-20); deployed to the VPS frontend as `p9-da6e94e` (BUILD_ID `2nIWv0nNRIdkFQbh92Ueh`).
 
 ## [Unreleased] — Phase 8 (SEO and URL migration)
 
-Phase 8 (SEO-01 governance, SEO-02 redirects/localized 410, SEO-03 canonical/hreflang/lastmod polish, documentation reconciliation, and the VPS legacy-host cutover) is implemented on branch `feat/full-p8-seo-url-migration`. The VPS cutover is live: `mypapyr.com` and `www.mypapyr.com` return host-level 308 responses to `https://budgezen.com$request_uri`; `budgezen.com` remains on Vercel and untouched. External indexing, ranking, and R-25 traffic evidence remain NOT_VERIFIED. CI is **22 jobs (22 on pushes to main)**, including the `qa-seo-inventory` guard for `docs/seo/` drift and the `qa-blog-content` guard for `frontend/content/blog/` drift. Phase 7 (ops guard jobs `qa-monitoring`, `qa-telegram-relay`, `qa-backup`) remains in branch `feat/full-p7-enterprise-completion`, PR #47 open, unmerged; its guard jobs are counted in the 23-job total per the documentation audit's ground-truth measurement.
+Phase 8 (SEO-01 governance, SEO-02 redirects/localized 410, SEO-03 canonical/hreflang/lastmod polish, documentation reconciliation, and the VPS legacy-host cutover) is merged to `main` via the Phase 9 squash (PR #49 → `31af3694`); the standalone P8 PR was closed as superseded. The VPS cutover is live: `mypapyr.com` and `www.mypapyr.com` return host-level 308 responses to `https://budgezen.com$request_uri`; `budgezen.com` remains on Vercel and untouched. External indexing, ranking, and R-25 traffic evidence remain NOT_VERIFIED. CI is **25 jobs (24 on pushes to main)**, including the `qa-seo-inventory` guard for `docs/seo/` drift, the `qa-blog-content` guard for `frontend/content/blog/` drift, and the P7 ops guards `qa-monitoring`, `qa-telegram-relay`, and `qa-backup`.
+
+## [Unreleased] — Phase 7 (enterprise operations)
+
+Phase 7 (OP-01 Netdata internal monitoring with privacy-safe health contracts, OP-02 derived localized public status page, OP-03 stdlib-only Telegram relay, OP-04 encrypted restic backup with monthly restore drill, owner gates doc, and additive CI QA jobs) is merged via PR #47 (`d91dec5`, 2026-08-21). Production activation remains owner-gated pending credential provisioning (Telegram bot/chat, restic/S3, R-12/R-13/R-26 confirmation); the VPS host identity is resolved to `root@82.25.62.204` with the application at `/opt/mypapyr`.
 
 ## [Unreleased] — Phase 6 enterprise completion
 

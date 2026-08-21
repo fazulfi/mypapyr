@@ -25,7 +25,7 @@ Owner-gated provisioning, all outstanding:
 - Telegram bot token and chat id.
 - Backup S3 credentials, endpoint, bucket, and restic password file.
 - Backup retention approval (owner): documented placeholder families daily 7 / weekly 4 / monthly 12 / yearly 3 stand in the code and templates until the owner approves the retention policy and the values are set in the production env file.
-- VPS host-state verification (owner): the two conflicting VPS host targets (`root@<HOST_A>` versus `root@<HOST_B>`, user `mypapyr`) remain explicit and unresolved; the owner must confirm which host runs the production stack and verify its current state before any backup or monitoring wiring. Never guess a host.
+- VPS host-state verification (owner): the production host is `root@82.25.62.204` with the application directory `/opt/mypapyr` and service account `mypapyr`; the owner must confirm host state (R-12/R-26) before any backup or monitoring wiring.
 - Production deployment access.
 
 ## Verification evidence

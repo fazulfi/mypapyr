@@ -10,9 +10,9 @@ This document is a public template for a separately authorized deployment. The r
 - A real `.env.production` provisioned out of band with mode `0600` and owned by the service account. Never copy the public example: its required values are intentionally EMPTY so an accidental load fails fast at boot instead of booting with placeholder credentials.
 - Version-pinned production images that have passed the release security gates (never `:latest`; `PAPYR_API_IMAGE` carries an immutable digest).
 
-## VPS host target (P7 unresolved conflict)
+## VPS host target (resolved)
 
-There are two conflicting VPS host targets on record for production: `root@<HOST_A>` versus `root@<HOST_B>` (user `mypapyr`), one of which is stale. **Never guess a host.** The owner must resolve which target is authoritative and confirm current host state (R-12/R-26) before any deployment command below is run. Until that resolution, all deployment steps in this runbook remain blocked and unexecuted.
+The production host is `root@82.25.62.204` with the application directory `/opt/mypapyr` and service account `mypapyr`. The earlier conflicting `<HOST_A>`/`<HOST_B>` targets are resolved to this single authoritative host. The owner should confirm current host state (R-12/R-26) before any deployment command below is run.
 
 ## Files
 
