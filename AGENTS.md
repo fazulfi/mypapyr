@@ -119,7 +119,7 @@ Repo guard (root): `bash scripts/check-ci.sh` (requires network for pin truth; C
 - `frontend/src/lib/taskPolling.ts` + `src/hooks/useTaskPolling.ts` — status polling contract
 - `frontend/src/proxy.ts` — locale-redirect middleware logic, wired as the Next.js 16 proxy-file convention (proxy function + `config.matcher`)
 - `deploy/docker-compose.yml` + `compose.override.deploy.yml`, `deploy/nginx/conf.d/production.conf` (skeleton)
-- `.github/workflows/ci.yml` — 25 jobs (24 on pushes to main), including `frontend-typecheck`, `qa-seo-inventory`, `qa-blog-content`, `qa-monitoring`, `qa-telegram-relay`, and `qa-backup`; CI-without-CD; `scripts/check-ci.sh` guard contract
+- `.github/workflows/ci.yml` — 29 jobs (28 on pushes to main), including `frontend-typecheck`, `frontend-a11y`, `frontend-visual`, `frontend-perf`, `qa-seo-inventory`, `qa-blog-content`, `qa-monitoring`, `qa-telegram-relay`, `qa-backup`, and `qa-launch`; CI-without-CD; `scripts/check-ci.sh` guard contract
 
 ## Runtime/Tooling Preferences
 
