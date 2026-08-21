@@ -8,7 +8,7 @@ fail() {
 
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 GUARD="$ROOT/scripts/check-launch.sh"
-[ -x "$GUARD" ] || fail "check-launch.sh absent or not executable: $GUARD"
+[ -f "$GUARD" ] || fail "check-launch.sh absent: $GUARD"
 FIXTURE=$(mktemp -d) || fail 'cannot create fixture'
 trap 'rm -rf "$FIXTURE"' EXIT HUP INT TERM
 

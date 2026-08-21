@@ -16,7 +16,7 @@ Phase 10 establishes Papyr's Core Web Vitals and page-performance program under 
 | Lighthouse best-practices score | ≥ 90 | ≥ 90 | Browser and delivery quality gate |
 | Lighthouse SEO score | ≥ 90 | ≥ 90 | Crawlability and discoverability gate |
 
-INP is a field-oriented Core Web Vital and is recorded when the measurement environment provides it. Lighthouse CI asserts the lab metrics available in the committed configuration, including FCP, LCP, CLS, and TBT. A passing lab run does not replace field validation.
+INP is a field-oriented Core Web Vital and is recorded when the measurement environment provides it. The performance runner asserts the lab metrics available in the committed configuration, including FCP, LCP, CLS, and TBT. A passing lab run does not replace field validation.
 
 ## Running the program
 
@@ -27,9 +27,9 @@ npm run build
 npm run test:perf
 ```
 
-`lhci autorun` starts the built Next.js app on port 3000, measures `/en` and `/en/compress-pdf`, asserts the configured scores and budgets, and writes local report artifacts to `frontend/.lighthouseci/`. Chrome must be installed and available to Lighthouse CI. The config currently uses one desktop profile; repeat the run with a mobile Lighthouse setting when establishing the mobile column in the results table.
+`node perf-assert.mjs` (the `test:perf` script) runs Lighthouse directly against the built Next.js app on port 3000, measures `/en` and `/en/compress-pdf`, asserts the configured scores and budgets, and writes a JSON summary to `frontend/.lighthouseci/report.json`. Chrome must be installed and available to Lighthouse. The runner currently uses a desktop profile; repeat the run with a mobile Lighthouse setting when establishing the mobile column in the results table.
 
-The config is intentionally local-only. It does not upload results to a remote Lighthouse server. The filesystem target keeps JSON and HTML reports under `.lighthouseci/`; this generated directory is an artifact location, not a source-controlled baseline.
+The runner is intentionally local-only. It does not upload results to a remote Lighthouse server. The filesystem target keeps JSON and HTML reports under `.lighthouseci/`; this generated directory is an artifact location, not a source-controlled baseline. Thresholds are enforced fail-closed in `perf-assert.mjs` (categories ≥ 0.9; FCP ≤ 1800 ms, LCP ≤ 2500 ms, CLS ≤ 0.1, TBT ≤ 300 ms).
 
 ## Ad-slot layout stability
 
@@ -37,7 +37,7 @@ DEC-018 reserves ad dimensions so an eligible ad cannot move surrounding content
 
 ## Field data and lab gates
 
-`@vercel/speed-insights` provides field data collection through the existing privacy-reviewed client integration. It helps observe real-user LCP, INP, and CLS across device and network conditions, but it is not a pass/fail gate and does not replace the local Lighthouse CI run. Investigations should compare field trends with the controlled mobile and desktop lab measurements before changing performance budgets.
+`@vercel/speed-insights` provides field data collection through the existing privacy-reviewed client integration. It helps observe real-user LCP, INP, and CLS across device and network conditions, but it is not a pass/fail gate and does not replace the local Lighthouse run. Investigations should compare field trends with the controlled mobile and desktop lab measurements before changing performance budgets.
 
 ## Phase 10 baseline
 

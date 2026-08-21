@@ -63,10 +63,10 @@ test.describe("Phase 10 VL-01 five-tool trilingual E2E gate", () => {
       page,
     }) => {
       await assertNoRuntimeErrors(page, async () => {
-        await clearTaskToken(page, tool);
         const controller = await interceptServerToolFlow(page, tool);
         await page.goto(tool.hrefs[locale]);
         await expect(page.locator("html")).toHaveAttribute("lang", locale);
+        await clearTaskToken(page, tool);
         await expect(page.locator("h1")).toBeVisible();
         await expect(page.getByTestId("dropzone")).toBeVisible();
 
@@ -82,6 +82,10 @@ test.describe("Phase 10 VL-01 five-tool trilingual E2E gate", () => {
         await expect(
           page.getByRole("button", { name: /Process another|Procesar otro|Proses file/ }),
         ).toBeVisible();
+
+        await expect(
+          page.evaluate((toolId) => sessionStorage.getItem(`papyr:task:${toolId}`), tool.id),
+        ).resolves.toBeNull();
 
         if (tool.id === "split-pdf") {
           const downloadResponse = page.waitForResponse(
@@ -101,9 +105,6 @@ test.describe("Phase 10 VL-01 five-tool trilingual E2E gate", () => {
         await expect(
           page.getByRole("button", { name: /Process another|Procesar otro|Proses file/ }),
         ).toBeVisible();
-        await expect(
-          page.evaluate((toolId) => sessionStorage.getItem(`papyr:task:${toolId}`), tool.id),
-        ).resolves.toBeNull();
 
         await page
           .getByRole("button", { name: /Process another|Procesar otro|Proses file/ })
@@ -124,13 +125,13 @@ test.describe("Phase 10 VL-01 five-tool trilingual E2E gate", () => {
     test(`${tool.id} ${locale}: retryable error and queued cancellation contract`, async ({
       page,
     }) => {
-      await clearTaskToken(page, tool);
       const controller = await interceptServerToolFlow(page, tool, {
         states: ["queued"],
         autoAdvance: false,
         error: { category: "processing", message_key: "states.error", retryable: true },
       });
       await page.goto(tool.hrefs[locale]);
+      await clearTaskToken(page, tool);
       await submitToolFlow(page, tool, locale, filesFor(tool));
       await expect(page.getByRole("status")).toBeVisible();
       await expect(page.getByRole("button", { name: /Cancel|Cancelar|Batalkan/ })).toHaveCount(0);

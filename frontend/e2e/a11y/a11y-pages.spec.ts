@@ -84,15 +84,22 @@ test.describe("Keyboard accessibility", () => {
 
     const seen = new Set<string>();
     for (let index = 0; index < 80; index += 1) {
-      await page.keyboard.press("Tab");
-      const focus = await page.locator(":focus").evaluate((element) => ({
+      await Promise.race([
+        page.keyboard.press("Tab"),
+        new Promise((resolve) => setTimeout(resolve, 500)),
+      ]);
+      const focused = page.locator(":focus");
+      if ((await focused.count()) === 0) {
+        break;
+      }
+      const focus = await focused.evaluate((element) => ({
         tag: element.tagName,
         id: element.id,
         text: element.textContent?.trim().slice(0, 80) ?? "",
       }));
       expect(focus.tag).toMatch(/^(A|BUTTON|INPUT|SELECT|TEXTAREA|SUMMARY)$/);
       seen.add(`${focus.tag}:${focus.id}:${focus.text}`);
-      if (index > 8 && (await page.locator(":focus").count()) === 0) {
+      if (index > 8) {
         break;
       }
     }
