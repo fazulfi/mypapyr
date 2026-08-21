@@ -129,7 +129,7 @@ export function DoneCard({
         <div className="mb-5 rounded-xl bg-slate-50 px-4 py-5">
           <div className="flex items-center justify-between">
             <div className="text-center">
-              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-700">
                 {copy.states.before}
               </p>
               <p className="text-2xl font-semibold tracking-tight text-slate-500">
@@ -137,13 +137,13 @@ export function DoneCard({
               </p>
             </div>
             <div className="flex flex-col items-center gap-1">
-              <span className="rounded-full bg-accent/10 px-3 py-1 text-sm font-bold text-accent">
+              <span className="rounded-full bg-accent/10 px-3 py-1 text-sm font-bold text-blue-800">
                 &minus;{saved}%
               </span>
               <ArrowRightIcon />
             </div>
             <div className="text-center">
-              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-accent/80">
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-blue-800">
                 {copy.states.after}
               </p>
               <p className="text-2xl font-semibold tracking-tight text-navy">

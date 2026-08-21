@@ -262,7 +262,7 @@ export function Navbar({ locale }: NavbarProps): React.ReactElement {
                         href={tool.hrefs[locale]}
                         className={`block px-4 py-2 text-sm transition-colors hover:bg-slate-100 ${
                           pathname.includes(tool.hrefs[locale])
-                            ? "bg-accent/10 text-accent font-medium"
+                            ? "bg-accent/10 text-blue-800 font-medium"
                             : "text-slate-600"
                         }`}
                         onClick={() => setOpenCategory(null)}
@@ -332,7 +332,7 @@ export function Navbar({ locale }: NavbarProps): React.ReactElement {
                       onClick={() => setMobileOpen(false)}
                       className={`flex min-h-[44px] items-center rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
                         pathname.includes(tool.hrefs[locale])
-                          ? "bg-accent/10 text-accent"
+                          ? "bg-accent/10 text-blue-800"
                           : "text-slate-600 hover:bg-slate-50"
                       }`}
                     >

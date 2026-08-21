@@ -105,7 +105,7 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
   // Idle / ready / uploading phase: show dropzone + submit button
   if (phase === "idle" || phase === "ready" || phase === "uploading") {
     return (
-      <main className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-gray-50 p-8">
         <div className="mx-auto max-w-3xl">
           <ToolPageHeader locale={locale} toolId="compress-pdf" />
           <PrivacyNotice locale={locale} model="server" />
@@ -130,7 +130,7 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
           </button>
           <OtherTools currentTool="compress-pdf" locale={locale} />
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -165,7 +165,7 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-3xl">
         <ToolPageHeader locale={locale} toolId="compress-pdf" />
         <PrivacyNotice locale={locale} model="server" />
@@ -174,7 +174,7 @@ export function CompressPdfTool({ locale }: { locale: Locale }) {
         <AdSlot pageSlug="compress-pdf" phase={phase} label={copy.ads.label} />
         <ResultProblemReport locale={locale} page="/compress-pdf" localeContext={locale} />
       </div>
-    </main>
+    </div>
   );
 }
 

@@ -58,7 +58,7 @@ export function ErrorCard({
       data-retryable={retryable}
       className="rounded-2xl border border-rose-200 bg-rose-50/50 p-6"
     >
-      <div className="mb-4 flex items-center gap-3 text-rose-500">
+      <div className="mb-4 flex items-center gap-3 text-rose-700">
         <AlertIcon />
         <p className="text-sm font-semibold">{copy.states.errorTitle}</p>
       </div>

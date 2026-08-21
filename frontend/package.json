@@ -11,6 +11,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:a11y": "playwright test e2e/a11y/ --project=chromium-desktop",
+    "test:perf": "lhci autorun",
     "typecheck": "tsc --noEmit",
     "format:check": "prettier --check ."
   },
@@ -27,6 +29,8 @@
     "sharp": "^0.35.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.11.1",
+    "@lhci/cli": "^0.15.1",
     "@playwright/test": "1.62.1",
     "@tailwindcss/postcss": "4.3.3",
     "@tailwindcss/typography": "0.5.20",

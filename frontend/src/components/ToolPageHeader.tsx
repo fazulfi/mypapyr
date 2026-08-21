@@ -182,7 +182,7 @@ export function ToolPageHeader({ locale, toolId }: { locale: Locale; toolId: Too
 
   return (
     <div className="mb-8 flex flex-col items-center text-center">
-      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/10 text-blue-800">
         {TOOL_ICONS[toolId]}
       </div>
       <h1 className="mb-2 text-3xl font-bold text-navy">{tool.title}</h1>
@@ -191,7 +191,7 @@ export function ToolPageHeader({ locale, toolId }: { locale: Locale; toolId: Too
         {features.map((feature, index) => (
           <span
             key={feature}
-            className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent"
+            className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-blue-800"
           >
             {FEATURE_ICONS[index]}
             {feature}

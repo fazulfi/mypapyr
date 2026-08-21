@@ -241,7 +241,7 @@ export function ContactForm({
         role="status"
       >
         <p className="text-sm font-medium text-emerald-800">{copy.confirmation}</p>
-        {serverError ? <p className="mt-1 text-xs text-slate-500">{serverError}</p> : null}
+        {serverError ? <p className="mt-1 text-xs text-slate-700">{serverError}</p> : null}
         <button
           type="button"
           className="mt-3 text-xs font-semibold text-emerald-700 underline underline-offset-2"
@@ -330,14 +330,14 @@ export function ContactForm({
           rows={collapsed ? 4 : 6}
           className="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
         />
-        <p className="text-right text-xs text-slate-400">
+        <p className="text-right text-xs text-slate-600">
           {message.length}/{MAX_MESSAGE_LENGTH}
         </p>
       </div>
 
       <div className="space-y-1.5">
         <label htmlFor="contact-email" className="block text-sm font-medium text-slate-700">
-          {copy.emailLabel} <span className="font-normal text-slate-400">({copy.optional})</span>
+          {copy.emailLabel} <span className="font-normal text-slate-600">({copy.optional})</span>
         </label>
         <input
           id="contact-email"
@@ -347,7 +347,7 @@ export function ContactForm({
           onChange={(event) => setEmail(event.target.value)}
           className="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
         />
-        <p className="text-xs text-slate-400">{copy.emailHint}</p>
+        <p className="text-xs text-slate-600">{copy.emailHint}</p>
       </div>
 
       {/* Cloudflare Turnstile placeholder — script injected client-side when env token present */}

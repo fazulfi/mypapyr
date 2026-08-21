@@ -69,7 +69,7 @@ export function ResultProblemReport({
       id="result-problem-report"
       className="mt-3 rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3"
     >
-      <p className="mb-2 text-xs font-medium text-slate-500">{copy.contact.reportIntro}</p>
+      <p className="mb-2 text-xs font-medium text-slate-700">{copy.contact.reportIntro}</p>
       <ContactForm
         locale={locale}
         collapsed
@@ -79,7 +79,7 @@ export function ResultProblemReport({
       <button
         type="button"
         onClick={() => setOpen(false)}
-        className="mt-3 text-xs font-medium text-slate-400 underline-offset-2 hover:text-slate-600 hover:underline"
+        className="mt-3 text-xs font-medium text-slate-700 underline-offset-2 hover:text-slate-800 hover:underline"
       >
         {copy.contact.closeReport}
       </button>

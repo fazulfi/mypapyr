@@ -151,7 +151,7 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
   // Idle / ready / uploading phase: show dropzone + submit button
   if (phase === "idle" || phase === "ready" || phase === "uploading") {
     return (
-      <main className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-gray-50 p-8">
         <div className="mx-auto max-w-3xl">
           <ToolPageHeader locale={locale} toolId="merge-pdf" />
           <PrivacyNotice locale={locale} model="client" />
@@ -212,7 +212,7 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
           </button>
           <OtherTools currentTool="merge-pdf" locale={locale} />
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -247,7 +247,7 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-3xl">
         <ToolPageHeader locale={locale} toolId="merge-pdf" />
         <PrivacyNotice locale={locale} model="client" />
@@ -256,7 +256,7 @@ export function MergePdfTool({ locale }: { locale: Locale }) {
         <OtherTools currentTool="merge-pdf" locale={locale} />
         <ResultProblemReport locale={locale} page="/merge-pdf" localeContext={locale} />
       </div>
-    </main>
+    </div>
   );
 }
 

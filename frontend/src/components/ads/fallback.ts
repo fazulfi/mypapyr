@@ -90,7 +90,7 @@ function createArrowIcon(): SVGSVGElement {
 
 function createCta(label: string): HTMLSpanElement {
   const el = createTextEl(
-    "inline-flex items-center gap-1 rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent",
+    "inline-flex items-center gap-1 rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-blue-800",
     label,
   );
   el.appendChild(createArrowIcon());
