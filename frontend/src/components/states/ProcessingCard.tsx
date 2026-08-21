@@ -54,7 +54,7 @@ export function ProcessingCard({
               <p className="text-sm font-semibold text-navy">{fileName}</p>
             )}
             {fileSizeBytes !== undefined && (
-              <p className="text-xs text-slate-400">{formatFileSize(fileSizeBytes)}</p>
+              <p className="text-xs text-slate-600">{formatFileSize(fileSizeBytes)}</p>
             )}
           </div>
         </div>
@@ -66,7 +66,7 @@ export function ProcessingCard({
       <div className="relative h-1.5 overflow-hidden rounded-full bg-slate-100">
         <div className="absolute inset-0 animate-shimmer rounded-full bg-gradient-to-r from-transparent via-accent to-transparent bg-[length:200%_100%]" />
       </div>
-      <p className="mt-2.5 text-center text-xs text-slate-400">{copy.states.processingHint}</p>
+      <p className="mt-2.5 text-center text-xs text-slate-600">{copy.states.processingHint}</p>
     </div>
   );
 }

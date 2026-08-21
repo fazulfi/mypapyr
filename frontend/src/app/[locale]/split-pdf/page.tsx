@@ -127,7 +127,7 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
   // Idle / ready / uploading phase: show dropzone + submit button
   if (phase === "idle" || phase === "ready" || phase === "uploading") {
     return (
-      <main className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-gray-50 p-8">
         <div className="mx-auto max-w-3xl">
           <ToolPageHeader locale={locale} toolId="split-pdf" />
           <PrivacyNotice locale={locale} model="client" />
@@ -226,7 +226,7 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
           </button>
           <OtherTools currentTool="split-pdf" locale={locale} />
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -263,7 +263,7 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-3xl">
         <ToolPageHeader locale={locale} toolId="split-pdf" />
         <PrivacyNotice locale={locale} model="client" />
@@ -272,7 +272,7 @@ export function SplitPdfTool({ locale }: { locale: Locale }) {
         <OtherTools currentTool="split-pdf" locale={locale} />
         <ResultProblemReport locale={locale} page="/split-pdf" localeContext={locale} />
       </div>
-    </main>
+    </div>
   );
 }
 

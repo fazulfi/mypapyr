@@ -395,7 +395,7 @@ export default async function LocaleHomePage({
       <section className="mx-auto max-w-[1200px] px-6 pb-20 pt-24 text-center">
         <div className="mb-8 inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 pl-2">
           <div className="h-1.5 w-1.5 rounded-full bg-accent" />
-          <span className="text-xs font-medium tracking-wide text-accent">
+          <span className="text-xs font-medium tracking-wide text-blue-800">
             {copy.home.heroPill}
           </span>
         </div>
@@ -422,7 +422,7 @@ export default async function LocaleHomePage({
             return (
               <div
                 key={badge}
-                className="flex items-center gap-1.5 text-[13.5px] font-medium text-slate-500"
+                className="flex items-center gap-1.5 text-[13.5px] font-medium text-slate-700"
               >
                 <span className="text-accent">
                   <BadgeIcon />
@@ -453,14 +453,14 @@ export default async function LocaleHomePage({
               data-tool-id={tool.id}
               className={TOOL_CARD_CLASS}
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-slate-100 text-slate-500 transition-colors group-hover:bg-accent/15 group-hover:text-accent">
+              <span className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-slate-100 text-slate-600 transition-colors group-hover:bg-accent/15 group-hover:text-accent">
                 <ToolIcon name={tool.icon} />
               </span>
               <span className="text-[15px] font-semibold text-navy">
                 {tool.localizedLabels[locale]}
               </span>
-              <span className="text-[13.5px] leading-snug text-slate-500">{tool.description}</span>
-              <span className="mt-auto flex items-center gap-1 text-[13px] font-medium text-slate-400 transition-colors group-hover:text-accent">
+              <span className="text-[13.5px] leading-snug text-slate-700">{tool.description}</span>
+              <span className="mt-auto flex items-center gap-1 text-[13px] font-medium text-slate-600 transition-colors group-hover:text-accent">
                 {copy.home.cardCta} <ArrowRightIcon size={13} />
               </span>
             </a>
@@ -488,12 +488,12 @@ export default async function LocaleHomePage({
               const CardIcon = PRIVACY_CARD_ICONS[index];
               return (
                 <div key={card.title} className="flex gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-accent/15 text-accent">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-accent/15 text-blue-800">
                     <CardIcon />
                   </div>
                   <div>
                     <h3 className="mb-1 text-[15px] font-semibold text-navy">{card.title}</h3>
-                    <p className="text-sm leading-relaxed text-slate-500">{card.desc}</p>
+                    <p className="text-sm leading-relaxed text-slate-700">{card.desc}</p>
                   </div>
                 </div>
               );
@@ -512,7 +512,7 @@ export default async function LocaleHomePage({
               key={step}
               className="flex flex-col items-center gap-3 rounded-[10px] border border-slate-200 bg-white p-6 text-center"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/15 text-sm font-semibold text-accent">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/15 text-sm font-semibold text-blue-900">
                 {index + 1}
               </span>
               <span className="text-[15px] font-semibold text-navy">{step}</span>
@@ -533,9 +533,9 @@ export default async function LocaleHomePage({
             >
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-semibold text-navy marker:content-none">
                 {item.question}
-                <ChevronIcon className="shrink-0 text-slate-400 transition-transform group-open:rotate-180" />
+                <ChevronIcon className="shrink-0 text-slate-600 transition-transform group-open:rotate-180" />
               </summary>
-              <p className="mt-3 text-sm leading-relaxed text-slate-500">{item.answer}</p>
+              <p className="mt-3 text-sm leading-relaxed text-slate-700">{item.answer}</p>
             </details>
           ))}
         </div>

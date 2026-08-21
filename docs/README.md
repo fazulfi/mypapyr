@@ -28,6 +28,11 @@ Status legend:
 | [release-checklist.md](release-checklist.md) | operators, release managers | Operational | End-to-end release checklist: gates, CI, release build, activation, post-deploy verification. |
 | [p6-completion-report.md](p6-completion-report.md) | contributors, operators, reviewers | Operational | Phase 6 enterprise completion: workstreams, evidence, deployment, verification, and known limitations. |
 | [p7-completion-report.md](p7-completion-report.md) | contributors, operators, reviewers | Operational | Phase 7 operations completion: monitoring, derived status, Telegram relay, encrypted backups, owner gates, and deployment blockers. |
+| [accessibility/exceptions-register.md](accessibility/exceptions-register.md) | contributors, reviewers | Authoritative | WCAG 2.2 accessibility program (DEC-062): scan scope, rule set, and the register of documented exceptions. |
+| [verification/visual-baseline.md](verification/visual-baseline.md) | contributors, reviewers | Operational | Rendered visual verification baseline: route/viewport matrix, token and WCAG contrast contract, artifact location (VL-03). |
+| [verification/performance.md](verification/performance.md) | contributors, reviewers | Operational | Core Web Vitals and performance gates: R-27 targets per DEC-200/201, ad-slot stability, measurement procedure (VL-04). |
+| [verification/smoke.md](verification/smoke.md) | operators | Operational | Pre-launch smoke procedure: offline preflight, HTTP smoke, and rollback-preflight evidence modes (VL-05). |
+| [verification/launch-checklist.md](verification/launch-checklist.md) | operators, release managers | Operational | Launch activation checklist: gates, evidence capture, owner authorization (G-3), and post-launch verification (VL-05). |
 | [CHANGELOG.md](../CHANGELOG.md) | contributors, operators, reviewers | Operational | User- and operator-facing change history. |
 | [licensing.md](licensing.md) | contributors, reviewers | Authoritative | Licensing decision record: no license granted yet (all rights reserved), inbound=outbound note. |
 

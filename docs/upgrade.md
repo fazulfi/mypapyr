@@ -80,7 +80,7 @@ the Redis AOF. Follow this exact order:
 ```bash
 # 1. Export session-only deploy variables (never stored in source):
 #    the provisioned env file and the immutable digest image references.
-export PAPYR_ENV_FILE=/opt/papyr/production/.env
+export PAPYR_ENV_FILE=/opt/mypapyr/production/.env
 export PAPYR_API_IMAGE=registry/papyr-api@sha256:<new-digest>
 export PAPYR_WORKERS_IMAGE=registry/papyr-workers@sha256:<new-digest>
 export PAPYR_CLAMD_IMAGE=registry/clamav@sha256:<new-digest>

@@ -29,7 +29,7 @@ Export these once in the deployment session; every command below uses them.
 
 ```bash
 # Path to the provisioned environment file (mode 0600, service-account owned).
-export PAPYR_ENV_FILE=/opt/papyr/production/.env
+export PAPYR_ENV_FILE=/opt/mypapyr/production/.env
 
 # Immutable api image reference produced by the release gates (digest).
 export PAPYR_API_IMAGE=registry/papyr-api@sha256:<digest>
@@ -95,6 +95,13 @@ Full-topology activation (Phase 5 baseline): the unified topology includes `redi
 
 ## Operations
 
+For the Phase 10 launch gate, run `bash scripts/check-launch.sh` for the offline
+preflight, `bash scripts/check-launch.sh smoke` for public read-only smoke, and
+`bash scripts/check-launch.sh rollback-preflight` for rollback evidence. Record the
+coordinated gate in [docs/verification/launch-checklist.md](../docs/verification/launch-checklist.md)
+and use [docs/verification/smoke.md](../docs/verification/smoke.md) for the smoke
+contract. These checks never SSH, deploy, reload nginx, or print secrets.
+
 - Rotate credentials out of band and restart only affected services.
 - Keep Redis and worker services on internal networks.
 - Apply bounded log rotation and host resource alerts.
@@ -111,12 +118,20 @@ Retain the previous version-pinned image set and reviewed configuration. Roll ba
 
 ```bash
 export PAPYR_API_IMAGE=registry/papyr-api@sha256:<previous-digest>
+export PAPYR_WORKERS_IMAGE=registry/papyr-workers@sha256:<previous-digest>
+export PAPYR_CLAMD_IMAGE=registry/clamav@sha256:<previous-digest>
 docker compose -p papyr-app --env-file "$PAPYR_ENV_FILE" \
   -f deploy/docker-compose.yml config --quiet
 docker compose -p papyr-app --env-file "$PAPYR_ENV_FILE" \
   -f deploy/docker-compose.yml --profile app --profile queue \
-  up -d api redis clamd
+  up -d
 ```
+
+Restore the frontend through the authorized Vercel rollback process using the recorded
+previous deployment URL and BUILD_ID. For the legacy host cutover, retain and restore
+`/etc/nginx/sites-available/mypapyr.bak-cutover-<UTC timestamp>` after a read-only
+`nginx -t` passes; never reload a failed configuration. These are pointer restores,
+not destructive operations.
 
 Database or object-format changes require an explicit compatibility and recovery plan.
 
@@ -155,7 +170,7 @@ Browser ── /api/v1/* (same-origin) ──> Next.js rewrite (next.config.ts)
 ### Backend origin
 
 - The rewrite destination is `NEXT_PUBLIC_API_BASE_URL` (build-time, default `https://api.mypapyr.com`); see `frontend/next.config.ts`. Set it at build for any non-default origin.
-- The API service publishes **no host port** (internal `expose: "3000"` only). It must be reachable by nginx on the compose network at `api:3000`, and by a public origin through an nginx/Cloudflare vhost that terminates TLS.
+- The API service publishes **no host port** in the base template (internal `expose: "3000"` only). The production compose override publishes host port `3016` to the API container's port `3000` (`3016:3000`). It must be reachable by nginx on the compose network at `api:3000`, and by a public origin through an nginx/Cloudflare vhost that terminates TLS.
 
 ### nginx `api.mypapyr.com` vhost (release-time, not in this template)
 

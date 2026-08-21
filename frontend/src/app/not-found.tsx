@@ -15,6 +15,9 @@ interface NotFoundContentProps {
 export function NotFoundContent({ locale, messages }: NotFoundContentProps): React.ReactElement {
   return (
     <html lang={locale} className={fontVariables}>
+      <head>
+        <title>{messages.notFound.title}</title>
+      </head>
       <body className="flex min-h-dvh flex-col bg-[var(--color-bg)] font-sans text-[var(--color-foreground)] antialiased">
         <SkipLink label={messages.a11y.skipToContent} />
         <main

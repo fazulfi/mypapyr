@@ -106,7 +106,7 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
   // Idle / ready / uploading phase: show dropzone + submit button
   if (phase === "idle" || phase === "ready" || phase === "uploading") {
     return (
-      <main className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-gray-50 p-8">
         <div className="mx-auto max-w-3xl">
           <ToolPageHeader locale={locale} toolId="jpg-to-pdf" />
           <PrivacyNotice locale={locale} model="hybrid" />
@@ -136,7 +136,7 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
           </div>
           <OtherTools currentTool="jpg-to-pdf" locale={locale} />
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -171,7 +171,7 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-3xl">
         <ToolPageHeader locale={locale} toolId="jpg-to-pdf" />
         <PrivacyNotice locale={locale} model="hybrid" />
@@ -180,7 +180,7 @@ export function JpgToPdfTool({ locale }: { locale: Locale }) {
         <OtherTools currentTool="jpg-to-pdf" locale={locale} />
         <ResultProblemReport locale={locale} page="/jpg-to-pdf" localeContext={locale} />
       </div>
-    </main>
+    </div>
   );
 }
 

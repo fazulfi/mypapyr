@@ -136,7 +136,7 @@ export function Dropzone({
         {copy.uploader.browseCta}
       </p>
       {maxSizeBytes !== undefined && (
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-600">
           {copy.uploader.dropHint.replace(
             "{size}",
             String(Math.round(maxSizeBytes / (1024 * 1024))),

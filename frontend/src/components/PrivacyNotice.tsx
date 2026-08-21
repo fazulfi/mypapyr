@@ -33,7 +33,7 @@ export type ProcessingModel = "server" | "client" | "hybrid";
 export function PrivacyNotice({ locale, model }: { locale: Locale; model: ProcessingModel }) {
   const copy = getMessages(locale);
   return (
-    <div className="mt-6 flex items-start rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+    <div className="mt-6 flex items-start rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs text-slate-700">
       <span className="mt-0.5 mr-2 shrink-0 text-slate-400">
         <ShieldIcon />
       </span>

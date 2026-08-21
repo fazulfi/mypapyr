@@ -93,7 +93,7 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
   // Idle / ready / uploading phase: show dropzone + submit button
   if (phase === "idle" || phase === "ready" || phase === "uploading") {
     return (
-      <main className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-gray-50 p-8">
         <div className="mx-auto max-w-3xl">
           <ToolPageHeader locale={locale} toolId="pdf-to-jpg" />
           <PrivacyNotice locale={locale} model="server" />
@@ -123,7 +123,7 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
           </div>
           <OtherTools currentTool="pdf-to-jpg" locale={locale} />
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -160,7 +160,7 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-3xl">
         <ToolPageHeader locale={locale} toolId="pdf-to-jpg" />
         <PrivacyNotice locale={locale} model="server" />
@@ -169,7 +169,7 @@ export function PdfToJpgTool({ locale }: { locale: Locale }) {
         <OtherTools currentTool="pdf-to-jpg" locale={locale} />
         <ResultProblemReport locale={locale} page="/pdf-to-jpg" localeContext={locale} />
       </div>
-    </main>
+    </div>
   );
 }
 
