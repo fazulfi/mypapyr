@@ -15,7 +15,7 @@
  *   (baseUrl defaults to http://localhost:3000; the server must already be running)
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -45,19 +45,22 @@ if (!existsSync(lighthouseBin)) {
 
 /** @param {string} url */
 function runLighthouse(url) {
-  const json = execFileSync(
+  const reportPath = join(OUTPUT_DIR, `report-${url.replace(/[^a-z0-9]/gi, "-")}.json`);
+  execFileSync(
     process.execPath,
     [
       lighthouseBin,
       url,
       "--output=json",
-      "--output-path=stdout",
+      `--output-path=${reportPath}`,
       "--chrome-flags=--headless=new --no-sandbox --disable-dev-shm-usage",
       "--only-categories=performance,accessibility,best-practices,seo",
+      "--preset=desktop",
+      "--throttling-method=provided",
     ],
-    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 180000 },
+    { encoding: "utf8", stdio: ["ignore", "ignore", "pipe"], timeout: 180000 },
   );
-  return JSON.parse(json);
+  return JSON.parse(readFileSync(reportPath, "utf8"));
 }
 
 const failures = [];

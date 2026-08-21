@@ -59,9 +59,7 @@ test.describe("Phase 10 VL-01 five-tool trilingual E2E gate", () => {
   });
 
   for (const { tool, locale } of toolCases) {
-    test(`${tool.id} ${locale}: happy path, download, reset, recovery, and layout`, async ({
-      page,
-    }) => {
+    test(`${tool.id} ${locale}: happy path, download, and layout`, async ({ page }) => {
       await assertNoRuntimeErrors(page, async () => {
         const controller = await interceptServerToolFlow(page, tool);
         await page.goto(tool.hrefs[locale]);
@@ -87,6 +85,11 @@ test.describe("Phase 10 VL-01 five-tool trilingual E2E gate", () => {
           page.evaluate((toolId) => sessionStorage.getItem(`papyr:task:${toolId}`), tool.id),
         ).resolves.toBeNull();
 
+        await page.evaluate(() => {
+          const root = document.documentElement;
+          if (root.scrollWidth > root.clientWidth) throw new Error("horizontal overflow");
+        });
+
         if (tool.id === "split-pdf") {
           const downloadResponse = page.waitForResponse(
             (response) =>
@@ -100,12 +103,19 @@ test.describe("Phase 10 VL-01 five-tool trilingual E2E gate", () => {
           await navigation;
           await expect(page).toHaveURL("https://example.com/dl");
         }
+      });
+    });
+
+    test(`${tool.id} ${locale}: reset contract after done`, async ({ page }) => {
+      await assertNoRuntimeErrors(page, async () => {
+        const controller = await interceptServerToolFlow(page, tool);
+        await page.goto(tool.hrefs[locale]);
+        await clearTaskToken(page, tool);
+        await submitToolFlow(page, tool, locale, filesFor(tool));
+        controller.setState("done");
+        await waitForDone(page);
 
         await expect(page.getByTestId("dropzone")).toHaveCount(0);
-        await expect(
-          page.getByRole("button", { name: /Process another|Procesar otro|Proses file/ }),
-        ).toBeVisible();
-
         await page
           .getByRole("button", { name: /Process another|Procesar otro|Proses file/ })
           .click();
@@ -114,11 +124,6 @@ test.describe("Phase 10 VL-01 five-tool trilingual E2E gate", () => {
         await expect(
           page.getByRole("button", { name: tool.submitText[locale], exact: true }),
         ).toBeDisabled();
-
-        await page.evaluate(() => {
-          const root = document.documentElement;
-          if (root.scrollWidth > root.clientWidth) throw new Error("horizontal overflow");
-        });
       });
     });
 
@@ -154,7 +159,7 @@ test.describe("Phase 10 VL-01 five-tool trilingual E2E gate", () => {
       toolFixtures["pdf-to-jpg"],
     ];
     for (const tool of chain) {
-      await page.locator(`a[href="${tool.hrefs.en}"]`).click();
+      await page.locator(`a[href="${tool.hrefs.en}"]`).first().click();
       await expect(page).toHaveURL(tool.hrefs.en);
       await expect(page.locator("h1")).toBeVisible();
     }
