@@ -52,8 +52,8 @@ Server job:
 | Workers | One-worker processing foundation: single in-flight job, per-tool timeouts, stale-claim recovery, terminal acknowledgement, and five-tool executors; worker entrypoint (`__main__.py` + `entrypoint.py`) | One active worker executing one concurrent native job at launch |
 | Storage | Cloudflare R2 client with opaque keys, presigned downloads, cleanup coordination, and a lifecycle rule template; live lifecycle rule applied at release | One-hour temporary-object lifecycle safety net in production |
 | Edge and proxy | Nginx server-block template with `__SET_ME__` placeholders only | Hardened Nginx reverse proxy behind Cloudflare |
-| Monitoring | Monitor and cleanup operations entrypoints; incident alerting not yet configured | Host resource monitoring, external uptime checks, automated status experience, incident alerts |
-| Delivery | CI with 23 required checks (22 on pushes to main, where the PR-only dependency review is skipped) and no deployment steps | Twenty-three required CI checks with no deployment steps; separately authorized release and deployment procedures |
+| Monitoring | Monitor and cleanup operations entrypoints; P7 monitoring and alert templates in branch (internal-only Netdata compose, derived status derivation, Telegram relay, restic backup), none wired to a live provider yet | Host resource monitoring, external uptime checks, automated status experience, incident alerts |
+| Delivery | CI with 25 required checks (24 on pushes to main, where the PR-only dependency review is skipped) and no deployment steps | Twenty-five required CI checks with no deployment steps; separately authorized release and deployment procedures |
 
 ## 4. Component boundaries
 
@@ -260,6 +260,8 @@ Target observability combines:
 
 Monitoring coverage includes the API, queue, workers, Redis, processing engines, storage integration, cleanup health, and relevant public endpoints. Metrics must support capacity decisions without collecting sensitive document attributes.
 
+The P7 operations scope (in branch, not yet merged) carries this target into templates guarded by CI: an internal-only digest-pinned Netdata compose profile (`deploy/monitoring/netdata-compose.yml`), a closed health-signal vocabulary (`deploy/monitoring/health-signals.md`), a derived public status module (`frontend/src/lib/status.ts`) that renders without a VPS health fetch, a standard-library Telegram relay with a closed allowlist (`deploy/monitoring/telegram-relay.py`, `deploy/monitoring/alerts.md`), and an encrypted restic backup with an allowlist scope manifest (`deploy/backup/`). Live wiring of all of these is owner-gated: the monitoring provider and thresholds require owner approval, the Telegram bot token and chat id are provisioned out of band, backup credentials and the restic password file are provisioned out of band, backup retention is approved by the owner, and the conflicting VPS host targets are resolved before any host-state verification. Until those gates clear, none of the P7 artifacts send alerts, take backups, or publish status derived from live multi-region probes.
+
 ### 11.1 Public status experience
 
 A simple public status page shows material service availability and incidents in plain language without sensitive infrastructure details. It is hosted on the frontend platform so it stays useful during a backend outage, and is updated automatically from approved health signals rather than manual incident copy. Status wording distinguishes observable service availability from guarantees about every engine or request, and the page does not claim complete infrastructure independence.
@@ -275,7 +277,7 @@ The target backend topology is Nginx, FastAPI, Redis, and bounded workers in one
 CI is continuous integration only. The repository CI:
 
 - Runs on every push and pull request to the main branch.
-- Requires 23 checks on pull requests (22 on pushes to main, where the PR-only dependency review is skipped), across three groups: core quality (frontend format and lint, frontend unit tests with coverage, frontend production build, Playwright E2E, backend lint and format, backend strict mypy, backend tests with an 80 percent coverage floor), security and supply chain (Trivy filesystem and configuration scan, gitleaks full-history secret scan, dependency review, npm audit, pip audit), and repository QA (action pin verification, Dockerfile lint, production-image build and non-root smoke, Compose structural validation, workflow YAML lint, markdownlint, shellcheck).
+- Requires 25 checks on pull requests (24 on pushes to main, where the PR-only dependency review is skipped), across three groups: core quality (frontend format and lint, frontend TypeScript typecheck, frontend unit tests with coverage, frontend production build, Playwright E2E, backend lint and format, backend strict mypy, backend tests with an 80 percent coverage floor), security and supply chain (Trivy filesystem and configuration scan, gitleaks full-history secret scan, dependency review, npm audit, pip audit), and repository QA (action pin verification, Dockerfile lint, production-image build and non-root smoke, Compose structural validation, workflow YAML lint, markdownlint, shellcheck, and the P7 operations guards for monitoring scope, Telegram relay scope, and backup scope).
 - Third-party actions are pinned to immutable commit SHAs.
 - Jobs use least-privilege read-only permissions and do not persist checkout credentials.
 - Contains no deployment steps and consumes no production credentials.
@@ -337,7 +339,7 @@ Status values match the product specification: **Available now**, **Deployed**, 
 | Next.js frontend foundation | Available now | `frontend/` source and tests |
 | FastAPI service foundation (app factory, strict configuration, health and readiness endpoints, request correlation, stable error envelope, validation schemas) | Available now | `backend/` source and tests |
 | Deployment templates (Compose, Nginx, environment, runbook) | Available now | `deploy/` |
-| Continuous integration (20 required checks: quality, security and supply chain, repository QA) | Available now | `.github/workflows/ci.yml` |
+| Continuous integration (23 required checks: quality, security and supply chain, repository QA) | Available now | `.github/workflows/ci.yml` |
 | Shared trilingual shell: locale routing, accessible navigation, supporting route shells, localized 404, and unit and E2E gates | Deployed | `frontend/src/app/[locale]/`, `frontend/src/components/`, `frontend/src/lib/i18n.ts`, `frontend/src/proxy.ts`; roadmap |
 | Legal, support, and status route shells (privacy, terms, cookies and advertising, contact, status, roadmap) | Deployed | `frontend/src/app/[locale]/`; roadmap |
 | Blog route shell | Available now | `frontend/src/app/[locale]/blog/` |
@@ -351,7 +353,7 @@ Status values match the product specification: **Available now**, **Deployed**, 
 | R2 object lifecycle and one-hour retention | Deployed | `backend/app/utils/r2.py`, `backend/app/tasks/cleanup.py`, `deploy/r2-lifecycle.json`, and their tests; the lifecycle rule is applied during a separately authorized release |
 | Browser versus server routing model | Specified | Section 5 |
 | Threat model and security controls | Specified | Section 10 |
-| Observability and status experience | Specified | Section 11 |
+| Observability and status experience | In branch | Section 11; P7 monitoring, alert relay, derived status, and backup templates are implemented and CI-guarded, with live wiring owner-gated and unprovisioned |
 | Full legal, support, and status content and functionality | Planned | Roadmap and operational procedures |
 | Blog publishing programme | Planned | Roadmap |
 | Hardened production deployment and release procedure | Planned | Roadmap and operational procedures |

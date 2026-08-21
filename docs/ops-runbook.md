@@ -2,7 +2,7 @@
 
 Ground truth for operating Papyr's backend: the bounded ops entrypoints, the
 readiness contract, the eight monitor probes, log provenance, incident
-response, and the (documented, not provisioned) alert wiring. Every command
+response, and the (implemented, not activated) alert wiring. Every command
 and JSON shape below is grounded in files under `backend/app/`.
 
 - [Entrypoints & how to run them](#entrypoints--how-to-run-them)
@@ -10,7 +10,7 @@ and JSON shape below is grounded in files under `backend/app/`.
 - [The eight probes](#the-eight-probes)
 - [Logs: location, rotation, retention, sanitization](#logs-location-rotation-retention-sanitization)
 - [Incident response checklist](#incident-response-checklist)
-- [Alert wiring (placeholders)](#alert-wiring-placeholders)
+- [Alert wiring (implemented, owner-gated)](#alert-wiring-implemented-owner-gated)
 
 ## Entrypoints & how to run them
 
@@ -212,18 +212,32 @@ General triage sequence: `compose ps` → which container is unhealthy →
 envelope `request_id` → restart the affected service. Check the monitor's
 one-line report (or `--watch 60`) for the failing probe names above.
 
-## Alert wiring (placeholders)
+## Alert wiring (implemented, owner-gated)
 
-**Documented, not provisioned.** Two integration seams are declared as
-environment placeholders, but nothing in the repo sends alerts yet
-(`integrations.md`): Sentry and Telegram are "environment contract only."
+**Implemented in the repository, not activated in production.** Two integration
+seams exist as source artifacts, but nothing is live and no credentials are
+provisioned. Live wiring, credential provisioning, and activation are
+owner-gated, out-of-band actions (`integrations.md`).
 
-- `SENTRY_DSN=__SET_ME__` (root `.env.example:88`).
-- `TELEGRAM_BOT_TOKEN=__SET_ME__`, `TELEGRAM_CHAT_ID=__SET_ME__`
-  (root `.env.example:82-83`).
+- **Telegram relay (OP-03):** `deploy/monitoring/telegram-relay.py`
+  implements a standard-library-only incident relay: it consumes the monitor's
+  JSON report, pages only on critical (`fail`) checks, de-duplicates within a
+  cooldown window, retries transient sends, and writes a permanent-failure
+  marker on bad channel credentials. Its payload allowlist and privacy contract
+  live in `deploy/monitoring/alerts.md`, and `scripts/check-telegram-relay.sh`
+  asserts the structural contract offline. Nothing has ever been sent;
+  `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` remain
+  `__SET_ME__` placeholders (root `.env.example:140-141`) awaiting owner
+  provisioning, and the relay may stay skipped.
+- **Sentry:** not implemented; declared as an environment contract only.
+  `SENTRY_DSN=__SET_ME__` (root `.env.example:146`).
+- **Netdata (OP-01):** an internal-only digest-pinned monitoring companion
+  (`deploy/monitoring/netdata-compose.yml`, profiles `monitoring`) observes the
+  closed health-signal vocabulary; see `docs/integrations.md`. Like the relay
+  it is implemented but not activated on the VPS.
 
-Until provisioned, incident detection is the compose `healthcheck`s +
-`restart: unless-stopped` + the `monitor` service (probes 1–8, exit codes
+Until activated, incident detection is the compose `healthcheck`s +
+`restart: unless-stopped` + the `monitor` service (probes 1-8, exit codes
 above) + host-level alerting the operator wires out of band. Do not rely on
 these placeholders for paging; treat the runbook checklist as the response
 path.

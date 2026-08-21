@@ -1,7 +1,9 @@
 #!/bin/sh
 #
-# test-check-ci.sh — guard regression: an unpinned `uses:` reference and a
-# missing production-image contract must be rejected. Builds temp fixtures
+# test-check-ci.sh — guard regression: an unpinned `uses:` reference, a
+# missing production-image contract, the `workflow_dispatch`-trigger/placement
+# contract, and a deploy command in a run step must be rejected, while the
+# additive `workflow_dispatch` trigger must be accepted. Builds temp fixtures
 # from the canonical workflow, injects `uses: actions/foo@v1` as a real step
 # and removes the qa-production-api job in turn, runs the guard against each
 # fixture, and asserts non-zero exits. The canonical workflow is never modified.
@@ -276,6 +278,58 @@ if (cd "$FIXTURE" && sh scripts/check-ci.sh >/dev/null 2>&1); then
     fail "job env shell fragment (\$(echo ...)) was NOT rejected (guard exit 0)"
 fi
 
+# ----- workflow_dispatch trigger regression --------------------------------
+# The no-CD guard must PERMIT the additive `workflow_dispatch` trigger — the
+# canonical workflow declares it today, so the guard must pass it — while
+# keeping ALL deployment/CD behavior rejected: the trigger keyword placed
+# outside the `on:` mapping and a real deployment command in a run step both
+# still fail.
+cp "$WF_DIR/ci.yml" "$FIXTURE/.github/workflows/ci.yml"
+
+grep -q 'workflow_dispatch:' "$FIXTURE/.github/workflows/ci.yml" \
+    || fail "fixture: canonical workflow lost its workflow_dispatch trigger"
+if ! OUT=$(cd "$FIXTURE" && sh scripts/check-ci.sh 2>&1); then
+    printf '%s\n' "$OUT" >&2
+    fail "canonical workflow_dispatch trigger was rejected by check-ci (must pass)"
+fi
+
+# The trigger keyword outside the on: mapping is still a structural marker.
+"$PYTHON" - "$FIXTURE/.github/workflows/ci.yml" <<'PY'
+import sys
+p = sys.argv[1]
+with open(p, encoding="utf-8") as fh:
+    s = fh.read()
+s = s.replace(
+    "    env:\n      PAPYR_COMPOSE_DIR:",
+    "    env:\n      workflow_dispatch: injected-outside-on\n      PAPYR_COMPOSE_DIR:",
+    1,
+)
+with open(p, "w", encoding="utf-8", newline="\n") as fh:
+    fh.write(s)
+PY
+if (cd "$FIXTURE" && sh scripts/check-ci.sh >/dev/null 2>&1); then
+    fail "workflow_dispatch outside the on: mapping was NOT rejected (guard exit 0)"
+fi
+
+# A real deployment command inside a run step still fails the no-CD guard.
+cp "$WF_DIR/ci.yml" "$FIXTURE/.github/workflows/ci.yml"
+"$PYTHON" - "$FIXTURE/.github/workflows/ci.yml" <<'PY'
+import sys
+p = sys.argv[1]
+with open(p, encoding="utf-8") as fh:
+    s = fh.read()
+s = s.replace(
+    "      - name: Install dependencies\n        run: npm ci",
+    "      - name: Install dependencies\n        run: npm ci\n\n"
+    "      - name: Defensive deploy probe\n        run: deploy --to production",
+)
+with open(p, "w", encoding="utf-8", newline="\n") as fh:
+    fh.write(s)
+PY
+if (cd "$FIXTURE" && sh scripts/check-ci.sh >/dev/null 2>&1); then
+    fail "deployment command in a run step was NOT rejected (guard exit 0)"
+fi
+
 # ----- positive regression ------------------------------------------------
 # With the defects fixed, the canonical workflow must pass the full guard
 # (including pin truth) so the fixed workflow is proven to pass, not just the
@@ -286,4 +340,4 @@ if ! OUT=$(cd "$FIXTURE" && sh scripts/check-ci.sh 2>&1); then
     fail "canonical (fixed) workflow was rejected by check-ci (must pass)"
 fi
 
-printf 'test-check-ci: PASS — unpinned action, missing job, CMD-override / compose-env contract, and .env.test fixture verified\n'
+printf 'test-check-ci: PASS — unpinned action, missing job, CMD-override / compose-env contract, workflow_dispatch trigger/placement, deploy-command rejection, and .env.test fixture verified\n'

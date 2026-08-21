@@ -39,18 +39,20 @@ Repo guard (root):
 - [ ] Security: Trivy (critical/high), gitleaks full-history.
 - [ ] Supply chain: dependency review, npm audit, pip-audit.
 - [ ] QA: action-pin truth, compose structural, hadolint, markdownlint, production API image build + non-root smoke, shellcheck, yamllint.
-- [ ] All 22 CI jobs pass on the PR (22 on pushes to main; 7 status checks required by branch protection).
+- [ ] Operations guards: monitoring scope (OP-01), Telegram relay scope (OP-03), backup scope (OP-04).
+- [ ] All 25 CI jobs pass on the PR (24 on pushes to main, where the PR-only dependency review is skipped; 7 status checks required by branch protection).
 
-## P9. Content, legal, and blog evidence
+### 3.1 P7 operations verification (when the release carries the P7 operations scope)
 
-- [ ] Legal Version 1.0 footer with effective date is rendered on Privacy, Terms, and Cookies & Advertising in all 3 locales.
-- [ ] Legal pages contain no informational-shell or "later phase" copy.
-- [ ] `npm test` is green, including blog and legal tests.
-- [ ] `bash scripts/check-blog-content.sh` is green.
-- [ ] Sitemap contains 57 entries, including all 15 localized article URLs with real per-article `lastmod` values.
-- [ ] `/blog` lists 5 articles per locale (15 total) with publication date and "Papyr Team" author text.
-- [ ] Article pages expose canonical and hreflang metadata on `budgezen.com`.
-- [ ] No deployment, indexing, or ranking claim is made from branch-only evidence.
+Record results in the completion report alongside the CI evidence. These steps are owner-gated; a skipped step stays explicit with a written reason.
+
+- [ ] Netdata: `deploy/monitoring/netdata-compose.yml` renders with `docker compose config --quiet`, stays internal-only (no published host ports), and `scripts/check-monitoring.sh` exits 0.
+- [ ] Derived status: `frontend/src/lib/status.ts` derives availability from consecutive failures across at least two regions; the localized status page renders unavailable and unknown states without a VPS health fetch. The live multi-region snapshot producer is not wired until the owner approves the monitoring provider and thresholds (owner gate).
+- [ ] Telegram relay: `scripts/check-telegram-relay.sh` exits 0; a dry-run (`--dry-run`) sends nothing and exits 0. If the bot token and chat id are unprovisioned, the relay stays skipped and the skip is recorded as an owner-gated pending action.
+- [ ] Backup: `scripts/check-backup.sh` exits 0; daily restic (`deploy/backup/restic-backup.sh`) runs against a scratch repository with the allowlist scope manifest, and the monthly isolated restore drill (`deploy/backup/restore-drill.md`) is executed on a scratch repository until a live repository exists.
+- [ ] Environment provisioning: every new variable in `deploy/.env.production.example` has a real value in the production env file (`PAPYR_ENV_FILE`), approved by the owner; no empty or `__SET_ME__` value ships to the VPS.
+- [ ] Non-root runtime: the production API image runs with a non-root user, read-only root filesystem, and dropped capabilities (the CI `qa-production-api` job is the gate; a local smoke is optional extra evidence).
+- [ ] PR/CI gates: the P7 PR is open with all 25 CI jobs green and an owner-approved merge; nothing deploys until the owner clears the gates and the release build in Section 4 passes.
 
 ## 4. Release build (VPS)
 

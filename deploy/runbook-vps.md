@@ -10,6 +10,10 @@ This document is a public template for a separately authorized deployment. The r
 - A real `.env.production` provisioned out of band with mode `0600` and owned by the service account. Never copy the public example: its required values are intentionally EMPTY so an accidental load fails fast at boot instead of booting with placeholder credentials.
 - Version-pinned production images that have passed the release security gates (never `:latest`; `PAPYR_API_IMAGE` carries an immutable digest).
 
+## VPS host target (P7 unresolved conflict)
+
+There are two conflicting VPS host targets on record for production: `root@<HOST_A>` versus `root@<HOST_B>` (user `mypapyr`), one of which is stale. **Never guess a host.** The owner must resolve which target is authoritative and confirm current host state (R-12/R-26) before any deployment command below is run. Until that resolution, all deployment steps in this runbook remain blocked and unexecuted.
+
 ## Files
 
 Place the reviewed release versions under a dedicated application directory:
@@ -96,6 +100,10 @@ Full-topology activation (Phase 5 baseline): the unified topology includes `redi
 - Apply bounded log rotation and host resource alerts.
 - Test backup restoration independently of backup creation.
 - Capture sanitized diagnostics for incidents; never paste credentials or document-derived data.
+
+## Backup operations (P7 OP-04)
+
+The repository contains a public-safe encrypted restic procedure at `deploy/backup/restic-backup.sh`. Schedule `run` daily from the host scheduler after owner approval of the R-13 retention values; the script requires `RESTIC_REPOSITORY`, `RESTIC_PASSWORD_FILE`, `PAPYR_BACKUP_ROOT`, and `PAPYR_BACKUP_SCOPE`, and never stores credentials. `run` fails closed unless `RESTIC_PASSWORD_FILE` is a mode-`0600` regular file owned by the operator. Scope is enforced by the allowlist manifest `deploy/backup/backup-scope.txt` via `--files-from`: restic reads only the listed configuration paths, so document data (filenames, contents, metadata), R2 objects, signed URLs, queue payloads, uploads, results, Redis, and secrets structurally cannot enter the repository. Use `plan`/`--dry-run` for offline validation. Perform the monthly isolated restore drill in `deploy/backup/restore-drill.md`; it is not production evidence and must use a temporary target.
 
 ## Rollback
 

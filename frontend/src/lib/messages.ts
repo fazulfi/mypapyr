@@ -497,6 +497,37 @@ export const messages = {
         },
       },
     },
+    statusPage: {
+      observedDisclaimer:
+        "This page reports observed availability, not a guarantee of future uptime.",
+      state: {
+        operational: "Operational",
+        degraded: "Degraded",
+        down: "Service disruption",
+        unknown: "Status unknown",
+      },
+      stateBody: {
+        operational:
+          "All monitored regions reported success in the most recent observation window.",
+        degraded:
+          "One or more regions are reporting repeated failures. Some requests may be affected.",
+        down: "Multiple regions are reporting sustained failures at the same time.",
+        unknown:
+          "Monitoring signals are being configured. There is not enough observed data to determine availability yet.",
+      },
+      regionsHeading: "Regions",
+      regionState: {
+        operational: "Operational",
+        degraded: "Observed failures",
+        down: "Down",
+      },
+      policyHeading: "How availability is derived",
+      policyBody:
+        "Availability is derived from consecutive failed observations. A region is marked down only after {failures} failed observations in a row, and the service is marked as disrupted only when {regions} regions fail together.",
+      lastObservedLabel: "Last observed",
+      neverObserved: "Never",
+      insufficientNote: "Not enough observations yet to confirm availability.",
+    },
   },
   es: {
     ads: {
@@ -1000,6 +1031,38 @@ export const messages = {
           paragraphs: ["¿Tienes una pregunta sobre privacidad? Contáctanos en {email}."],
         },
       },
+    },
+    statusPage: {
+      observedDisclaimer:
+        "Esta página informa disponibilidad observada, no garantiza disponibilidad futura.",
+      state: {
+        operational: "Operativo",
+        degraded: "Degradado",
+        down: "Interrupción del servicio",
+        unknown: "Estado desconocido",
+      },
+      stateBody: {
+        operational:
+          "Todas las regiones supervisadas informaron resultados correctos en la ventana de observación más reciente.",
+        degraded:
+          "Una o más regiones informan fallos repetidos. Algunas solicitudes pueden verse afectadas.",
+        down: "Varias regiones informan fallos sostenidos al mismo tiempo.",
+        unknown:
+          "Las señales de supervisión se están configurando. Todavía no hay suficientes datos observados para determinar la disponibilidad.",
+      },
+      regionsHeading: "Regiones",
+      regionState: {
+        operational: "Operativo",
+        degraded: "Fallos observados",
+        down: "Caído",
+      },
+      policyHeading: "Cómo se determina la disponibilidad",
+      policyBody:
+        "La disponibilidad se determina a partir de observaciones fallidas consecutivas. Una región solo se marca como caída después de {failures} observaciones fallidas seguidas, y el servicio solo se marca como interrumpido cuando {regions} regiones fallan a la vez.",
+      lastObservedLabel: "Última observación",
+      neverObserved: "Nunca",
+      insufficientNote:
+        "Todavía no hay suficientes observaciones para confirmar la disponibilidad.",
     },
   },
   id: {
@@ -1506,6 +1569,37 @@ export const messages = {
           paragraphs: ["Punya pertanyaan tentang privasi? Hubungi kami di {email}."],
         },
       },
+    },
+    statusPage: {
+      observedDisclaimer:
+        "Halaman ini melaporkan ketersediaan yang teramati, bukan jaminan ketersediaan di masa depan.",
+      state: {
+        operational: "Beroperasi normal",
+        degraded: "Menurun",
+        down: "Gangguan layanan",
+        unknown: "Status tidak diketahui",
+      },
+      stateBody: {
+        operational:
+          "Semua wilayah yang dipantau melaporkan hasil sukses pada jendela observasi terbaru.",
+        degraded:
+          "Satu atau lebih wilayah melaporkan kegagalan berulang. Sebagian permintaan mungkin terdampak.",
+        down: "Beberapa wilayah melaporkan kegagalan berkelanjutan pada waktu yang sama.",
+        unknown:
+          "Sinyal pemantauan sedang dikonfigurasi. Belum ada cukup data teramati untuk menentukan ketersediaan.",
+      },
+      regionsHeading: "Wilayah",
+      regionState: {
+        operational: "Beroperasi normal",
+        degraded: "Kegagalan teramati",
+        down: "Gangguan",
+      },
+      policyHeading: "Cara ketersediaan ditentukan",
+      policyBody:
+        "Ketersediaan ditentukan dari kegagalan observasi berurutan. Sebuah wilayah baru ditandai terganggu setelah {failures} kegagalan observasi berturut-turut, dan layanan baru ditandai terganggu ketika {regions} wilayah gagal bersamaan.",
+      lastObservedLabel: "Terakhir diamati",
+      neverObserved: "Tidak pernah",
+      insufficientNote: "Belum cukup observasi untuk mengonfirmasi ketersediaan.",
     },
   },
 } as const;

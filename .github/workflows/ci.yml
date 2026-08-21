@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -281,7 +282,7 @@ jobs:
 
       - name: Upload Trivy SARIF
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: trivy-fs-report
           path: trivy-fs.sarif
@@ -330,7 +331,6 @@ jobs:
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: high
-          config-file: ./.github/dependency-review-config.yml
 
   supplychain-npm-audit:
     name: Supply chain (npm audit)
@@ -630,3 +630,44 @@ jobs:
 
       - name: Run blog content gate
         run: bash scripts/check-blog-content.sh
+  qa-monitoring:
+    name: QA (OP-01 monitoring guard)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: OP-01 monitoring scope guard
+        run: bash scripts/check-monitoring.sh
+      - name: OP-01 monitoring regression
+        run: bash scripts/test-check-monitoring.sh
+
+  qa-telegram-relay:
+    name: QA (OP-03 Telegram relay guard)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: OP-03 Telegram relay guard
+        run: bash scripts/check-telegram-relay.sh
+      - name: OP-03 Telegram relay regression
+        run: bash scripts/test-check-telegram-relay.sh
+
+  qa-backup:
+    name: QA (OP-04 backup scope guard)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: OP-04 backup scope guard
+        run: bash scripts/check-backup.sh
+      - name: OP-04 backup regression
+        run: bash scripts/test-check-backup.sh
