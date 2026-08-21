@@ -2,6 +2,10 @@
 
 All notable changes to this project are tracked here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once a release version is cut. Branch-level work during a release cycle is recorded here before merge.
 
+## [Unreleased] — Phase 10 (pre-launch verification and launch gate)
+
+Phase 10 (in PR, branch `feat/phase-10-pre-launch-verification`) builds the five-tool trilingual launch gate and the coordinated production-activation toolkit: VL-01 five-tool trilingual E2E gate (`frontend/e2e/five-tools.spec.ts` + `helpers.ts`), VL-02 accessibility program (axe WCAG 2.2 A/AA with `target-size`, `frontend/e2e/a11y/`, exceptions register, plus fixes for pre-existing landmark and contrast violations in `src`), VL-03 rendered visual verification (`frontend/e2e/visual.spec.ts`, `scripts/check-contrast.sh`), VL-04 Core Web Vitals + performance (`frontend/lighthouserc.js`, `test:perf`), and VL-05 pre-launch smoke + rollback readiness + activation checklist (`scripts/check-launch.sh`, `docs/verification/`). CI gains four jobs (`frontend-a11y`, `frontend-visual`, `frontend-perf`, `qa-launch`), raising the total to 29 (28 on pushes to main). Launch gate execution and the G-3 owner authorization remain pending.
+
 ## [Unreleased] — Phase 9 (Content, Legal & Blog)
 
 - Phase 9: legal page revision with version footers (DEC-045), pure-MDX blog with 15 localized articles, CI blog-content gates, /blog listing, article sitemap entries. Merged via PR #49 (`31af3694`, 2026-08-20); deployed to the VPS frontend as `p9-da6e94e` (BUILD_ID `2nIWv0nNRIdkFQbh92Ueh`).
