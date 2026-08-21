@@ -70,7 +70,9 @@ for (const url of URLS) {
   for (const [id, category] of Object.entries(categories)) {
     const score = category.score ?? 0;
     if (score < CATEGORY_MIN) {
-      failures.push(`${url} category ${id}: ${Math.round(score * 100)} (min ${CATEGORY_MIN * 100})`);
+      failures.push(
+        `${url} category ${id}: ${Math.round(score * 100)} (min ${CATEGORY_MIN * 100})`,
+      );
     } else {
       passed += 1;
     }
@@ -87,7 +89,10 @@ for (const url of URLS) {
   }
 }
 
-writeFileSync(OUT_FILE, JSON.stringify({ passed, failures, generatedAt: new Date().toISOString() }, null, 2));
+writeFileSync(
+  OUT_FILE,
+  JSON.stringify({ passed, failures, generatedAt: new Date().toISOString() }, null, 2),
+);
 
 if (failures.length > 0) {
   console.error("perf-assert: FAIL");
